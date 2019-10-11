@@ -1,0 +1,67 @@
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+version: '2'
+
+services:
+
+  orderer-0.netop1.com:
+    container_name: orderer-0.netop1.com
+    extends:
+      file: peer-base.yaml
+      service: orderer-base
+    volumes:
+        - ./../channel-artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
+        - ./../../netop1.com/orderers/orderer-0.netop1.com/msp:/var/hyperledger/orderer/msp
+        - ./../../netop1.com/orderers/orderer-0.netop1.com/tls/:/var/hyperledger/orderer/tls
+        - orderer-0.netop1.com:/var/hyperledger/production/orderer
+    ports:
+      - 7050:7050
+
+  peer-0.netop1.com:
+    container_name: peer-0.netop1.com
+    extends:
+      file: peer-base.yaml
+      service: peer-base
+    environment:
+      - CORE_PEER_ID=peer-0.netop1.com
+      - CORE_PEER_ADDRESS=peer-0.netop1.com:7051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:7051
+      - CORE_PEER_CHAINCODEADDRESS=peer-0.netop1.com:7052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer-1.netop1.com:8051
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer-0.netop1.com:7051
+      - CORE_PEER_LOCALMSPID=Org1
+    volumes:
+        - /var/run/:/host/var/run/
+        - ./../../netop1.com/peers/peer-0.netop1.com/msp:/etc/hyperledger/fabric/msp
+        - ./../../netop1.com/peers/peer-0.netop1.com/tls:/etc/hyperledger/fabric/tls
+        - peer-0.netop1.com:/var/hyperledger/production
+    ports:
+      - 7051:7051
+
+  peer-1.netop1.com:
+    container_name: peer-1.netop1.com
+    extends:
+      file: peer-base.yaml
+      service: peer-base
+    environment:
+      - CORE_PEER_ID=peer-1.netop1.com
+      - CORE_PEER_ADDRESS=peer-1.netop1.com:8051
+      - CORE_PEER_LISTENADDRESS=0.0.0.0:8051
+      - CORE_PEER_CHAINCODEADDRESS=peer-1.netop1.com:8052
+      - CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:8052
+      - CORE_PEER_GOSSIP_EXTERNALENDPOINT=peer-1.netop1.com:8051
+      - CORE_PEER_GOSSIP_BOOTSTRAP=peer-0.netop1.com:7051
+      - CORE_PEER_LOCALMSPID=Org1
+    volumes:
+        - /var/run/:/host/var/run/
+        - ./../../netop1.com/peers/peer-1.netop1.com/msp:/etc/hyperledger/fabric/msp
+        - ./../../netop1.com/peers/peer-1.netop1.com/tls:/etc/hyperledger/fabric/tls
+        - peer-1.netop1.com:/var/hyperledger/production
+
+    ports:
+      - 8051:8051
+

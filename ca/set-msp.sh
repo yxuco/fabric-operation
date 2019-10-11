@@ -22,7 +22,7 @@ function genCrypto {
   cp ${ORG_DIR}/tlsca-${ORG}-server/tls-cert.pem ${ORG_DIR}/ca-${ORG}-client/tlsadmin
 
   # generate crypto data
-  docker exec -w /etc/hyperledger/fabric-ca-client -it caclient.netop1.com bash -c './gen-crypto.sh'
+  docker exec -w /etc/hyperledger/fabric-ca-client -it caclient.${FABRIC_ORG} bash -c './gen-crypto.sh'
 }
 
 function printConfigYaml {
@@ -81,21 +81,20 @@ function copyCACrypto {
   done
 }
 
-# copyNodeCrypto <node-namme> peers|orderers|users - copy crypto data of an orderer or a peer
-# e.g., copyNodeCrypto peer-1 peers
+# copyNodeCrypto <node-namme> peers|orderers|users client|server - copy crypto data of an orderer or a peer
+# e.g., copyNodeCrypto peer-1 peers server
 function copyNodeCrypto {
   NODE=${1}
   FOLDER=${2}
+  TLSTYPE=${3}
   if [ "${FOLDER}" == "users" ]; then
     NODE_NAME=${NODE}\@${FABRIC_ORG}
     SOURCE=${ORG_DIR}/ca-${ORG}-client/${NODE_NAME}
     TARGET=${MSP_DIR}/${FOLDER}/${NODE_NAME}
-    TLSTYPE=client
   else
     NODE_NAME=${NODE}.${FABRIC_ORG}
     SOURCE=${ORG_DIR}/ca-${ORG}-client/${NODE}
     TARGET=${MSP_DIR}/${FOLDER}/${NODE_NAME}
-    TLSTYPE=server
   fi
 
   # copy msp data
@@ -152,22 +151,22 @@ function setupMSP {
   # copy orderers
   getOrderers
   for ord in "${ORDERERS[@]}"; do
-    copyNodeCrypto ${ord} orderers
+    copyNodeCrypto ${ord} orderers server
   done
 
   # copy peers
   getPeers
   for p in "${PEERS[@]}"; do
-    copyNodeCrypto ${p} peers
+    copyNodeCrypto ${p} peers server
   done
 
   # copy admin user
-  copyNodeCrypto ${ADMIN_USER:-"Admin"} users
+  copyNodeCrypto ${ADMIN_USER:-"Admin"} users server
 
   # copy other users
   if [ ! -z "${USERS}" ]; then
     for u in ${USERS}; do
-      copyNodeCrypto ${u} users
+      copyNodeCrypto ${u} users client
     done
   fi
 }

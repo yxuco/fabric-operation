@@ -1,0 +1,35 @@
+# generate orderer genesis and channel tx
+configtxgen -profile OneOrgOrdererGenesis -channelID byfn-sys-channel -outputBlock ./channel-artifacts/genesis.block
+configtxgen -profile OneOrgChannel -outputCreateChannelTx ./channel-artifacts/channel.tx -channelID mychannel
+configtxgen -profile OneOrgChannel -outputAnchorPeersUpdate ./channel-artifacts/anchors.tx -channelID mychannel -asOrg Org1
+
+# optional: convert generated files to readable json
+configtxlator proto_decode --input ./channel-artifacts/genesis.block --type common.Block --output ./channel-artifacts/genesis.json
+configtxlator proto_decode --input ./channel-artifacts/channel.tx --type common.Envelope --output ./channel-artifacts/channel.json
+
+docker-compose -f docker-compose.yaml up -d
+
+docker exec -it cli bash
+
+# already setup
+  CORE_PEER_LOCALMSPID="Org1"
+  CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peers/peer-0.netop1.com/tls/ca.crt
+  CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/users/Admin@netop1.com/msp
+  CORE_PEER_ADDRESS=peer-0.netop1.com:7051
+
+# set this for TLS
+ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/orderers/orderer-0.netop1.com/msp/tlscacerts/tlsca.netop1.com-cert.pem
+peer channel create -o orderer-0.netop1.com:7050 -c mychannel -f ./channel-artifacts/channel.tx --tls --cafile $ORDERER_CA
+peer channel join -b mychannel.block
+peer channel fetch config config_block.pb -o orderer-0.netop1.com:7050 -c mychannel --tls --cafile $ORDERER_CA
+peer channel update -o orderer-0.netop1.com:7050 -c mychannel -f ./channel-artifacts/anchors.tx --tls --cafile $ORDERER_CA
+
+CC_SRC_PATH="github.com/chaincode/chaincode_example02/go/"
+peer chaincode install -n mycc -v 1.0 -l golang -p ${CC_SRC_PATH}
+peer chaincode instantiate -o orderer-0.netop1.com:7050 --tls --cafile $ORDERER_CA -C mychannel -n mycc -l golang -v 1.0 -c '{"Args":["init","a","100","b","200"]}' -P "OR ('Org1.peer')"
+
+peer chaincode query -C mychannel -n mycc -c '{"Args":["query","a"]}'
+peer chaincode invoke -o orderer-0.netop1.com:7050 --tls --cafile $ORDERER_CA -C mychannel -n mycc -c '{"Args":["invoke","a","b","10"]}'
+exit
+
+docker-compose -f docker-compose.yaml down --volumes --remove-orphans
