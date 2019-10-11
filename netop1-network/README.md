@@ -67,7 +67,7 @@ peer chaincode invoke -o orderer-0.netop1.com:7050 --tls --cafile $ORDERER_CA -C
 # exit cli container when test is done
 exit
 ```
-## Stop the sammple network and cleanup
+## Stop the sample network and cleanup
 ``` 
 docker-compose -f docker-compose.yaml down --volumes --remove-orphans
 docker rm $(docker ps -a | grep dev-peer | awk '{print $1}')
