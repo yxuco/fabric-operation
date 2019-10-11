@@ -12,9 +12,19 @@ cd ../ca
 These steps starts CA server for the default sample org, `netop1`, and use `fabric-ca-client` to generate crypto data.  The result is stored in the folder [netop1.com](../netop1.com).
 
 ## Generate Orderer genesis block and app channel tx
+For development, generate orderer genesis block for `solo` consensus:
 ```
 cd ../netop1-network
 configtxgen -profile OneOrgOrdererGenesis -channelID byfn-sys-channel -outputBlock ./channel-artifacts/genesis.block
+```
+Or, for production, generate orderer genesis block for `etcd raft` consensus:
+```
+cd ../netop1-network
+configtxgen -profile EtcdRaftOrdererGenesis -channelID byfn-sys-channel -outputBlock ./channel-artifacts/genesis.block
+```
+Generate config tx for creating app channel:
+```
+cd ../netop1-network
 configtxgen -profile OneOrgChannel -outputCreateChannelTx ./channel-artifacts/channel.tx -channelID mychannel
 configtxgen -profile OneOrgChannel -outputAnchorPeersUpdate ./channel-artifacts/anchors.tx -channelID mychannel -asOrg Org1
 ```
@@ -23,12 +33,15 @@ The result is stored in the folder [channel-artifacts](./channel-artifacts).  Op
 configtxlator proto_decode --input ./channel-artifacts/genesis.block --type common.Block --output ./channel-artifacts/genesis.json
 configtxlator proto_decode --input ./channel-artifacts/channel.tx --type common.Envelope --output ./channel-artifacts/channel.json
 ```
-
 ## Start sample Fabric network
+For development, start Fabric network using `solo` consensus:
 ```
 docker-compose -f docker-compose.yaml up -d
 ```
-
+Or for production, start Fabric network using `etcd raft` consensus and `couchdb`:
+```
+docker-compose -f docker-compose.yaml -f docker-compose-etcdraft.yaml -f docker-compose-couch.yaml up -d
+```
 ## Create channel and test chaincode
 Start `cli` docker container shell:
 ```
@@ -60,16 +73,18 @@ CC_SRC_PATH="github.com/chaincode/chaincode_example02/go/"
 peer chaincode install -n mycc -v 1.0 -l golang -p ${CC_SRC_PATH}
 peer chaincode instantiate -o orderer-0.netop1.com:7050 --tls --cafile $ORDERER_CA -C mychannel -n mycc -l golang -v 1.0 -c '{"Args":["init","a","100","b","200"]}' -P "OR ('Org1.peer')"
 
-# invoke and query the chaincode
+# invoke and query the chaincode, query returns 100
 peer chaincode query -C mychannel -n mycc -c '{"Args":["query","a"]}'
 peer chaincode invoke -o orderer-0.netop1.com:7050 --tls --cafile $ORDERER_CA -C mychannel -n mycc -c '{"Args":["invoke","a","b","10"]}'
+# query returns 90
+peer chaincode query -C mychannel -n mycc -c '{"Args":["query","a"]}'
 
 # exit cli container when test is done
 exit
 ```
 ## Stop the sample network and cleanup
 ``` 
-docker-compose -f docker-compose.yaml down --volumes --remove-orphans
+docker-compose -f docker-compose.yaml -f docker-compose-etcdraft.yaml -f docker-compose-couch.yaml down --volumes --remove-orphans
 docker rm $(docker ps -a | grep dev-peer | awk '{print $1}')
 docker rmi $(docker images | grep dev-peer | awk '{print $3}')
 ```

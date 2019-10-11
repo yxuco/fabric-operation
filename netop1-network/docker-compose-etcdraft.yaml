@@ -1,0 +1,31 @@
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+version: '2'
+
+volumes:
+  orderer-1.netop1.com:
+  orderer-2.netop1.com:
+
+networks:
+  byfn:
+
+services:
+
+  orderer-1.netop1.com:
+    extends:
+      file:   base/docker-compose-base.yaml
+      service: orderer-1.netop1.com
+    container_name: orderer-1.netop1.com
+    networks:
+      - byfn
+
+  orderer-2.netop1.com:
+    extends:
+      file:   base/docker-compose-base.yaml
+      service: orderer-2.netop1.com
+    container_name: orderer-2.netop1.com
+    networks:
+      - byfn

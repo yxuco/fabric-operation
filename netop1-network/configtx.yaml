@@ -302,7 +302,7 @@ Profiles:
             Capabilities:
                 <<: *ApplicationCapabilities
 
-    SampleMultiNodeEtcdRaft:
+    EtcdRaftOrdererGenesis:
         <<: *ChannelDefaults
         Capabilities:
             <<: *ChannelCapabilities
