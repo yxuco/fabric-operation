@@ -1,9 +1,9 @@
 #!/bin/bash
-# setup orderer and peer MSPs using CA server of a specified org
-# usage: set-msp.sh <org_name>
-# where config parameters for the org are specified in ../config/org.env, e.g.
-#   set-msp.sh netop1
-# use config parameters specified in ../config/netop1.env
+# generate crypto keys using CA server of a specified org
+# usage: bootstrap.sh <org_name>
+# it uses config parameters of the specified org as defined in ../config/org.env, e.g.
+#   bootstrap.sh netop1
+# using config parameters specified in ../config/netop1.env
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
 ORG_ENV=$(dirname "${SCRIPT_DIR}")/config/${1:-"netop1"}.env
@@ -118,28 +118,26 @@ function copyNodeCrypto {
 # set list of orderers from config
 function getOrderers {
   ORDERERS=()
-  min=${ORDERER_MIN:-"0"}
-  seq=${ORDERER_MAX:-"-1"}
-  seq=$((${seq}-1))
-  until [ "${seq}" -lt "${min}" ]; do
+  seq=${ORDERER_MIN:-"0"}
+  max=${ORDERER_MAX:-"0"}
+  until [ "${seq}" -ge "${max}" ]; do
     ORDERERS+=("orderer-${seq}")
-    seq=$((${seq}-1))
+    seq=$((${seq}+1))
   done
 }
 
 # set list of peers from config
 function getPeers {
   PEERS=()
-  min=${PEER_MIN:-"0"}
-  seq=${PEER_MAX:-"-1"}
-  seq=$((${seq}-1))
-  until [ "${seq}" -lt "${min}" ]; do
+  seq=${PEER_MIN:-"0"}
+  max=${PEER_MAX:-"0"}
+  until [ "${seq}" -ge "${max}" ]; do
     PEERS+=("peer-${seq}")
-    seq=$((${seq}-1))
+    seq=$((${seq}+1))
   done
 }
 
-function setupMSP {
+function collectAllCrypto {
   # cleanup target MSP folder
   rm -R ${MSP_DIR}
 
@@ -172,8 +170,8 @@ function setupMSP {
 }
 
 function main {
-    genCrypto
-    setupMSP
+  genCrypto
+  collectAllCrypto
 }
 
 main

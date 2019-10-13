@@ -18,24 +18,22 @@ CSR_HOSTS=${CLIENT_HOSTS:-"localhost,cli.${FABRIC_ORG}"}
 # set list of orderers from config
 function getOrderers {
   ORDERERS=()
-  min=${ORDERER_MIN:-"0"}
-  seq=${ORDERER_MAX:-"-1"}
-  seq=$((${seq}-1))
-  until [ "${seq}" -lt "${min}" ]; do
+  seq=${ORDERER_MIN:-"0"}
+  max=${ORDERER_MAX:-"0"}
+  until [ "${seq}" -ge "${max}" ]; do
     ORDERERS+=("orderer-${seq}")
-    seq=$((${seq}-1))
+    seq=$((${seq}+1))
   done
 }
 
 # set list of peers from config
 function getPeers {
   PEERS=()
-  min=${PEER_MIN:-"0"}
-  seq=${PEER_MAX:-"-1"}
-  seq=$((${seq}-1))
-  until [ "${seq}" -lt "${min}" ]; do
+  seq=${PEER_MIN:-"0"}
+  max=${PEER_MAX:-"0"}
+  until [ "${seq}" -ge "${max}" ]; do
     PEERS+=("peer-${seq}")
-    seq=$((${seq}-1))
+    seq=$((${seq}+1))
   done
 }
 
