@@ -1,0 +1,170 @@
+---
+Organizations:
+
+    - &netop1OrdererMSP
+        Name: netop1OrdererMSP
+        ID: netop1OrdererMSP
+        MSPDir: ../msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('netop1OrdererMSP.member')"
+            Writers:
+                Type: Signature
+                Rule: "OR('netop1OrdererMSP.member')"
+            Admins:
+                Type: Signature
+                Rule: "OR('netop1OrdererMSP.admin')"
+
+    - &netop1MSP
+        Name: netop1MSP
+        ID: netop1MSP
+        MSPDir: ../msp
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('netop1MSP.admin', 'netop1MSP.peer', 'netop1MSP.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('netop1MSP.admin', 'netop1MSP.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('netop1MSP.admin')"
+
+        AnchorPeers:
+            - Host: peer-0.netop1.com
+              Port: 7051
+
+Capabilities:
+    Channel: &ChannelCapabilities
+        V1_4_3: true
+        V1_3: false
+        V1_1: false
+    Orderer: &OrdererCapabilities
+        V1_4_2: true
+        V1_1: false
+    Application: &ApplicationCapabilities
+        V1_4_2: true
+        V1_3: false
+        V1_2: false
+        V1_1: false
+
+Application: &ApplicationDefaults
+    Organizations:
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+
+    Capabilities:
+        <<: *ApplicationCapabilities
+
+Orderer: &OrdererDefaults
+    OrdererType: solo
+    Addresses:
+        - orderer-0.netop1.com
+    BatchTimeout: 2s
+    BatchSize:
+        MaxMessageCount: 10
+        AbsoluteMaxBytes: 99 MB
+        PreferredMaxBytes: 512 KB
+    Organizations:
+
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+        BlockValidation:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+
+Channel: &ChannelDefaults
+    Policies:
+        Readers:
+            Type: ImplicitMeta
+            Rule: "ANY Readers"
+        Writers:
+            Type: ImplicitMeta
+            Rule: "ANY Writers"
+        Admins:
+            Type: ImplicitMeta
+            Rule: "MAJORITY Admins"
+    Capabilities:
+        <<: *ChannelCapabilities
+
+Profiles:
+
+    soloOrdererGenesis:
+        <<: *ChannelDefaults
+        Orderer:
+            <<: *OrdererDefaults
+            Organizations:
+                - *netop1OrdererMSP
+            Capabilities:
+                <<: *OrdererCapabilities
+
+        Consortiums:
+            netop1Consortium:
+                Organizations:
+                    - *netop1MSP
+
+    etcdraftOrdererGenesis:
+        <<: *ChannelDefaults
+        Capabilities:
+            <<: *ChannelCapabilities
+        Orderer:
+            <<: *OrdererDefaults
+            OrdererType: etcdraft
+            EtcdRaft:
+                Consenters:
+                - Host: orderer-0.netop1.com
+                  Port: 7050
+                  ClientTLSCert: ../orderers/orderer-0.netop1.com/tls/server.crt
+                  ServerTLSCert: ../orderers/orderer-0.netop1.com/tls/server.crt
+                - Host: orderer-1.netop1.com
+                  Port: 7050
+                  ClientTLSCert: ../orderers/orderer-1.netop1.com/tls/server.crt
+                  ServerTLSCert: ../orderers/orderer-1.netop1.com/tls/server.crt
+                - Host: orderer-2.netop1.com
+                  Port: 7050
+                  ClientTLSCert: ../orderers/orderer-2.netop1.com/tls/server.crt
+                  ServerTLSCert: ../orderers/orderer-2.netop1.com/tls/server.crt
+            Addresses:
+                - orderer-0.netop1.com:7050
+                - orderer-1.netop1.com:7050
+                - orderer-2.netop1.com:7050
+            Organizations:
+                - *netop1OrdererMSP
+            Capabilities:
+                <<: *OrdererCapabilities
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+            - <<: *netop1OrdererMSP
+
+        Consortiums:
+            netop1Consortium:
+                Organizations:
+                    - *netop1MSP
+
+    netop1Channel:
+        Consortium: netop1Consortium
+        <<: *ChannelDefaults
+        Application:
+            <<: *ApplicationDefaults
+            Organizations:
+                - *netop1MSP
+            Capabilities:
+                <<: *ApplicationCapabilities

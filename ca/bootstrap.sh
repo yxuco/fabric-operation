@@ -46,12 +46,13 @@ function printConfigYaml {
 function copyCACrypto {
   CA_NAME=${1}
   TARGET=${MSP_DIR}/${CA_NAME}
-  mkdir -p ${TARGET}
+  mkdir -p ${TARGET}/tls
 
   SOURCE=${ORG_DIR}/${CA_NAME}-${ORG}-server
   KEYSTORE=${SOURCE}/msp/keystore
   CERTFILE=${SOURCE}/ca-cert.pem
   cp ${CERTFILE} ${TARGET}/${CA_NAME}.${FABRIC_ORG}-cert.pem
+  cp ${SOURCE}/tls-cert.pem ${TARGET}/tls/server.crt
   mkdir -p ${MSP_DIR}/msp/${CA_NAME}certs
   cp ${CERTFILE} ${MSP_DIR}/msp/${CA_NAME}certs/${CA_NAME}.${FABRIC_ORG}-cert.pem
 
@@ -67,6 +68,8 @@ function copyCACrypto {
   # calculate public key checksum from CA certificate
   pubsum=$(openssl x509 -in ${CERTFILE} -pubkey -noout -outform pem | ${CHECKSUM})
   echo "public key checksum: ${pubsum}"
+  tlssum=$(openssl x509 -in ${SOURCE}/tls-cert.pem -pubkey -noout -outform pem | ${CHECKSUM})
+  echo "public tls key checksum: ${tlssum}"
 
   # find CA private key with the same public key checksum as the CA certificate
   for f in ${KEYSTORE}/*_sk; do
@@ -74,9 +77,11 @@ function copyCACrypto {
     sum=$(openssl pkey -in ${f} -pubout -outform pem | ${CHECKSUM})
     echo "checksum from private key: ${sum}"
     if [ "${sum}" == "${pubsum}" ]; then
-      cp ${f} ${TARGET}
+      cp ${f} ${TARGET}/${CA_NAME}.${FABRIC_ORG}-key.pem
       echo "Got CA private key: ${f}"
-      break
+    elif [ "${sum}" == "${tlssum}" ]; then
+      cp ${f} ${TARGET}/tls/server.key
+      echo "Got CA TLS private key: ${f}"
     fi
   done
 }

@@ -9,6 +9,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
 source $(dirname "${SCRIPT_DIR}")/config/${1:-"netop1"}.env
 ORG=${FABRIC_ORG%%.*}
 ORG_DIR=${SCRIPT_DIR}/${ORG}
+CA_PORT=${CA_PORT:-"7054"}
+TLS_PORT=${TLS_PORT:-"7055"}
 
 # printServerDockerYaml init|start ca|tlsca
 # e.g., printServerDockerYaml start tlsca
@@ -20,7 +22,7 @@ function printServerDockerYaml {
     ADMIN=${TLS_ADMIN:-"admin"}
     PASSWD=${TLS_PASSWD:-"adminpw"}
   else
-    PORT=${CA_PORT:-"7054"}
+    PORT=${CA_PORT}
     ADMIN=${CA_ADMIN:-"admin"}
     PASSWD=${CA_PASSWD:-"adminpw"}
   fi

@@ -9,7 +9,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
 ORG_ENV=$(dirname "${SCRIPT_DIR}")/config/${1:-"netop1"}.env
 source ${ORG_ENV}
 ORG=${FABRIC_ORG%%.*}
-ORG_DIR=${SCRIPT_DIR}/${ORG}
 MSP_DIR=$(dirname "${SCRIPT_DIR}")/${FABRIC_ORG}
 
 SYS_CHANNEL=${SYS_CHANNEL:-"${ORG}-channel"}
@@ -262,8 +261,8 @@ function printCliDockerYaml {
   echo "version: '3.7'
 
 services:
-  cli:
-    container_name: cli
+  tool:
+    container_name: tool
     image: hyperledger/fabric-tools
     tty: true
     stdin_open: true
@@ -296,14 +295,14 @@ function gen-config {
   mkdir -p ${MSP_DIR}/artifacts
   printConfigTx > ${MSP_DIR}/artifacts/configtx.yaml
 
-  # start cli container to generate genesis block and channel tx
+  # start tool container to generate genesis block and channel tx
   printCliDockerYaml > ${MSP_DIR}/artifacts/docker-compose.yaml
   cp ${SCRIPT_DIR}/gen-config-block.sh ${MSP_DIR}/artifacts
   docker-compose -f ${MSP_DIR}/artifacts/docker-compose.yaml up
 
-  # cleanup cli container and docker network
+  # cleanup tool container and docker network
   docker network rm artifacts_${NETWORK}
-  docker rm cli
+  docker rm tool
 }
 
 function main {
