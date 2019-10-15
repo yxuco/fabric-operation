@@ -41,14 +41,12 @@ Similar to previous commands, you can provide an optional argument to this scrip
 ## Configure and start Fabric network
 ```
 cd ./network
-./bootstrap.sh
 ./start-network.sh
 ./run-test.sh
 ./stop-network.sh
 ```
 These commands does the following:
-* Generate docker compose yaml files for the Fabric network using the script [bootstrap.sh](./network/bootstrap.sh).  The resulting yaml files are stored in folder [network](./netop1.com/network).
-* Start the fabric network specified by the docker compose yaml, using the script [start-network.sh](./network/start-network.sh).
+* Generate docker compose yaml files for the Fabric network, and then start the fabric network, using the script [start-network.sh](./network/start-network.sh).  The yaml files are stored in folder [network](./netop1.com/network).
 * Use the script [run-test.sh](./network/run-test.sh) to create test channel, join a peer to the channel, install a test [chaincode](./chaincode/chaincode_example02/go), and invoke chaincode transactions.
 * Use the script [stop-network.sh](./network/stop-network.sh) to stop the network and cleanup the docker containers and images.
 

@@ -93,8 +93,8 @@ services:"
   printClientService
 }
 
-# start TLS and CA servers and a CA client for the configured FABRIC_ORG
-function startCA {
+function main {
+  # create docker yaml for CA server and client if it does not exist already
   mkdir -p "${ORG_DIR}"
   if [ ! -f "${ORG_DIR}/docker-compose.yaml" ]; then
     printCADockerYaml > ${ORG_DIR}/docker-compose.yaml
@@ -102,10 +102,6 @@ function startCA {
 
   # start CA server and client
   docker-compose -f ${ORG_DIR}/docker-compose.yaml up -d
-}
-
-function main {
-  startCA
 }
 
 main
