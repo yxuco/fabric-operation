@@ -8,15 +8,13 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
 source $(dirname "${SCRIPT_DIR}")/config/${1:-"netop1"}.env
 ORG=${FABRIC_ORG%%.*}
-ORG_DIR=${SCRIPT_DIR}/${ORG}
+ORG_DIR=$(dirname "${SCRIPT_DIR}")/${FABRIC_ORG}/canet
 CA_PORT=${CA_PORT:-"7054"}
 TLS_PORT=${TLS_PORT:-"7055"}
 
-# printServerDockerYaml init|start ca|tlsca
-# e.g., printServerDockerYaml start tlsca
-function printServerDockerYaml {
-  CMD=${1}
-  CA_NAME=${2}
+# printServerService ca|tlsca
+function printServerService {
+  CA_NAME=${1}
   if [ "${CA_NAME}" == "tlsca" ]; then
     PORT=${TLS_PORT}
     ADMIN=${TLS_ADMIN:-"admin"}
@@ -28,11 +26,9 @@ function printServerDockerYaml {
   fi
 
   CN_NAME="${CA_NAME}.${FABRIC_ORG}"
-  CONFIG_DIR="${CA_NAME}-${ORG}-server"
+  setServerConfig ${CA_NAME}
 
-  echo "version: '3.7'
-
-services:
+  echo "
   ${CN_NAME}:
     image: hyperledger/fabric-ca
     container_name: ${CN_NAME}
@@ -40,28 +36,38 @@ services:
     - ${PORT}:7054
     environment:
     - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+    - FABRIC_CA_SERVER_PORT=7054
     - FABRIC_CA_SERVER_TLS_ENABLED=true
     - FABRIC_CA_SERVER_CSR_CN=${CN_NAME}
     - FABRIC_CA_SERVER_CSR_HOSTS=${CN_NAME},localhost
     volumes:
-    - ${ORG_DIR}/${CONFIG_DIR}:/etc/hyperledger/fabric-ca-server
-    command: sh -c 'fabric-ca-server ${CMD} -b ${ADMIN}:${PASSWD} -p 7054 --tls.enabled'
+    - ./${CA_NAME}-server:/etc/hyperledger/fabric-ca-server
+    command: sh -c 'fabric-ca-server start -b ${ADMIN}:${PASSWD} --tls.enabled'
     networks:
-    - ${NETWORK}
-
-networks:
-  ${NETWORK}:
-"
+    - ${NETWORK}"
 }
 
-# printClientDockerYaml - print docker yaml for ca client
-function printClientDockerYaml {
+# setServerConfig ca|tlsca
+function setServerConfig {
+  CA_NAME=${1}
+  SERVER_DIR="${ORG_DIR}/${CA_NAME}-server"
+  mkdir -p ${SERVER_DIR}
+  cp ${SCRIPT_DIR}/fabric-ca-server-config.yaml ${SERVER_DIR}/fabric-ca-server-config.yaml
+  sed -i -e "s/%%admin%%/${ADMIN}/" ${SERVER_DIR}/fabric-ca-server-config.yaml
+  sed -i -e "s/%%adminpw%%/${PASSWD}/" ${SERVER_DIR}/fabric-ca-server-config.yaml
+  sed -i -e "s/%%country%%/${CSR_COUNTRY}/" ${SERVER_DIR}/fabric-ca-server-config.yaml
+  sed -i -e "s/%%state%%/${CSR_STATE}/" ${SERVER_DIR}/fabric-ca-server-config.yaml
+  sed -i -e "s/%%city%%/${CSR_CITY}/" ${SERVER_DIR}/fabric-ca-server-config.yaml
+  sed -i -e "s/%%org%%/${FABRIC_ORG}/" ${SERVER_DIR}/fabric-ca-server-config.yaml
+  rm ${SERVER_DIR}/fabric-ca-server-config.yaml-e
+}
+
+# printClientService - print docker yaml for ca client
+function printClientService {
   CLIENT_NAME="caclient.${FABRIC_ORG}"
-  CLIENT_DIR="ca-${ORG}-client"
+  mkdir -p "${ORG_DIR}/ca-client"
 
-  echo "version: '3.7'
-
-services:
+  echo "
   ${CLIENT_NAME}:
     image: hyperledger/fabric-ca
     container_name: ${CLIENT_NAME}
@@ -69,58 +75,33 @@ services:
     - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-client
     - FABRIC_CA_CLIENT_TLS_CERTFILES=/etc/hyperledger/fabric-ca-client/tls-cert.pem
     volumes:
-    - ${ORG_DIR}/${CLIENT_DIR}:/etc/hyperledger/fabric-ca-client
+    - ./ca-client:/etc/hyperledger/fabric-ca-client
     command: bash -c 'while true; do sleep 30; done'
     networks:
-    - ${NETWORK}
+    - ${NETWORK}"
+}
+
+function printCADockerYaml {
+  echo "version: '3.7'
 
 networks:
   ${NETWORK}:
-"
-}
 
-# configCA ca|tlsca
-# e.g., configCA ca
-function configCA {
-  CA_NAME=${1}
-  mkdir -p ${ORG_DIR}
-
-  # initialize CA server config with specified Org name in CA certificate
-  printServerDockerYaml init ${CA_NAME} > ${ORG_DIR}/init-${CA_NAME}-${ORG}.yaml
-  docker-compose -f ${ORG_DIR}/init-${CA_NAME}-${ORG}.yaml up
-  sed "s/O: Hyperledger/O: ${FABRIC_ORG}/g" ${ORG_DIR}/${CA_NAME}-${ORG}-server/fabric-ca-server-config.yaml > ${ORG_DIR}/fabric-ca-server-config.yaml
-  rm -R ${ORG_DIR}/${CA_NAME}-${ORG}-server/*
-  sed "s/OU: Fabric//g" ${ORG_DIR}/fabric-ca-server-config.yaml > ${ORG_DIR}/${CA_NAME}-${ORG}-server/fabric-ca-server-config.yaml
-
-  # cleanup files from CA init
-  rm ${ORG_DIR}/fabric-ca-server-config.yaml
-  rm ${ORG_DIR}/init-${CA_NAME}-${ORG}.yaml
-  docker rm ${CA_NAME}.${FABRIC_ORG}
-
-  # create CA server docker-compose yaml
-  printServerDockerYaml start ${CA_NAME} > ${ORG_DIR}/${CA_NAME}-${ORG}-server.yaml
+services:"
+  printServerService ca
+  printServerService tlsca
+  printClientService
 }
 
 # start TLS and CA servers and a CA client for the configured FABRIC_ORG
 function startCA {
-  if [ ! -f "${ORG_DIR}/tlsca-${ORG}-server.yaml" ]; then
-    # config TLS CA server
-    configCA tlsca
-  fi
-
-  if [ ! -f "${ORG_DIR}/ca-${ORG}-client.yaml" ]; then
-    # config CA client
-    printClientDockerYaml > ${ORG_DIR}/ca-${ORG}-client.yaml
-    mkdir -p ${ORG_DIR}/ca-${ORG}-client
-  fi
-
-  if [ ! -f "${ORG_DIR}/ca-${ORG}-server.yaml" ]; then
-    # config CA server
-    configCA ca
+  mkdir -p "${ORG_DIR}"
+  if [ ! -f "${ORG_DIR}/docker-compose.yaml" ]; then
+    printCADockerYaml > ${ORG_DIR}/docker-compose.yaml
   fi
 
   # start CA server and client
-  docker-compose -f ${ORG_DIR}/tlsca-${ORG}-server.yaml -f ${ORG_DIR}/ca-${ORG}-server.yaml -f ${ORG_DIR}/ca-${ORG}-client.yaml up -d
+  docker-compose -f ${ORG_DIR}/docker-compose.yaml up -d
 }
 
 function main {

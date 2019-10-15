@@ -9,17 +9,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
 ORG_ENV=$(dirname "${SCRIPT_DIR}")/config/${1:-"netop1"}.env
 source ${ORG_ENV}
 ORG=${FABRIC_ORG%%.*}
-ORG_DIR=${SCRIPT_DIR}/${ORG}
 MSP_DIR=$(dirname "${SCRIPT_DIR}")/${FABRIC_ORG}
+ORG_DIR=${MSP_DIR}/canet
 
 function genCrypto {
-  mkdir -p ${ORG_DIR}/ca-${ORG}-client/caadmin
-  mkdir -p ${ORG_DIR}/ca-${ORG}-client/tlsadmin
+  mkdir -p ${ORG_DIR}/ca-client/caadmin
+  mkdir -p ${ORG_DIR}/ca-client/tlsadmin
 
-  cp ${ORG_ENV} ${ORG_DIR}/ca-${ORG}-client/org.env
-  cp ${SCRIPT_DIR}/gen-crypto.sh ${ORG_DIR}/ca-${ORG}-client
-  cp ${ORG_DIR}/ca-${ORG}-server/tls-cert.pem ${ORG_DIR}/ca-${ORG}-client/caadmin
-  cp ${ORG_DIR}/tlsca-${ORG}-server/tls-cert.pem ${ORG_DIR}/ca-${ORG}-client/tlsadmin
+  cp ${ORG_ENV} ${ORG_DIR}/ca-client/org.env
+  cp ${SCRIPT_DIR}/gen-crypto.sh ${ORG_DIR}/ca-client
+  cp ${ORG_DIR}/ca-server/tls-cert.pem ${ORG_DIR}/ca-client/caadmin
+  cp ${ORG_DIR}/tlsca-server/tls-cert.pem ${ORG_DIR}/ca-client/tlsadmin
 
   # generate crypto data
   docker exec -w /etc/hyperledger/fabric-ca-client -it caclient.${FABRIC_ORG} bash -c './gen-crypto.sh'
@@ -48,7 +48,7 @@ function copyCACrypto {
   TARGET=${MSP_DIR}/${CA_NAME}
   mkdir -p ${TARGET}/tls
 
-  SOURCE=${ORG_DIR}/${CA_NAME}-${ORG}-server
+  SOURCE=${ORG_DIR}/${CA_NAME}-server
   KEYSTORE=${SOURCE}/msp/keystore
   CERTFILE=${SOURCE}/ca-cert.pem
   cp ${CERTFILE} ${TARGET}/${CA_NAME}.${FABRIC_ORG}-cert.pem
@@ -94,11 +94,11 @@ function copyNodeCrypto {
   TLSTYPE=${3}
   if [ "${FOLDER}" == "users" ]; then
     NODE_NAME=${NODE}\@${FABRIC_ORG}
-    SOURCE=${ORG_DIR}/ca-${ORG}-client/${NODE_NAME}
+    SOURCE=${ORG_DIR}/ca-client/${NODE_NAME}
     TARGET=${MSP_DIR}/${FOLDER}/${NODE_NAME}
   else
     NODE_NAME=${NODE}.${FABRIC_ORG}
-    SOURCE=${ORG_DIR}/ca-${ORG}-client/${NODE}
+    SOURCE=${ORG_DIR}/ca-client/${NODE}
     TARGET=${MSP_DIR}/${FOLDER}/${NODE_NAME}
   fi
 
@@ -144,9 +144,12 @@ function getPeers {
 
 function collectAllCrypto {
   # cleanup target MSP folder
-  rm -R ${MSP_DIR}
+  for f in ca tlsca msp orderers peers users; do
+    echo "cleanup ${f}"
+    rm -R ${MSP_DIR}/${f}
+  done
 
-  # copy CA 
+  # copy CA
   copyCACrypto ca
   copyCACrypto tlsca
   printConfigYaml > ${MSP_DIR}/msp/config.yaml

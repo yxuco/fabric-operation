@@ -7,8 +7,7 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
 source $(dirname "${SCRIPT_DIR}")/config/${1:-"netop1"}.env
-ORG=${FABRIC_ORG%%.*}
-ORG_DIR=${SCRIPT_DIR}/${ORG}
+ORG_DIR=$(dirname "${SCRIPT_DIR}")/${FABRIC_ORG}/canet
 
-docker-compose -f ${ORG_DIR}/tlsca-${ORG}-server.yaml -f ${ORG_DIR}/ca-${ORG}-server.yaml -f ${ORG_DIR}/ca-${ORG}-client.yaml down
-rm -R ${ORG_DIR}
+docker-compose -f ${ORG_DIR}/docker-compose.yaml down --volumes --remove-orphans
+rm -R ${ORG_DIR}/ca-client
