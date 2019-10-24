@@ -65,7 +65,9 @@ cd ./network
 ./k8s-test.sh
 ./stop-k8s.sh
 ```
-These steps generates yaml files for Kubernetes persistent volumes and orderer and peer pods, starts the fabric network using the `docker desktop` on Mac. The yaml files are stored under folder [network](./netop1.comm/network). It then collect artifacts used by the tests and store them in folder [k8s](.netop1.com/k8s), and creates and starts a `cli` pod to run tests for channel creation and chaincode invocations.
+* The script [start-k8s.sh](./network/start-k8s.sh) generates yaml files for Kubernetes persistent volumes and orderer and peer pods, starts the fabric network using the `docker-desktop` on Mac. The yaml files are stored under folder [network](./netop1.com/network). 
+* The script [k8s-test.sh](./network/k8s-test.sh) collects artifacts required by the tests and stores the artifacts in folder [k8s](./netop1.com/k8s), and then creates and starts a `cli` pod to run tests for channel creation and chaincode invocations.
+* The script [stop-k8s.sh](./network/stop-k8s.sh) shutdown all kubernetes pods, deletes persistent volumes, and cleans up the persistent data.
 
 ## TODO
 Will soon enhance these scripts to support Kubernetes on popular cloud service providers.
