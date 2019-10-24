@@ -46,7 +46,7 @@ cd ./msp
 ./bootstrap.sh netop1 k8s
 ```
 ## Configure and start Fabric network
-To start and test the network using docker-compose, use the following commands:
+If you created msp artifacts for docker-compose in the previous step, use the following commands to start and test the network using docker-compose:
 ```
 cd ./network
 ./start-docker.sh
@@ -58,7 +58,7 @@ These commands does the following:
 * Use the script [docker-test.sh](./network/docker-test.sh) to create a test channel, join a peer to the channel, install a test [chaincode](./chaincode/chaincode_example02/go), and invoke chaincode transactions.
 * Use the script [stop-docker.sh](./network/stop-docker.sh) to stop the network and cleanup the docker containers and images.
 
-To start and test the network using Kubernetes, i.e., docker desktop on Mac, use the following commands:
+If you created msp artifacts for kubernetes in the previous step, use the following commands to start and test the network using `docker-desktop` on Mac:
 ```
 cd ./network
 ./start-k8s.sh
