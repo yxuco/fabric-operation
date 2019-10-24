@@ -1,7 +1,7 @@
 version: '2'
 
 networks:
-  fabnet:
+  netop1:
 
 services:
 
@@ -33,67 +33,7 @@ services:
     ports:
       - 7050:7050
     networks:
-      - fabnet
-
-  orderer-1.netop1.com:
-    container_name: orderer-1.netop1.com
-    image: hyperledger/fabric-orderer
-    environment:
-      - FABRIC_LOGGING_SPEC=INFO
-      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
-      - ORDERER_GENERAL_GENESISMETHOD=file
-      - ORDERER_GENERAL_GENESISFILE=/var/hyperledger/orderer/orderer.genesis.block
-      - ORDERER_GENERAL_LOCALMSPID=netop1OrdererMSP
-      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
-      # enabled TLS
-      - ORDERER_GENERAL_TLS_ENABLED=true
-      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
-      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
-      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
-      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
-      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
-    command: orderer
-    volumes:
-        - ./../artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
-        - ./../orderers/orderer-1.netop1.com/msp:/var/hyperledger/orderer/msp
-        - ./../orderers/orderer-1.netop1.com/tls/:/var/hyperledger/orderer/tls
-        - orderer-1.netop1.com:/var/hyperledger/production/orderer
-    ports:
-      - 7060:7050
-    networks:
-      - fabnet
-
-  orderer-2.netop1.com:
-    container_name: orderer-2.netop1.com
-    image: hyperledger/fabric-orderer
-    environment:
-      - FABRIC_LOGGING_SPEC=INFO
-      - ORDERER_GENERAL_LISTENADDRESS=0.0.0.0
-      - ORDERER_GENERAL_GENESISMETHOD=file
-      - ORDERER_GENERAL_GENESISFILE=/var/hyperledger/orderer/orderer.genesis.block
-      - ORDERER_GENERAL_LOCALMSPID=netop1OrdererMSP
-      - ORDERER_GENERAL_LOCALMSPDIR=/var/hyperledger/orderer/msp
-      # enabled TLS
-      - ORDERER_GENERAL_TLS_ENABLED=true
-      - ORDERER_GENERAL_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
-      - ORDERER_GENERAL_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
-      - ORDERER_GENERAL_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
-      - ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY=/var/hyperledger/orderer/tls/server.key
-      - ORDERER_GENERAL_CLUSTER_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-    working_dir: /opt/gopath/src/github.com/hyperledger/fabric
-    command: orderer
-    volumes:
-        - ./../artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
-        - ./../orderers/orderer-2.netop1.com/msp:/var/hyperledger/orderer/msp
-        - ./../orderers/orderer-2.netop1.com/tls/:/var/hyperledger/orderer/tls
-        - orderer-2.netop1.com:/var/hyperledger/production/orderer
-    ports:
-      - 7070:7050
-    networks:
-      - fabnet
+      - netop1
 
   peer-0.netop1.com:
     container_name: peer-0.netop1.com
@@ -111,7 +51,7 @@ services:
       # the following setting starts chaincode containers on the same
       # bridge network as the peers
       # https://docs.docker.com/compose/networking/
-      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=network_fabnet
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=network_netop1
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
       - CORE_PEER_TLS_ENABLED=true
@@ -137,7 +77,7 @@ services:
     ports:
       - 7051:7051
     networks:
-      - fabnet
+      - netop1
 
   couchdb-0:
     container_name: couchdb-0
@@ -150,7 +90,7 @@ services:
     ports:
       - 7056:5984
     networks:
-      - fabnet
+      - netop1
 
   peer-1.netop1.com:
     container_name: peer-1.netop1.com
@@ -168,7 +108,7 @@ services:
       # the following setting starts chaincode containers on the same
       # bridge network as the peers
       # https://docs.docker.com/compose/networking/
-      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=network_fabnet
+      - CORE_VM_DOCKER_HOSTCONFIG_NETWORKMODE=network_netop1
       - FABRIC_LOGGING_SPEC=INFO
       #- FABRIC_LOGGING_SPEC=DEBUG
       - CORE_PEER_TLS_ENABLED=true
@@ -194,7 +134,7 @@ services:
     ports:
       - 7061:7051
     networks:
-      - fabnet
+      - netop1
 
   couchdb-1:
     container_name: couchdb-1
@@ -207,7 +147,7 @@ services:
     ports:
       - 7066:5984
     networks:
-      - fabnet
+      - netop1
 
   cli:
     container_name: cli
@@ -222,7 +162,7 @@ services:
       - ORG=netop1
       - SYS_CHANNEL=netop1-channel
       - TEST_CHANNEL=mychannel
-      - ORDERER_TYPE=etcdraft
+      - ORDERER_TYPE=solo
       #- FABRIC_CFG_PATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/config/artifacts
       - CORE_PEER_ID=cli
       - CORE_PEER_ADDRESS=peer-0.netop1.com:7051
@@ -241,14 +181,12 @@ services:
       - ./../:/opt/gopath/src/github.com/hyperledger/fabric/peer/config/
       - ./../../chaincode/:/opt/gopath/src/github.com/chaincode:cached
     networks:
-      - fabnet
+      - netop1
     depends_on:
       - peer-0.netop1.com
       - peer-1.netop1.com
 
 volumes:
   orderer-0.netop1.com:
-  orderer-1.netop1.com:
-  orderer-2.netop1.com:
   peer-0.netop1.com:
   peer-1.netop1.com:

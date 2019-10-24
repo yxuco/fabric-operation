@@ -1,0 +1,83 @@
+
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: peer-config-class
+# use localhost config folder
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+
+---
+kind: PersistentVolume
+apiVersion: v1
+# create one PV for each peer instance
+metadata:
+  name: config-peer-0
+  labels:
+    node: peer-0
+    org: netop1
+spec:
+  capacity:
+    storage: 100Mi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: peer-config-class
+  hostPath:
+    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/peers/peer-0.netop1.com
+    type: Directory
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: config-peer-0
+  namespace: netop1
+spec:
+  storageClassName: peer-config-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  selector:
+    matchLabels:
+      node: peer-0
+      org: netop1
+---
+kind: PersistentVolume
+apiVersion: v1
+# create one PV for each peer instance
+metadata:
+  name: config-peer-1
+  labels:
+    node: peer-1
+    org: netop1
+spec:
+  capacity:
+    storage: 100Mi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: peer-config-class
+  hostPath:
+    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/peers/peer-1.netop1.com
+    type: Directory
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: config-peer-1
+  namespace: netop1
+spec:
+  storageClassName: peer-config-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  selector:
+    matchLabels:
+      node: peer-1
+      org: netop1

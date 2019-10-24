@@ -1,19 +1,32 @@
 #!/bin/bash
 # create MSP configuration, channel profile, and orderer genesis block
-# usage: bootstrap.sh <org_name>
+#   for target environment, i.e., docker, k8s, aws, etc
+# usage: bootstrap.sh <org_name> <env>
 # it uses config parameters of the specified org as defined in ../config/org.env, e.g.
 #   bootstrap.sh netop1
 # using config parameters specified in ../config/netop1.env
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
-ORG_ENV=$(dirname "${SCRIPT_DIR}")/config/${1:-"netop1"}.env
-source ${ORG_ENV}
-ORG=${FABRIC_ORG%%.*}
-MSP_DIR=$(dirname "${SCRIPT_DIR}")/${FABRIC_ORG}
+source $(dirname "${SCRIPT_DIR}")/network/setup.sh ${1:-"netop1"} ${2:-"docker"}
 
+MSP_DIR=$(dirname "${SCRIPT_DIR}")/${FABRIC_ORG}
+ORG_MSP="${ORG}MSP"
+ORDERER_MSP=${ORDERER_MSP:-"${ORG}OrdererMSP"}
 SYS_CHANNEL=${SYS_CHANNEL:-"${ORG}-channel"}
 TEST_CHANNEL=${TEST_CHANNEL:-"mychannel"}
 ORDERER_TYPE=${ORDERER_TYPE:-"solo"}
+
+# e.g., getHostUrl peer-1
+function getHostUrl {
+  if [ ! -z "${SVC_DOMAIN}" ]; then
+    # for Kubernetes target
+    svc=${1%%-*}
+    echo "${1}.${svc}.${SVC_DOMAIN}"
+  else
+    # default for docker-composer
+    echo "${1}.${FABRIC_ORG}"
+  fi
+}
 
 # set list of orderers from config
 function getOrderers {
@@ -76,7 +89,7 @@ function printPeerMSP {
   if [ "${#PEERS[@]}" -gt "0" ]; then
     echo "
         AnchorPeers:
-            - Host: ${PEERS[0]}.${FABRIC_ORG}
+            - Host: $(getHostUrl ${PEERS[0]})
               Port: 7051"
   fi
 }
@@ -123,7 +136,7 @@ function printOrdererDefaults {
 Orderer: &OrdererDefaults
     OrdererType: solo
     Addresses:
-        - ${ORDERERS[0]}.${FABRIC_ORG}
+        - $(getHostUrl ${ORDERERS[0]}):7050
     BatchTimeout: 2s
     BatchSize:
         MaxMessageCount: 10
@@ -200,14 +213,14 @@ function printEtcdraftOrdererProfile {
             EtcdRaft:
                 Consenters:"
     for ord in "${ORDERERS[@]}"; do
-      echo "                - Host: ${ord}.${FABRIC_ORG}
+      echo "                - Host: $(getHostUrl ${ord})
                   Port: 7050
                   ClientTLSCert: ../orderers/${ord}.${FABRIC_ORG}/tls/server.crt
                   ServerTLSCert: ../orderers/${ord}.${FABRIC_ORG}/tls/server.crt"
     done
     echo "            Addresses:"
     for ord in "${ORDERERS[@]}"; do
-      echo "                - ${ord}.${FABRIC_ORG}:7050"
+      echo "                - $(getHostUrl ${ord}):7050"
     done
     echo "            Organizations:
                 - *${ORDERER_MSP}
@@ -237,8 +250,6 @@ function printOrgChannelProfile {
 function printConfigTx {
   getOrderers
   getPeers
-  ORG_MSP="${ORG}MSP"
-  ORDERER_MSP=${ORDERER_MSP:-"${ORG}OrdererMSP"}
 
   echo "---
 Organizations:"
@@ -257,7 +268,7 @@ Profiles:"
   printOrgChannelProfile
 }
 
-function printCliDockerYaml {
+function printToolDockerYaml {
   echo "version: '3.7'
 
 services:
@@ -282,10 +293,10 @@ services:
         - /var/run/:/host/var/run/
         - ./../:/opt/gopath/src/github.com/hyperledger/fabric/peer/config/
     networks:
-    - ${NETWORK}
+    - ${ORG}
 
 networks:
-  ${NETWORK}:
+  ${ORG}:
 "
 }
 
@@ -296,12 +307,12 @@ function gen-config {
   printConfigTx > ${MSP_DIR}/artifacts/configtx.yaml
 
   # start tool container to generate genesis block and channel tx
-  printCliDockerYaml > ${MSP_DIR}/artifacts/docker-compose.yaml
+  printToolDockerYaml > ${MSP_DIR}/artifacts/docker-compose.yaml
   cp ${SCRIPT_DIR}/gen-config-block.sh ${MSP_DIR}/artifacts
   docker-compose -f ${MSP_DIR}/artifacts/docker-compose.yaml up
 
   # cleanup tool container and docker network
-  docker network rm artifacts_${NETWORK}
+  docker network rm artifacts_${ORG}
   docker rm tool
 }
 

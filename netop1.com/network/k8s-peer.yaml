@@ -1,0 +1,141 @@
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: peer
+  namespace: netop1
+  labels:
+    app: peer
+spec:
+  selector:
+    app: peer
+  ports:
+    - name: external-listen-endpoint
+      port: 7051
+    - name: event-listen
+      port: 7053
+  clusterIP: None
+---
+kind: StatefulSet
+apiVersion: apps/v1
+metadata:
+  name:	peer
+  namespace: netop1
+spec:
+  selector:
+    matchLabels:
+      app: peer
+  serviceName: peer
+  replicas: 2
+  template:
+    metadata:
+      labels:
+       app: peer
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: couchdb
+        image: hyperledger/fabric-couchdb
+        env:
+        - name: COUCHDB_USER
+          value: 
+        - name: COUCHDB_PASSWORD
+          value: 
+        ports:
+         - containerPort: 5984
+      - name: peer 
+        image: hyperledger/fabric-peer
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: 500m
+        env:
+        - name: CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME
+          value: 
+        - name: CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD
+          value: 
+        - name: CORE_LEDGER_STATE_STATEDATABASE
+          value: CouchDB
+        - name: CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS
+          value: localhost:5984
+        - name: CORE_PEER_LOCALMSPID
+          value: netop1MSP
+        - name: CORE_PEER_MSPCONFIGPATH
+          value: /etc/hyperledger/peer/config/msp
+#        - name: FABRIC_CFG_PATH
+#          value: /var/hyperledger/peer/config
+        - name: CORE_PEER_LISTENADDRESS
+          value: 0.0.0.0:7051
+        - name: CORE_PEER_CHAINCODELISTENADDRESS
+          value: 0.0.0.0:7052
+        - name: CORE_VM_ENDPOINT
+          value: unix:///host/var/run/docker.sock
+#        - name: CORE_PEER_ADDRESSAUTODETECT
+#          value: "true"
+        - name: CORE_VM_DOCKER_HOSTCONFIG_DNS
+          value: 10.96.0.10
+        - name: FABRIC_LOGGING_SPEC
+          value: INFO
+        - name: CORE_PEER_TLS_ENABLED
+          value: "true"
+        - name: CORE_PEER_GOSSIP_USELEADERELECTION
+          value: "true"
+        - name: CORE_PEER_GOSSIP_ORGLEADER
+          value: "false"
+        - name: CORE_PEER_PROFILE_ENABLED
+          value: "true"
+        - name: CORE_PEER_TLS_CERT_FILE
+          value: /etc/hyperledger/peer/config/tls/server.crt
+        - name: CORE_PEER_TLS_KEY_FILE
+          value: /etc/hyperledger/peer/config/tls/server.key
+        - name: CORE_PEER_TLS_ROOTCERT_FILE
+          value: /etc/hyperledger/peer/config/tls/ca.crt
+        - name: CORE_PEER_FILESYSTEMPATH
+          value: /var/hyperledger/production
+        - name: GODEBUG
+          value: netdns=go
+        - name: CORE_PEER_GOSSIP_BOOTSTRAP
+          value: "peer-0.peer.netop1.svc.cluster.local:7051 peer-1.peer.netop1.svc.cluster.local:7051"
+# following env depends on hostname, will be reset in startup command
+        - name: CORE_PEER_ID
+          value:
+        - name: CORE_PEER_ADDRESS
+          value:
+        - name: CORE_PEER_CHAINCODEADDRESS
+          value:
+        - name: CORE_PEER_GOSSIP_EXTERNALENDPOINT
+          value:
+        workingDir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+        ports:
+         - containerPort: 7051
+         - containerPort: 7053
+        command:
+        - bash
+        - -c
+        - |
+          CORE_PEER_ID=$HOSTNAME.netop1.com
+          CORE_PEER_ADDRESS=$HOSTNAME.peer.netop1.svc.cluster.local:7051
+          CORE_PEER_CHAINCODEADDRESS=$HOSTNAME.peer.netop1.svc.cluster.local:7052
+          CORE_PEER_GOSSIP_EXTERNALENDPOINT=$HOSTNAME.peer.netop1.svc.cluster.local:7051
+          env
+          peer node start
+        volumeMounts:
+        - mountPath: /host/var/run
+          name: docker-sock
+        - mountPath: /etc/hyperledger/peer/config
+          name: config
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run
+          type: Directory
+  volumeClaimTemplates:
+  - metadata:
+      name: config
+    spec:
+      accessModes: 
+      - ReadWriteOnce
+      storageClassName: "peer-config-class"
+      resources:
+        requests:
+          storage: 100Mi

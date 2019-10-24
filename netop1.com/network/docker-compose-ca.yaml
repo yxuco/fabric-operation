@@ -1,7 +1,7 @@
 version: '2'
 
 networks:
-  fabnet:
+  netop1:
 
 services:
 
@@ -23,7 +23,7 @@ services:
     - ../ca/:/etc/hyperledger/fabric-ca-server-config
     command: sh -c 'fabric-ca-server start -b caadmin:caadminpw --tls.enabled'
     networks:
-    - fabnet
+    - netop1
 
   tlsca.netop1.com:
     image: hyperledger/fabric-ca
@@ -43,4 +43,4 @@ services:
     - ../tlsca/:/etc/hyperledger/fabric-ca-server-config
     command: sh -c 'fabric-ca-server start -b tlsadmin:tlsadminpw --tls.enabled'
     networks:
-    - fabnet
+    - netop1

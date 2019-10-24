@@ -98,14 +98,22 @@ function genCrypto {
 
   # enroll orderers
   for ord in "${ORDERERS[@]}"; do
+    o_hosts="${ord}.${FABRIC_ORG},${ord},localhost"
+    if [ ! -z "${SVC_DOMAIN}" ]; then
+      o_hosts="${ord}.orderer.${SVC_DOMAIN},${o_hosts}"
+    fi
     echo "enroll ${ord}"
-    fabric-ca-client enroll --tls.certfiles tls-cert.pem ${PROFILE} --csr.names "${CSR_NAMES}" --csr.hosts "${ord}.${FABRIC_ORG},${ord},localhost" -u https://${ord}.${FABRIC_ORG}:${ord}pw@${CA_NAME}.${FABRIC_ORG}:${PORT} -M ${FABRIC_CA_HOME}/${ord}/${CRYPTO_DIR}
+    fabric-ca-client enroll --tls.certfiles tls-cert.pem ${PROFILE} --csr.names "${CSR_NAMES}" --csr.hosts "${o_hosts}" -u https://${ord}.${FABRIC_ORG}:${ord}pw@${CA_NAME}.${FABRIC_ORG}:${PORT} -M ${FABRIC_CA_HOME}/${ord}/${CRYPTO_DIR}
   done
 
   # enroll peers
   for p in "${PEERS[@]}"; do
+    p_hosts="${p}.${FABRIC_ORG},${p},localhost"
+    if [ ! -z "${SVC_DOMAIN}" ]; then
+      p_hosts="${p}.peer.${SVC_DOMAIN},${p_hosts}"
+    fi
     echo "enroll ${p}"
-    fabric-ca-client enroll --tls.certfiles tls-cert.pem ${PROFILE} --csr.names "${CSR_NAMES}" --csr.hosts "${p}.${FABRIC_ORG},${p},localhost" -u https://${p}.${FABRIC_ORG}:${p}pw@${CA_NAME}.${FABRIC_ORG}:${PORT} -M ${FABRIC_CA_HOME}/${p}/${CRYPTO_DIR}
+    fabric-ca-client enroll --tls.certfiles tls-cert.pem ${PROFILE} --csr.names "${CSR_NAMES}" --csr.hosts "${p_hosts}" -u https://${p}.${FABRIC_ORG}:${p}pw@${CA_NAME}.${FABRIC_ORG}:${PORT} -M ${FABRIC_CA_HOME}/${p}/${CRYPTO_DIR}
   done
 }
 

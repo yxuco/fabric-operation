@@ -32,7 +32,7 @@ Organizations:
                 Rule: "OR('netop1MSP.admin')"
 
         AnchorPeers:
-            - Host: peer-0.netop1.com
+            - Host: peer-0.peer.netop1.svc.cluster.local
               Port: 7051
 
 Capabilities:
@@ -68,7 +68,7 @@ Application: &ApplicationDefaults
 Orderer: &OrdererDefaults
     OrdererType: solo
     Addresses:
-        - orderer-0.netop1.com
+        - orderer-0.orderer.netop1.svc.cluster.local:7050
     BatchTimeout: 2s
     BatchSize:
         MaxMessageCount: 10
@@ -129,22 +129,22 @@ Profiles:
             OrdererType: etcdraft
             EtcdRaft:
                 Consenters:
-                - Host: orderer-0.netop1.com
+                - Host: orderer-0.orderer.netop1.svc.cluster.local
                   Port: 7050
                   ClientTLSCert: ../orderers/orderer-0.netop1.com/tls/server.crt
                   ServerTLSCert: ../orderers/orderer-0.netop1.com/tls/server.crt
-                - Host: orderer-1.netop1.com
+                - Host: orderer-1.orderer.netop1.svc.cluster.local
                   Port: 7050
                   ClientTLSCert: ../orderers/orderer-1.netop1.com/tls/server.crt
                   ServerTLSCert: ../orderers/orderer-1.netop1.com/tls/server.crt
-                - Host: orderer-2.netop1.com
+                - Host: orderer-2.orderer.netop1.svc.cluster.local
                   Port: 7050
                   ClientTLSCert: ../orderers/orderer-2.netop1.com/tls/server.crt
                   ServerTLSCert: ../orderers/orderer-2.netop1.com/tls/server.crt
             Addresses:
-                - orderer-0.netop1.com:7050
-                - orderer-1.netop1.com:7050
-                - orderer-2.netop1.com:7050
+                - orderer-0.orderer.netop1.svc.cluster.local:7050
+                - orderer-1.orderer.netop1.svc.cluster.local:7050
+                - orderer-2.orderer.netop1.svc.cluster.local:7050
             Organizations:
                 - *netop1OrdererMSP
             Capabilities:

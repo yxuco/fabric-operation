@@ -1,0 +1,128 @@
+
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: orderer-data-class
+# use localhost data folder
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: orderer-config-class
+# use localhost config folder
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+
+---
+kind: PersistentVolume
+apiVersion: v1
+# create one PV for each orderer instance
+metadata:
+  name: data-orderer-0
+  labels:
+    node: orderer-0
+    org: netop1
+spec:
+  capacity:
+    storage: 500Mi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: orderer-data-class
+  hostPath:
+    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/k8s/data/orderer-0
+    type: DirectoryOrCreate
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: data-orderer-0
+  namespace: netop1
+spec:
+  storageClassName: orderer-data-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+  selector:
+    matchLabels:
+      node: orderer-0
+      org: netop1
+---
+kind: PersistentVolume
+apiVersion: v1
+# create one PV for each orderer instance
+metadata:
+  name: config-orderer-0
+  labels:
+    node: orderer-0
+    org: netop1
+spec:
+  capacity:
+    storage: 100Mi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: orderer-config-class
+  hostPath:
+    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/orderers/orderer-0.netop1.com
+    type: Directory
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: config-orderer-0
+  namespace: netop1
+spec:
+  storageClassName: orderer-config-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  selector:
+    matchLabels:
+      node: orderer-0
+      org: netop1
+---
+kind: PersistentVolume
+apiVersion: v1
+# scripts for all orderers
+metadata:
+  name: scripts-orderer
+  labels:
+    app: orderer
+    org: netop1
+spec:
+  capacity:
+    storage: 100Mi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadOnlyMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: manual
+  hostPath:
+    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/k8s/scripts
+    type: Directory
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: scripts-orderer
+  namespace: netop1
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadOnlyMany
+  resources:
+    requests:
+      storage: 100Mi
+  selector:
+    matchLabels:
+      app: orderer
+      org: netop1

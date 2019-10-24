@@ -1,7 +1,7 @@
 version: '3.7'
 
 networks:
-  fabnet:
+  netop1:
 
 services:
 
@@ -20,7 +20,7 @@ services:
     - ./ca-server:/etc/hyperledger/fabric-ca-server
     command: sh -c 'fabric-ca-server start -b caadmin:caadminpw --tls.enabled'
     networks:
-    - fabnet
+    - netop1
 
   tlsca.netop1.com:
     image: hyperledger/fabric-ca
@@ -37,16 +37,17 @@ services:
     - ./tlsca-server:/etc/hyperledger/fabric-ca-server
     command: sh -c 'fabric-ca-server start -b tlsadmin:tlsadminpw --tls.enabled'
     networks:
-    - fabnet
+    - netop1
 
   caclient.netop1.com:
     image: hyperledger/fabric-ca
     container_name: caclient.netop1.com
     environment:
+    - SVC_DOMAIN=netop1.svc.cluster.local
     - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-client
     - FABRIC_CA_CLIENT_TLS_CERTFILES=/etc/hyperledger/fabric-ca-client/tls-cert.pem
     volumes:
     - ./ca-client:/etc/hyperledger/fabric-ca-client
     command: bash -c 'while true; do sleep 30; done'
     networks:
-    - fabnet
+    - netop1

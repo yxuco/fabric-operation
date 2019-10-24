@@ -1,13 +1,13 @@
 #!/bin/bash
-# start fabric-ca server and client for a specified org
-# usage: start-ca.sh <org_name>
+# start fabric-ca server and client for a specified org,
+#   with optional target env, i.e., docker, k8s, aws, etc, to provide extra SVC_DOMAIN config
+# usage: start-ca.sh <org_name> <env>
 # where config parameters for the org are specified in ../config/org.env, e.g.
 #   start-ca.sh netop1
 # use config parameters specified in ../config/netop1.env
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
-source $(dirname "${SCRIPT_DIR}")/config/${1:-"netop1"}.env
-ORG=${FABRIC_ORG%%.*}
+source $(dirname "${SCRIPT_DIR}")/network/setup.sh ${1:-"netop1"} ${2:-"k8s"}
 ORG_DIR=$(dirname "${SCRIPT_DIR}")/${FABRIC_ORG}/canet
 CA_PORT=${CA_PORT:-"7054"}
 TLS_PORT=${TLS_PORT:-"7055"}
@@ -44,7 +44,7 @@ function printServerService {
     - ./${CA_NAME}-server:/etc/hyperledger/fabric-ca-server
     command: sh -c 'fabric-ca-server start -b ${ADMIN}:${PASSWD} --tls.enabled'
     networks:
-    - ${NETWORK}"
+    - ${ORG}"
 }
 
 # setServerConfig ca|tlsca
@@ -66,26 +66,28 @@ function setServerConfig {
 function printClientService {
   CLIENT_NAME="caclient.${FABRIC_ORG}"
   mkdir -p "${ORG_DIR}/ca-client"
+  kube_svc=${SVC_DOMAIN:-"${ORG}.svc.cluster.local"}
 
   echo "
   ${CLIENT_NAME}:
     image: hyperledger/fabric-ca
     container_name: ${CLIENT_NAME}
     environment:
+    - SVC_DOMAIN=${kube_svc}
     - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-client
     - FABRIC_CA_CLIENT_TLS_CERTFILES=/etc/hyperledger/fabric-ca-client/tls-cert.pem
     volumes:
     - ./ca-client:/etc/hyperledger/fabric-ca-client
     command: bash -c 'while true; do sleep 30; done'
     networks:
-    - ${NETWORK}"
+    - ${ORG}"
 }
 
 function printCADockerYaml {
   echo "version: '3.7'
 
 networks:
-  ${NETWORK}:
+  ${ORG}:
 
 services:"
   printServerService ca
