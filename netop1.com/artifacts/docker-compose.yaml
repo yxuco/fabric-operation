@@ -10,7 +10,7 @@ services:
       - ORG=netop1
       - SYS_CHANNEL=netop1-channel
       - TEST_CHANNEL=mychannel
-      - ORDERER_TYPE=solo
+      - ORDERER_TYPE=etcdraft
       - FABRIC_CFG_PATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/config/artifacts
       - GOPATH=/opt/gopath
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock

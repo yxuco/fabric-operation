@@ -70,13 +70,13 @@ spec:
     - name: CORE_VM_ENDPOINT
       value: unix:///host/var/run/docker.sock
     - name: FABRIC_LOGGING_SPEC
-      value: DEBUG
+      value: INFO
     - name: GOPATH
       value: /opt/gopath
     - name: ORDERER_CA
       value: /etc/hyperledger/cli/config/orderer-0.netop1.com/msp/tlscacerts/tlsca.netop1.com-cert.pem
     - name: ORDERER_TYPE
-      value: solo
+      value: etcdraft
     - name: ORDERER_URL
       value: orderer-0.orderer.netop1.svc.cluster.local:7050
     - name: ORG
