@@ -2,7 +2,17 @@
 # set AWS environment for a specified $ENV_NAME and $AWS_REGION
 # usage: source env.sh env region profile
 # specify profile if aws user assume a role of a different account, the assumed role should be defined in ~/.aws/config
+# you may also set AWS_PROFILE=your_profile, and do not pass any variables to this script to use default config
 # default value: ENV_NAME="fab", AWS_REGION="us-west-2"
+
+# number of EC2 instances to create for the cluster
+export EKS_NODE_COUNT=3
+# type of node instances to create
+export EKS_NODE_TYPE=t2.medium
+#export EKS_NODE_TYPE=m5.xlarge
+export AWS_CLI_HOME=${HOME}/.aws
+
+##### usually you do not need to modify parameters below this line
 
 # return the full path of this script
 function getScriptDir {
@@ -15,11 +25,6 @@ function getScriptDir {
   cd -P "$( dirname "$src" )" 
   pwd
 }
-
-export AWS_CLI_HOME=${HOME}/.aws
-export EKS_NODE_COUNT=3
-export EKS_NODE_TYPE=t2.medium
-#export EKS_NODE_TYPE=m5.xlarge
 
 if [[ ! -z "${1}" ]]; then
   export ENV_NAME=${1}
