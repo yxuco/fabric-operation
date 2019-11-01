@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
-source env.sh
+source env.sh "$@"
 
 vpcId=$(aws eks describe-cluster --name ${EKS_STACK} --query 'cluster.resourcesVpcConfig.vpcId' --output text)
 subnetIds=$(aws eks describe-cluster --name ${EKS_STACK} --query 'cluster.resourcesVpcConfig.subnetIds' --output text)
@@ -27,3 +27,7 @@ echo "configure EFS_SERVER for filesystem id: ${filesysid}"
 sed -i -e "s/^export EFS_SERVER=.*/export EFS_SERVER=${filesysid}.efs.${AWS_REGION}.amazonaws.com/" ./setup/env.sh
 sed -i -e "s/^export EFS_STACK=.*/export EFS_STACK=${EFS_STACK}/" ./setup/env.sh
 sed -i -e "s|^export MOUNT_POINT=.*|export MOUNT_POINT=${mountpoint}|" ./setup/env.sh
+
+# update fabric config env
+sed -i -e "s|^AWS_MOUNT_POINT=.*|AWS_MOUNT_POINT=${mountpoint}|" ../config/setup.sh
+sed -i -e "s|^AWS_FSID=.*|AWS_FSID=${filesysid}|" ../config/setup.sh

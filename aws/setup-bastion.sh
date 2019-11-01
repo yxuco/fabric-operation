@@ -1,12 +1,13 @@
 #!/bin/bash
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
-source env.sh
+source env.sh "$@"
 
 starttime=$(date +%s)
 aws configure set default.region ${AWS_REGION}
 bastionHost=$(aws ec2 describe-instances --region ${AWS_REGION} --query 'Reservations[*].Instances[*].PublicDnsName' --output text --filters "Name=tag:Name,Values=${EFS_STACK}-instance" "Name=instance-state-name,Values=running")
 sed -i -e "s|BASTION=.*|BASTION=${bastionHost}|" ./env.sh
+sed -i -e "s|BASTION=.*|BASTION=${bastionHost}|" ./setup/env.sh
 
 echo "setup bastion host ${bastionHost} ..."
 scp -i ${SSH_PRIVKEY} -q -o "StrictHostKeyChecking no" ${AWS_CLI_HOME}/config ec2-user@${bastionHost}:/home/ec2-user/

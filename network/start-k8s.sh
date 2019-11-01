@@ -1,14 +1,15 @@
 #!/bin/bash
 # create and start fabric network for Mac docker-desktop Kubernetes
-# usage: start-k8s.sh <org_name>
+# usage: start-k8s.sh <org_name> <env>
 # it uses config parameters of the specified org as defined in ../config/org.env, e.g.
 #   start-k8s.sh netop1
 # using config parameters specified in ../config/netop1.env
+# second parameter env can be k8s or aws to use local host or efs persistence, default k8s for local persistence
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
-source ${SCRIPT_DIR}/setup.sh ${1:-"netop1"} k8s
+ENV_TYPE=${2:-"k8s"}
+source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${1:-"netop1"} ${ENV_TYPE}
 
-MSP_DIR=$(dirname "${SCRIPT_DIR}")/${FABRIC_ORG}
 ORG_MSP="${ORG}MSP"
 ORDERER_MSP=${ORDERER_MSP:-"${ORG}OrdererMSP"}
 
@@ -43,221 +44,194 @@ function getPeers {
 # print k8s persistent volume for an orderer
 # even though volumeClaimTemplates can generate PVC automatically, 
 # we define all PVCs here to guarantee that they match the corresponding PVs
-# e.g., printOrdererPV orderer-1
+# e.g., printOrdererPV orderer-1 data|config
 function printOrdererPV {
+  if [ "${2}" == "data" ]; then
+    STORAGE="500Mi"
+    FOLDER="data/${1}"
+    PATH_TYPE="DirectoryOrCreate"
+    MODE="ReadWriteOnce"
+  elif [ "${2}" == "config" ]; then
+    STORAGE="100Mi"
+    FOLDER="crypto/orderers/${1}.${FABRIC_ORG}"
+    PATH_TYPE="Directory"
+    MODE="ReadWriteOnce"
+  else
+    # for orderer artifacts
+    STORAGE="100Mi"
+    FOLDER="artifacts"
+    PATH_TYPE="Directory"
+    MODE="ReadOnlyMany"
+  fi
+
   echo "---
 kind: PersistentVolume
 apiVersion: v1
-# create one PV for each orderer instance
 metadata:
-  name: data-${1}
+  name: ${2}-${1}
   labels:
-    node: ${1}
+    app: ${2}-${1}
     org: ${ORG}
 spec:
   capacity:
-    storage: 500Mi
+    storage: ${STORAGE}
   volumeMode: Filesystem
   accessModes:
-  - ReadWriteOnce
+  - ${MODE}
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: orderer-data-class
-  hostPath:
-    path: ${MSP_DIR}/k8s/data/${1}
-    type: DirectoryOrCreate
----
+  storageClassName: orderer-data-class"
+
+  if [ "${K8S_PERSISTENCE}" == "efs" ]; then
+    echo "  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: ${AWS_FSID}
+    volumeAttributes:
+      path: /${FABRIC_ORG}/${FOLDER}"
+  else
+    echo "  hostPath:
+    path: ${DATA_ROOT}/${FOLDER}
+    type: ${PATH_TYPE}"
+  fi
+
+  echo "---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: data-${1}
+  name: ${2}-${1}
   namespace: ${ORG}
 spec:
   storageClassName: orderer-data-class
   accessModes:
-    - ReadWriteOnce
+    - ${MODE}
   resources:
     requests:
-      storage: 500Mi
+      storage: ${STORAGE}
   selector:
     matchLabels:
-      node: ${1}
-      org: ${ORG}
----
-kind: PersistentVolume
-apiVersion: v1
-# create one PV for each orderer instance
-metadata:
-  name: config-${1}
-  labels:
-    node: ${1}
-    org: ${ORG}
-spec:
-  capacity:
-    storage: 100Mi
-  volumeMode: Filesystem
-  accessModes:
-  - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: orderer-config-class
-  hostPath:
-    path: ${MSP_DIR}/orderers/${1}.${FABRIC_ORG}
-    type: Directory
----
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: config-${1}
-  namespace: ${ORG}
-spec:
-  storageClassName: orderer-config-class
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 100Mi
-  selector:
-    matchLabels:
-      node: ${1}
+      app: ${2}-${1}
       org: ${ORG}"
 }
 
-function printOrdererStorageYaml {
-  # storage class for orderer config and data folders
+# printStorageClass <name>
+# storage class for local host, or AWS EFS
+function printStorageClass {
+  if [ "${K8S_PERSISTENCE}" == "efs" ]; then
+    PROVISIONER="efs.csi.aws.com"
+  else
+    # default to local host
+    PROVISIONER="kubernetes.io/no-provisioner"
+  fi
+
   echo "
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: orderer-data-class
-# use localhost data folder
-provisioner: kubernetes.io/no-provisioner
-volumeBindingMode: WaitForFirstConsumer
----
-kind: StorageClass
-apiVersion: storage.k8s.io/v1
-metadata:
-  name: orderer-config-class
-# use localhost config folder
-provisioner: kubernetes.io/no-provisioner
+  name: ${1}
+provisioner: ${PROVISIONER}
 volumeBindingMode: WaitForFirstConsumer
 "
+}
+
+function printOrdererStorageYaml {
+  # storage class for orderer config and data folders
+  printStorageClass "orderer-data-class"
 
   # PV and PVC for orderer config and data
   for ord in "${ORDERERS[@]}"; do
-    printOrdererPV ${ord}
+    printOrdererPV ${ord} data
+    printOrdererPV ${ord} config
     if [ "${ORDERER_TYPE}" == "solo" ]; then
       # create only the first orderer for solo consensus
       break
     fi
   done
 
-  # PV and PVC for orderer scripts
-  echo "---
-kind: PersistentVolume
-apiVersion: v1
-# scripts for all orderers
-metadata:
-  name: scripts-orderer
-  labels:
-    app: orderer
-    org: ${ORG}
-spec:
-  capacity:
-    storage: 100Mi
-  volumeMode: Filesystem
-  accessModes:
-  - ReadOnlyMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: manual
-  hostPath:
-    path: ${MSP_DIR}/k8s/scripts
-    type: Directory
----
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: scripts-orderer
-  namespace: ${ORG}
-spec:
-  storageClassName: manual
-  accessModes:
-    - ReadOnlyMany
-  resources:
-    requests:
-      storage: 100Mi
-  selector:
-    matchLabels:
-      app: orderer
-      org: ${ORG}"
+  # PV and PVC for orderer artifacts
+  printOrdererPV "orderer" "artifacts"
 }
 
 # print k8s persistent volume for a peer
 # even though volumeClaimTemplates can generate PVC automatically, 
 # we define all PVCs here to guarantee that they match the corresponding PVs
-# e.g., printPeerPV peer-1
+# e.g., printPeerPV peer-1 data|config
 function printPeerPV {
+  if [ "${2}" == "data" ]; then
+    STORAGE="500Mi"
+    FOLDER="data/${1}"
+    PATH_TYPE="DirectoryOrCreate"
+  else
+    STORAGE="100Mi"
+    FOLDER="crypto/peers/${1}.${FABRIC_ORG}"
+    PATH_TYPE="Directory"
+  fi
+
   echo "---
 kind: PersistentVolume
 apiVersion: v1
-# create one PV for each peer instance
 metadata:
-  name: config-${1}
+  name: ${2}-${1}
   labels:
-    node: ${1}
+    app: ${2}-${1}
     org: ${ORG}
 spec:
   capacity:
-    storage: 100Mi
+    storage: ${STORAGE}
   volumeMode: Filesystem
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: peer-config-class
-  hostPath:
-    path: ${MSP_DIR}/peers/${1}.${FABRIC_ORG}
-    type: Directory
----
+  storageClassName: peer-data-class"
+
+  if [ "${K8S_PERSISTENCE}" == "efs" ]; then
+    echo "  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: ${AWS_FSID}
+    volumeAttributes:
+      path: /${FABRIC_ORG}/${FOLDER}"
+  else
+    echo "  hostPath:
+    path: ${DATA_ROOT}/${FOLDER}
+    type: ${PATH_TYPE}"
+  fi
+
+  echo "---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: config-${1}
+  name: ${2}-${1}
   namespace: ${ORG}
 spec:
-  storageClassName: peer-config-class
+  storageClassName: peer-data-class
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 100Mi
+      storage: ${STORAGE}
   selector:
     matchLabels:
-      node: ${1}
+      app: ${2}-${1}
       org: ${ORG}"
 }
 
 function printPeerStorageYaml {
   # storage class for orderer config and data folders
-  echo "
-kind: StorageClass
-apiVersion: storage.k8s.io/v1
-metadata:
-  name: peer-config-class
-# use localhost config folder
-provisioner: kubernetes.io/no-provisioner
-volumeBindingMode: WaitForFirstConsumer
-"
+  printStorageClass "peer-data-class"
 
   # PV and PVC for peer config and data
   for p in "${PEERS[@]}"; do
-    printPeerPV ${p}
+    printPeerPV ${p} "data"
+    printPeerPV ${p} "config"
   done
 }
 
 function configPersistentData {
   for ord in "${ORDERERS[@]}"; do
-    mkdir -p ${MSP_DIR}/k8s/data/${ord}
+    mkdir -p ${DATA_ROOT}/data/${ord}
   done
-  mkdir -p ${MSP_DIR}/k8s/scripts
-  cp ${MSP_DIR}/artifacts/genesis.block ${MSP_DIR}/k8s/scripts
+
+  for p in "${PEERS[@]}"; do
+    mkdir -p ${DATA_ROOT}/data/${p}
+  done
 }
 
 function printNamespaceYaml {
@@ -326,8 +300,6 @@ spec:
         command:
         - orderer
         env:
-#        - name: FABRIC_CFG_PATH
-#          value: /var/hyperledger/orderer/config
         - name: FABRIC_LOGGING_SPEC
           value: INFO
         - name: ORDERER_GENERAL_LISTENADDRESS
@@ -337,7 +309,7 @@ spec:
         - name: ORDERER_FILELEDGER_LOCATION
           value: /var/hyperledger/production/orderer
         - name: ORDERER_GENERAL_GENESISFILE
-          value: /var/hyperledger/orderer/scripts/genesis.block
+          value: /var/hyperledger/orderer/artifacts/genesis.block
         - name: ORDERER_GENERAL_LOCALMSPID
           value: ${ORDERER_MSP}
         - name: ORDERER_GENERAL_LOCALMSPDIR
@@ -359,23 +331,23 @@ spec:
         - name: GODEBUG
           value: netdns=go
         volumeMounts:
-        # persistent volume matches FileLedger.Location in resources/orderer/orderer.yaml or the above env
+        # persistent volume matches FileLedger.Location in orderer.yaml or the above env
         - mountPath: /var/hyperledger/production/orderer
           name: data
         - mountPath: /var/hyperledger/orderer/config
           name: config
-        - mountPath: /var/hyperledger/orderer/scripts
-          name: scripts
+        - mountPath: /var/hyperledger/orderer/artifacts
+          name: artifacts
         workingDir: /opt/gopath/src/github.com/hyperledger/fabric/orderer
       volumes:
-      - name: scripts
+      - name: artifacts
         persistentVolumeClaim:
-          claimName: scripts-orderer
+          claimName: artifacts-orderer
   volumeClaimTemplates:
   - metadata:
       name: data
     spec:
-      accessModes: 
+      accessModes:
       - ReadWriteOnce
       storageClassName: \"orderer-data-class\"
       resources:
@@ -386,30 +358,10 @@ spec:
     spec:
       accessModes: 
       - ReadWriteOnce
-      storageClassName: \"orderer-config-class\"
+      storageClassName: \"orderer-data-class\"
       resources:
         requests:
-          storage: 100Mi
----
-apiVersion: v1
-kind: Service
-# open service port for orderers, so peer/client of other orgs of different network can access
-metadata:
-  name: orderer-public
-  namespace: ${ORG}
-spec:
-  type: NodePort
-# use Local if service is for a single POD, so proxy will not route other PODs 
-  externalTrafficPolicy: Local
-  selector:
-# use pod-name to restrict to a single POD
-    statefulset.kubernetes.io/pod-name: orderer-0
-    app: orderer
-  ports:
-  - protocol: TCP
-    port: 7050
-    targetPort: server
-    nodePort: 30750"
+          storage: 100Mi"
 }
 
 function printPeerYaml {
@@ -489,16 +441,12 @@ spec:
           value: ${ORG_MSP}
         - name: CORE_PEER_MSPCONFIGPATH
           value: /etc/hyperledger/peer/config/msp
-#        - name: FABRIC_CFG_PATH
-#          value: /var/hyperledger/peer/config
         - name: CORE_PEER_LISTENADDRESS
           value: 0.0.0.0:7051
         - name: CORE_PEER_CHAINCODELISTENADDRESS
           value: 0.0.0.0:7052
         - name: CORE_VM_ENDPOINT
           value: unix:///host/var/run/docker.sock
-#        - name: CORE_PEER_ADDRESSAUTODETECT
-#          value: \"true\"
         - name: CORE_VM_DOCKER_HOSTCONFIG_DNS
           value: ${DNS_IP}
         - name: FABRIC_LOGGING_SPEC
@@ -549,6 +497,8 @@ spec:
         volumeMounts:
         - mountPath: /host/var/run
           name: docker-sock
+        - mountPath: /var/hyperledger/production
+          name: data
         - mountPath: /etc/hyperledger/peer/config
           name: config
       volumes:
@@ -558,33 +508,42 @@ spec:
           type: Directory
   volumeClaimTemplates:
   - metadata:
+      name: data
+    spec:
+      accessModes: 
+      - ReadWriteOnce
+      storageClassName: \"peer-data-class\"
+      resources:
+        requests:
+          storage: 500Mi
+  - metadata:
       name: config
     spec:
       accessModes: 
       - ReadWriteOnce
-      storageClassName: \"peer-config-class\"
+      storageClassName: \"peer-data-class\"
       resources:
         requests:
           storage: 100Mi"
 }
 
 function main {
-  mkdir -p ${MSP_DIR}/network
+  mkdir -p ${DATA_ROOT}/network/k8s
   getOrderers
   getPeers
   configPersistentData
-  printNamespaceYaml > ${MSP_DIR}/network/k8s-namespace.yaml
-  printOrdererStorageYaml > ${MSP_DIR}/network/k8s-orderer-pv.yaml
-  printOrdererYaml > ${MSP_DIR}/network/k8s-orderer.yaml
-  printPeerStorageYaml > ${MSP_DIR}/network/k8s-peer-pv.yaml
-  printPeerYaml > ${MSP_DIR}/network/k8s-peer.yaml
+  printNamespaceYaml > ${DATA_ROOT}/network/k8s/namespace.yaml
+  printOrdererStorageYaml > ${DATA_ROOT}/network/k8s/orderer-pv.yaml
+  printOrdererYaml > ${DATA_ROOT}/network/k8s/orderer.yaml
+  printPeerStorageYaml > ${DATA_ROOT}/network/k8s/peer-pv.yaml
+  printPeerYaml > ${DATA_ROOT}/network/k8s/peer.yaml
 
   # start network
-  kubectl create -f ${MSP_DIR}/network/k8s-namespace.yaml
-  kubectl create -f ${MSP_DIR}/network/k8s-orderer-pv.yaml
-  kubectl create -f ${MSP_DIR}/network/k8s-peer-pv.yaml
-  kubectl create -f ${MSP_DIR}/network/k8s-orderer.yaml
-  kubectl create -f ${MSP_DIR}/network/k8s-peer.yaml
+  kubectl create -f ${DATA_ROOT}/network/k8s/namespace.yaml
+  kubectl create -f ${DATA_ROOT}/network/k8s/orderer-pv.yaml
+  kubectl create -f ${DATA_ROOT}/network/k8s/peer-pv.yaml
+  kubectl create -f ${DATA_ROOT}/network/k8s/orderer.yaml
+  kubectl create -f ${DATA_ROOT}/network/k8s/peer.yaml
 }
 
 main

@@ -1,0 +1,6 @@
+**/.DS_Store
+aws/config/*
+**/*.sh-e
+**/canet/ca-client/*
+**/data/orderer*/*
+**/data/peer*/*

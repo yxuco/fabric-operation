@@ -3,7 +3,7 @@
 export EKS_STACK=fab-eks-stack
 export EFS_STACK=fab-efs-client
 # used to mount EFS volume by NFS
-export EFS_SERVER=fs-bcd6c917.efs.us-west-2.amazonaws.com
+export EFS_SERVER=fs-0a0219a1.efs.us-west-2.amazonaws.com
 # name of the test environment
 export ENV_NAME=fab
 # used to share data across region and accounts
@@ -14,3 +14,4 @@ export SSH_PRIVKEY=fab-keypair.pem
 
 # user role if creating network in an assumed role
 export AWS_PROFILE=prod
+export BASTION=ec2-34-213-140-181.us-west-2.compute.amazonaws.com

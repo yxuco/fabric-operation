@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
-source env.sh
+source env.sh "$@"
 
 region=$(aws configure get region)
 

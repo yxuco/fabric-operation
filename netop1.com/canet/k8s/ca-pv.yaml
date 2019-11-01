@@ -1,0 +1,119 @@
+
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: ca-data-class
+# use localhost canet data folder
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+---
+kind: PersistentVolume
+apiVersion: v1
+# create PV for ca-server
+metadata:
+  name: ca-server-pv
+  labels:
+    node: ca-server
+    org: netop1
+spec:
+  capacity:
+    storage: 100Mi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ca-data-class
+  hostPath:
+    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/canet/ca-server
+    type: Directory
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ca-server-pvc
+  namespace: netop1
+spec:
+  storageClassName: ca-data-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  selector:
+    matchLabels:
+      node: ca-server
+      org: netop1
+---
+kind: PersistentVolume
+apiVersion: v1
+# create PV for tlsca-server
+metadata:
+  name: tlsca-server-pv
+  labels:
+    node: tlsca-server
+    org: netop1
+spec:
+  capacity:
+    storage: 100Mi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ca-data-class
+  hostPath:
+    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/canet/tlsca-server
+    type: Directory
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: tlsca-server-pvc
+  namespace: netop1
+spec:
+  storageClassName: ca-data-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  selector:
+    matchLabels:
+      node: tlsca-server
+      org: netop1
+---
+kind: PersistentVolume
+apiVersion: v1
+# create PV for ca-client
+metadata:
+  name: ca-client-pv
+  labels:
+    node: ca-client
+    org: netop1
+spec:
+  capacity:
+    storage: 100Mi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ca-data-class
+  hostPath:
+    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/canet/ca-client
+    type: Directory
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ca-client-pvc
+  namespace: netop1
+spec:
+  storageClassName: ca-data-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  selector:
+    matchLabels:
+      node: ca-client
+      org: netop1

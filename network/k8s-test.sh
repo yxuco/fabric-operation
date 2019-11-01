@@ -1,72 +1,114 @@
 #!/bin/bash
 # execute smoke test for kubernetes docker-desktop on fabric network for a specified org
-# usage: k8s-test.sh <org_name>
+# usage: k8s-test.sh <org_name> <env>
 # where config parameters for the org are specified in ../config/org.env, e.g.
 #   k8s-test.sh netop1
 # use config parameters specified in ../config/netop1.env
+# second parameter env can be k8s or aws to use local host or efs persistence, default k8s for local persistence
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
-source ${SCRIPT_DIR}/setup.sh ${1:-"netop1"} k8s
+ENV_TYPE=${2:-"k8s"}
+source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${1:-"netop1"} ${ENV_TYPE}
 
-MSP_DIR=$(dirname "${SCRIPT_DIR}")/${FABRIC_ORG}
 ORG_MSP=${ORG}MSP
 SYS_CHANNEL=${SYS_CHANNEL:-"${ORG}-channel"}
 TEST_CHANNEL=${TEST_CHANNEL:-"mychannel"}
 ORDERER_TYPE=${ORDERER_TYPE:-"solo"}
 
-# set list of peers from config
-function getPeers {
-  PEERS=()
-  seq=${PEER_MIN:-"0"}
-  max=${PEER_MAX:-"0"}
-  until [ "${seq}" -ge "${max}" ]; do
-    PEERS+=("peer-${seq}")
-    seq=$((${seq}+1))
-  done
-}
+# printCliPV artifacts|crypto|chaincode
+function printCliPV {
+    if [ "${1}" == "artifacts" ]; then
+    FOLDER="artifacts"
+  elif [ "${1}" == "crypto" ]; then
+    FOLDER="crypto/cli"
+  else
+    # chaincode
+    FOLDER="chaincode"
+  fi
 
-# printCliYaml <test-peer>
-# e.g., printCliYaml peer-0
-function printCliYaml {
-
-  echo "
+  echo "---
 kind: PersistentVolume
 apiVersion: v1
-# config data for cli
 metadata:
-  name: config-cli
+  name: ${1}-cli
   labels:
-    app: cli
+    app: ${1}-cli
     org: ${ORG}
 spec:
   capacity:
     storage: 100Mi
   volumeMode: Filesystem
   accessModes:
-  - ReadWriteOnce
+  - ReadOnlyMany
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: manual
-  hostPath:
-    path: ${MSP_DIR}/k8s/cli
-    type: Directory
----
+  storageClassName: cli-data-class"
+
+  if [ "${K8S_PERSISTENCE}" == "efs" ]; then
+    echo "  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: ${AWS_FSID}
+    volumeAttributes:
+      path: /${FABRIC_ORG}/${FOLDER}"
+  else
+    echo "  hostPath:
+    path: ${DATA_ROOT}/${FOLDER}
+    type: Directory"
+  fi
+
+  echo "---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: config-cli
+  name: ${1}-cli
   namespace: ${ORG}
 spec:
-  storageClassName: manual
+  storageClassName: cli-data-class
   accessModes:
-    - ReadWriteOnce
+    - ReadOnlyMany
   resources:
     requests:
       storage: 100Mi
   selector:
     matchLabels:
-      app: cli
-      org: ${ORG}
----
+      app: ${1}-cli
+      org: ${ORG}"
+}
+
+# printStorageClass <name>
+# storage class for local host, or AWS EFS
+function printStorageClass {
+  if [ "${K8S_PERSISTENCE}" == "efs" ]; then
+    PROVISIONER="efs.csi.aws.com"
+  else
+    # default to local host
+    PROVISIONER="kubernetes.io/no-provisioner"
+  fi
+
+  echo "
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: ${1}
+provisioner: ${PROVISIONER}
+volumeBindingMode: WaitForFirstConsumer
+"
+}
+
+function printCliStorageYaml {
+  # storage class for cli data folders
+  printStorageClass "cli-data-class"
+
+  # PV and PVC for cli data
+  printCliPV artifacts
+  printCliPV crypto
+  printCliPV chaincode
+}
+
+# printCliYaml <test-peer>
+# e.g., printCliYaml peer-0
+function printCliYaml {
+  admin=${ADMIN_USER:-"Admin"}
+  echo "
 apiVersion: v1
 kind: Pod
 metadata:
@@ -89,15 +131,15 @@ spec:
     - name: CORE_PEER_LOCALMSPID
       value: ${ORG_MSP}
     - name: CORE_PEER_MSPCONFIGPATH
-      value: /etc/hyperledger/cli/config/${ADMIN}@${FABRIC_ORG}/msp
+      value: /etc/hyperledger/cli/crypto/${admin}@${FABRIC_ORG}/msp
     - name: CORE_PEER_TLS_CERT_FILE
-      value: /etc/hyperledger/cli/config/${1}.${FABRIC_ORG}/tls/server.crt
+      value: /etc/hyperledger/cli/crypto/${1}.${FABRIC_ORG}/tls/server.crt
     - name: CORE_PEER_TLS_ENABLED
       value: \"true\"
     - name: CORE_PEER_TLS_KEY_FILE
-      value: /etc/hyperledger/cli/config/${1}.${FABRIC_ORG}/tls/server.key
+      value: /etc/hyperledger/cli/crypto/${1}.${FABRIC_ORG}/tls/server.key
     - name: CORE_PEER_TLS_ROOTCERT_FILE
-      value: /etc/hyperledger/cli/config/${1}.${FABRIC_ORG}/tls/ca.crt
+      value: /etc/hyperledger/cli/crypto/${1}.${FABRIC_ORG}/tls/ca.crt
     - name: CORE_VM_ENDPOINT
       value: unix:///host/var/run/docker.sock
     - name: FABRIC_LOGGING_SPEC
@@ -105,7 +147,7 @@ spec:
     - name: GOPATH
       value: /opt/gopath
     - name: ORDERER_CA
-      value: /etc/hyperledger/cli/config/${TEST_ORDERER}.${FABRIC_ORG}/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem
+      value: /etc/hyperledger/cli/crypto/${TEST_ORDERER}.${FABRIC_ORG}/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem
     - name: ORDERER_TYPE
       value: ${ORDERER_TYPE}
     - name: ORDERER_URL
@@ -116,51 +158,58 @@ spec:
       value: ${SYS_CHANNEL}
     - name: TEST_CHANNEL
       value: ${TEST_CHANNEL}
-    workingDir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    workingDir: /etc/hyperledger/cli/artifacts
     volumeMounts:
     - mountPath: /host/var/run
       name: docker-sock
-    - mountPath: /etc/hyperledger/cli/config
-      name: config
+    - mountPath: /etc/hyperledger/cli/artifacts
+      name: artifacts
+    - mountPath: /opt/gopath/src/github.com/chaincode
+      name: chaincode
+    - mountPath: /etc/hyperledger/cli/crypto
+      name: crypto
   volumes:
   - name: docker-sock
     hostPath:
       path: /var/run
       type: Directory
-  - name: config
+  - name: artifacts
     persistentVolumeClaim:
-      claimName: config-cli"
-}
-
-function setupTestConfig {
-  mkdir -p ${MSP_DIR}/k8s/cli/${TEST_ORDERER}.${FABRIC_ORG}/msp
-  cp -R ${MSP_DIR}/orderers/${TEST_ORDERER}.${FABRIC_ORG}/msp/tlscacerts ${MSP_DIR}/k8s/cli/${TEST_ORDERER}.${FABRIC_ORG}/msp
-
-  for p in "${PEERS[@]}"; do
-    mkdir -p ${MSP_DIR}/k8s/cli/${p}.${FABRIC_ORG}
-    cp -R ${MSP_DIR}/peers/${p}.${FABRIC_ORG}/tls ${MSP_DIR}/k8s/cli/${p}.${FABRIC_ORG}
-  done
-
-  mkdir -p ${MSP_DIR}/k8s/cli/${ADMIN}\@${FABRIC_ORG}
-  cp -R ${MSP_DIR}/users/${ADMIN}\@${FABRIC_ORG}/msp ${MSP_DIR}/k8s/cli/${ADMIN}\@${FABRIC_ORG}
-  mkdir -p ${MSP_DIR}/k8s/cli/artifacts
-  cp ${MSP_DIR}/artifacts/*.tx ${MSP_DIR}/k8s/cli/artifacts
-  cp -R ${MSP_DIR}/../chaincode ${MSP_DIR}/k8s/cli
+      claimName: artifacts-cli
+  - name: crypto
+    persistentVolumeClaim:
+      claimName: crypto-cli
+  - name: chaincode
+    persistentVolumeClaim:
+      claimName: chaincode-cli"
 }
 
 function main {
+  echo "generate k8s yaml for cli"
   TEST_ORDERER=orderer-0
-  ADMIN=${ADMIN_USER:-"Admin"}
-  getPeers
-  setupTestConfig
-  printCliYaml peer-0 > ${MSP_DIR}/network/k8s-cli.yaml
+  printCliStorageYaml > ${DATA_ROOT}/network/k8s/cli-pv.yaml
+  printCliYaml peer-0 > ${DATA_ROOT}/network/k8s/cli.yaml
 
-  cp ${SCRIPT_DIR}/k8s-test-sample.sh ${MSP_DIR}/k8s/cli
-  kubectl create -f ${MSP_DIR}/network/k8s-cli.yaml
+  # copy test chaincode
+  local chaincode=$(dirname "${SCRIPT_DIR}")/chaincode
+  if [ -d "${chaincode}" ]; then
+    echo "copy chaincode from ${chaincode}"
+    cp -R ${chaincode} ${DATA_ROOT}
+  fi
+
+  # copy test-sample script to artifacts
+  if [ -f "${SCRIPT_DIR}/test-sample.sh" ]; then
+    echo "copy smoke test script ${SCRIPT_DIR}/test-sample.sh"
+    cp ${SCRIPT_DIR}/test-sample.sh ${DATA_ROOT}/artifacts
+  fi
+
+  echo "start cli POD"
+  kubectl create -f ${DATA_ROOT}/network/k8s/cli-pv.yaml
+  kubectl create -f ${DATA_ROOT}/network/k8s/cli.yaml
 
   echo "wait 15s for cli pod to start ..."
   sleep 15
-  kubectl exec -it cli -- bash -c '/etc/hyperledger/cli/config/k8s-test-sample.sh'
+  kubectl exec -it cli -- bash -c '/etc/hyperledger/cli/artifacts/test-sample.sh'
 }
 
 main

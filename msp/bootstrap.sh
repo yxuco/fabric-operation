@@ -5,11 +5,12 @@
 # it uses config parameters of the specified org as defined in ../config/org.env, e.g.
 #   bootstrap.sh netop1
 # using config parameters specified in ../config/netop1.env
+# second parameter env can be k8s or aws to use local host or efs persistence, default k8s for local persistence
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
-source $(dirname "${SCRIPT_DIR}")/network/setup.sh ${1:-"netop1"} ${2:-"docker"}
+ENV_TYPE=${2:-"k8s"}
+source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${1:-"netop1"} ${ENV_TYPE}
 
-MSP_DIR=$(dirname "${SCRIPT_DIR}")/${FABRIC_ORG}
 ORG_MSP="${ORG}MSP"
 ORDERER_MSP=${ORDERER_MSP:-"${ORG}OrdererMSP"}
 SYS_CHANNEL=${SYS_CHANNEL:-"${ORG}-channel"}
@@ -56,7 +57,7 @@ function printOrdererMSP {
     - &${ORDERER_MSP}
         Name: ${ORDERER_MSP}
         ID: ${ORDERER_MSP}
-        MSPDir: ../msp
+        MSPDir: /etc/hyperledger/crypto/msp
         Policies:
             Readers:
                 Type: Signature
@@ -75,7 +76,7 @@ function printPeerMSP {
     - &${ORG_MSP}
         Name: ${ORG_MSP}
         ID: ${ORG_MSP}
-        MSPDir: ../msp
+        MSPDir: /etc/hyperledger/crypto/msp
         Policies:
             Readers:
                 Type: Signature
@@ -215,8 +216,8 @@ function printEtcdraftOrdererProfile {
     for ord in "${ORDERERS[@]}"; do
       echo "                - Host: $(getHostUrl ${ord})
                   Port: 7050
-                  ClientTLSCert: ../orderers/${ord}.${FABRIC_ORG}/tls/server.crt
-                  ServerTLSCert: ../orderers/${ord}.${FABRIC_ORG}/tls/server.crt"
+                  ClientTLSCert: /etc/hyperledger/crypto/orderers/${ord}.${FABRIC_ORG}/tls/server.crt
+                  ServerTLSCert: /etc/hyperledger/crypto/orderers/${ord}.${FABRIC_ORG}/tls/server.crt"
     done
     echo "            Addresses:"
     for ord in "${ORDERERS[@]}"; do
@@ -268,7 +269,7 @@ Profiles:"
   printOrgChannelProfile
 }
 
-function printToolDockerYaml {
+function printDockerYaml {
   echo "version: '3.7'
 
 services:
@@ -278,20 +279,21 @@ services:
     tty: true
     stdin_open: true
     environment:
-      - ORG=${ORG}
-      - SYS_CHANNEL=${SYS_CHANNEL}
-      - TEST_CHANNEL=${TEST_CHANNEL}
-      - ORDERER_TYPE=${ORDERER_TYPE}
-      - FABRIC_CFG_PATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/config/artifacts
+      - FABRIC_CFG_PATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/artifacts
       - GOPATH=/opt/gopath
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
-      #- FABRIC_LOGGING_SPEC=DEBUG
       - FABRIC_LOGGING_SPEC=INFO
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
-    command: /bin/bash -c 'cd config/artifacts && ./gen-config-block.sh'
+    command: /bin/bash -c \"
+        cd artifacts 
+        && configtxgen -profile ${ORDERER_TYPE}OrdererGenesis -channelID ${SYS_CHANNEL} -outputBlock ./genesis.block
+        && configtxgen -profile ${ORG}Channel -outputCreateChannelTx ./channel.tx -channelID ${TEST_CHANNEL}
+        && configtxgen -profile ${ORG}Channel -outputAnchorPeersUpdate ./anchors.tx -channelID ${TEST_CHANNEL} -asOrg ${ORG_MSP}
+      \"
     volumes:
         - /var/run/:/host/var/run/
-        - ./../:/opt/gopath/src/github.com/hyperledger/fabric/peer/config/
+        - ${DATA_ROOT}/crypto/tool/:/etc/hyperledger/crypto/
+        - ${DATA_ROOT}/artifacts/:/opt/gopath/src/github.com/hyperledger/fabric/peer/artifacts/
     networks:
     - ${ORG}
 
@@ -300,24 +302,202 @@ networks:
 "
 }
 
-# generate orderer genesis block and tx for creating test channel
-function gen-config {
-  # print out configtx.yaml
-  mkdir -p ${MSP_DIR}/artifacts
-  printConfigTx > ${MSP_DIR}/artifacts/configtx.yaml
+function printK8sNamespace {
+  echo "
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ${ORG}
+  labels:
+    use: hyperledger"
+}
 
+# printK8sStorageClass <name>
+# storage class for local host, or AWS EFS
+function printK8sStorageClass {
+  if [ "${K8S_PERSISTENCE}" == "efs" ]; then
+    PROVISIONER="efs.csi.aws.com"
+  else
+    # default to local host
+    PROVISIONER="kubernetes.io/no-provisioner"
+  fi
+
+  echo "
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: ${1}
+provisioner: ${PROVISIONER}
+volumeBindingMode: WaitForFirstConsumer
+"
+}
+
+# print k8s PV and PVC for tool Job
+function printK8sStorageYaml {
+  printK8sStorageClass "tool-data-class"
+
+  printK8sPV "tool-crypto"
+  printK8sPV "tool-artifacts"
+}
+
+# printK8sPV tool-crypto|tool-artifacts
+function printK8sPV {
+  if [ "${1}" == "tool-crypto" ]; then
+    FOLDER="crypto/tool"
+    MODE="ReadOnlyMany"
+  else
+    FOLDER="artifacts"
+    MODE="ReadWriteOnce"
+  fi
+
+  echo "---
+kind: PersistentVolume
+apiVersion: v1
+# create PV for ${1}
+metadata:
+  name: ${1}-pv
+  labels:
+    app: ${1}
+    org: ${ORG}
+spec:
+  capacity:
+    storage: 100Mi
+  volumeMode: Filesystem
+  accessModes:
+  - ${MODE}
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: tool-data-class"
+
+  if [ "${K8S_PERSISTENCE}" == "efs" ]; then
+    echo "  csi:
+    driver: efs.csi.aws.com
+    volumeHandle: ${AWS_FSID}
+    volumeAttributes:
+      path: /${FABRIC_ORG}/${FOLDER}"
+  else
+    echo "  hostPath:
+    path: ${DATA_ROOT}/${FOLDER}
+    type: Directory"
+  fi
+
+  echo "---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: ${1}-pvc
+  namespace: ${ORG}
+spec:
+  storageClassName: tool-data-class
+  accessModes:
+    - ${MODE}
+  resources:
+    requests:
+      storage: 100Mi
+  selector:
+    matchLabels:
+      app: ${1}
+      org: ${ORG}"
+}
+
+function printK8sJob {
+  echo "
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: tool
+  namespace: ${ORG}
+  labels:
+    app: tool
+spec:
+#  selector:
+#    matchLabels:
+#      app: tool
+  backoffLimit: 3
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: tool
+    spec:
+      containers:
+      - name: tool
+        image: hyperledger/fabric-tools
+        env:
+        - name: FABRIC_LOGGING_SPEC
+          value: INFO
+        - name: GOPATH
+          value: /opt/gopath
+        - name: FABRIC_CFG_PATH
+          value: /etc/hyperledger/artifacts
+        - name: CORE_VM_ENDPOINT
+          value: unix:///host/var/run/docker.sock
+        command:
+        - /bin/bash
+        - -c
+        - |
+          cd /etc/hyperledger/artifacts 
+          configtxgen -profile ${ORDERER_TYPE}OrdererGenesis -channelID ${SYS_CHANNEL} -outputBlock ./genesis.block
+          configtxgen -profile ${ORG}Channel -outputCreateChannelTx ./channel.tx -channelID ${TEST_CHANNEL}
+          configtxgen -profile ${ORG}Channel -outputAnchorPeersUpdate ./anchors.tx -channelID ${TEST_CHANNEL} -asOrg ${ORG_MSP}
+        volumeMounts:
+        - mountPath: /host/var/run
+          name: docker-sock
+        - mountPath: /etc/hyperledger/artifacts
+          name: artifacts
+        - mountPath: /etc/hyperledger/crypto
+          name: crypto
+      restartPolicy: Never
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run
+          type: Directory
+      - name: artifacts
+        persistentVolumeClaim:
+          claimName: tool-artifacts-pvc
+      - name: crypto
+        persistentVolumeClaim:
+          claimName: tool-crypto-pvc"
+}
+
+function runK8s {
+  echo "use kubernetes"
+  # print k8s yaml for tool job
+  mkdir -p "${DATA_ROOT}/artifacts/k8s"
+  printK8sNamespace > ${DATA_ROOT}/artifacts/k8s/namespace.yaml
+  printK8sStorageYaml > ${DATA_ROOT}/artifacts/k8s/tool-pv.yaml
+  printK8sJob > ${DATA_ROOT}/artifacts/k8s/tool.yaml
+
+  # run tool job
+  kubectl create -f ${DATA_ROOT}/artifacts/k8s/namespace.yaml
+  kubectl create -f ${DATA_ROOT}/artifacts/k8s/tool-pv.yaml
+  kubectl create -f ${DATA_ROOT}/artifacts/k8s/tool.yaml
+}
+
+function runDocker {
+  echo "use docker-compose"
   # start tool container to generate genesis block and channel tx
-  printToolDockerYaml > ${MSP_DIR}/artifacts/docker-compose.yaml
-  cp ${SCRIPT_DIR}/gen-config-block.sh ${MSP_DIR}/artifacts
-  docker-compose -f ${MSP_DIR}/artifacts/docker-compose.yaml up
+  mkdir -p "${DATA_ROOT}/artifacts/docker"
+  printDockerYaml > ${DATA_ROOT}/artifacts/docker/docker-compose.yaml
+  docker-compose -f ${DATA_ROOT}/artifacts/docker/docker-compose.yaml up
 
   # cleanup tool container and docker network
-  docker network rm artifacts_${ORG}
+  docker network rm docker_${ORG}
   docker rm tool
 }
 
+# generate orderer genesis block and tx for creating test channel
 function main {
-  gen-config
+  # print out configtx.yaml
+  echo "create ${DATA_ROOT}/artifacts/configtx.yaml"
+  mkdir -p "${DATA_ROOT}/artifacts"
+  printConfigTx > ${DATA_ROOT}/artifacts/configtx.yaml
+
+  if [ "${ENV_TYPE}" == "docker" ]; then
+    runDocker
+  else
+    runK8s
+  fi
 }
 
 main

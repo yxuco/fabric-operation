@@ -25,7 +25,7 @@ Organizations:
         ID: OrdererOrg
 
         # MSPDir is the filesystem path which contains the MSP configuration
-        MSPDir: ../netop1.com/msp
+        MSPDir: ../netop1.com/crypto/msp
 
         # Policies defines the set of policies at this level of the config tree
         # For organization policies, their canonical path is usually
@@ -49,7 +49,7 @@ Organizations:
         # ID to load the MSP definition as
         ID: Org1
 
-        MSPDir: ../netop1.com/msp
+        MSPDir: ../netop1.com/crypto/msp
 
         # Policies defines the set of policies at this level of the config tree
         # For organization policies, their canonical path is usually
@@ -313,16 +313,16 @@ Profiles:
                 Consenters:
                 - Host: orderer-0.netop1.com
                   Port: 7050
-                  ClientTLSCert: ../netop1.com/orderers/orderer-0.netop1.com/tls/server.crt
-                  ServerTLSCert: ../netop1.com/orderers/orderer-0.netop1.com/tls/server.crt
+                  ClientTLSCert: ../netop1.com/crypto/orderers/orderer-0.netop1.com/tls/server.crt
+                  ServerTLSCert: ../netop1.com/crypto/orderers/orderer-0.netop1.com/tls/server.crt
                 - Host: orderer-1.netop1.com
                   Port: 7050
-                  ClientTLSCert: ../netop1.com/orderers/orderer-1.netop1.com/tls/server.crt
-                  ServerTLSCert: ../netop1.com/orderers/orderer-1.netop1.com/tls/server.crt
+                  ClientTLSCert: ../netop1.com/crypto/orderers/orderer-1.netop1.com/tls/server.crt
+                  ServerTLSCert: ../netop1.com/crypto/orderers/orderer-1.netop1.com/tls/server.crt
                 - Host: orderer-2.netop1.com
                   Port: 7050
-                  ClientTLSCert: ../netop1.com/orderers/orderer-2.netop1.com/tls/server.crt
-                  ServerTLSCert: ../netop1.com/orderers/orderer-2.netop1.com/tls/server.crt
+                  ClientTLSCert: ../netop1.com/crypto/orderers/orderer-2.netop1.com/tls/server.crt
+                  ServerTLSCert: ../netop1.com/crypto/orderers/orderer-2.netop1.com/tls/server.crt
             Addresses:
                 - orderer-0.netop1.com:7050
                 - orderer-1.netop1.com:7050

@@ -2,7 +2,7 @@
 # create AWS key-pair used by EKS and EFS, only if it does not exist already
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
-source env.sh
+source env.sh "$@"
 
 function createKeyPair {
   # check key pair if it exists

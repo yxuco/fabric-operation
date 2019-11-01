@@ -1,28 +1,38 @@
 #!/bin/bash
 # generate crypto keys using CA server of a specified org
-# usage: bootstrap.sh <org_name>
-# it uses config parameters of the specified org as defined in ../config/org.env, e.g.
+#   with optional ca server env, i.e., docker or k8s
+# usage: bootstrap.sh <org_name> <env>
+# where config parameters for the org are specified in ../config/org_name.env, e.g.
 #   bootstrap.sh netop1
-# using config parameters specified in ../config/netop1.env
+# use config parameters specified in ../config/netop1.env
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
-ORG_ENV=$(dirname "${SCRIPT_DIR}")/config/${1:-"netop1"}.env
-source ${ORG_ENV}
+ORG_ENV=${1:-"netop1"}
+ENV_TYPE=${2:-"k8s"}
+source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${ORG_ENV} ${ENV_TYPE}
+
 ORG=${FABRIC_ORG%%.*}
-MSP_DIR=$(dirname "${SCRIPT_DIR}")/${FABRIC_ORG}
-ORG_DIR=${MSP_DIR}/canet
+ORG_DIR=${DATA_ROOT}/canet
 
 function genCrypto {
   mkdir -p ${ORG_DIR}/ca-client/caadmin
   mkdir -p ${ORG_DIR}/ca-client/tlsadmin
 
-  cp ${ORG_ENV} ${ORG_DIR}/ca-client/org.env
+  cp $(dirname "${SCRIPT_DIR}")/config/${ORG_ENV}.env ${ORG_DIR}/ca-client/org.env
   cp ${SCRIPT_DIR}/gen-crypto.sh ${ORG_DIR}/ca-client
   cp ${ORG_DIR}/ca-server/tls-cert.pem ${ORG_DIR}/ca-client/caadmin
   cp ${ORG_DIR}/tlsca-server/tls-cert.pem ${ORG_DIR}/ca-client/tlsadmin
 
   # generate crypto data
-  docker exec -w /etc/hyperledger/fabric-ca-client -it caclient.${FABRIC_ORG} bash -c './gen-crypto.sh'
+  if [ "${ENV_TYPE}" == "docker" ]; then
+    echo "use docker-compose"
+    docker exec -w /etc/hyperledger/fabric-ca-client -it caclient.${FABRIC_ORG} bash -c './gen-crypto.sh'
+  else
+    echo "use k8s"
+    cpod=$(kubectl get pod -l app=ca-client -o name)
+    echo "generate crypto using ca-client: ${cpod##*/}"
+    kubectl exec -it ${cpod##*/} -- bash -c '/etc/hyperledger/fabric-ca-client/gen-crypto.sh'
+  fi
 }
 
 function printConfigYaml {
@@ -45,7 +55,7 @@ function printConfigYaml {
 # copyCACrypto ca|tlsca
 function copyCACrypto {
   CA_NAME=${1}
-  TARGET=${MSP_DIR}/${CA_NAME}
+  TARGET=${DATA_ROOT}/crypto/${CA_NAME}
   mkdir -p ${TARGET}/tls
 
   SOURCE=${ORG_DIR}/${CA_NAME}-server
@@ -53,8 +63,8 @@ function copyCACrypto {
   CERTFILE=${SOURCE}/ca-cert.pem
   cp ${CERTFILE} ${TARGET}/${CA_NAME}.${FABRIC_ORG}-cert.pem
   cp ${SOURCE}/tls-cert.pem ${TARGET}/tls/server.crt
-  mkdir -p ${MSP_DIR}/msp/${CA_NAME}certs
-  cp ${CERTFILE} ${MSP_DIR}/msp/${CA_NAME}certs/${CA_NAME}.${FABRIC_ORG}-cert.pem
+  mkdir -p ${DATA_ROOT}/crypto/msp/${CA_NAME}certs
+  cp ${CERTFILE} ${DATA_ROOT}/crypto/msp/${CA_NAME}certs/${CA_NAME}.${FABRIC_ORG}-cert.pem
 
   # checksum command for Linux
   CHECKSUM=sha256sum
@@ -95,29 +105,52 @@ function copyNodeCrypto {
   if [ "${FOLDER}" == "users" ]; then
     NODE_NAME=${NODE}\@${FABRIC_ORG}
     SOURCE=${ORG_DIR}/ca-client/${NODE_NAME}
-    TARGET=${MSP_DIR}/${FOLDER}/${NODE_NAME}
   else
     NODE_NAME=${NODE}.${FABRIC_ORG}
     SOURCE=${ORG_DIR}/ca-client/${NODE}
-    TARGET=${MSP_DIR}/${FOLDER}/${NODE_NAME}
   fi
+  TARGET=${DATA_ROOT}/crypto/${FOLDER}/${NODE_NAME}
 
   # copy msp data
   mkdir -p ${TARGET}/msp
-  cp -R ${MSP_DIR}/msp/cacerts ${TARGET}/msp
-  cp -R ${MSP_DIR}/msp/tlscacerts ${TARGET}/msp
+  cp -R ${DATA_ROOT}/crypto/msp/cacerts ${TARGET}/msp
+  cp -R ${DATA_ROOT}/crypto/msp/tlscacerts ${TARGET}/msp
   cp -R ${SOURCE}/msp/signcerts ${TARGET}/msp
   cp -R ${SOURCE}/msp/keystore ${TARGET}/msp
-  cp ${MSP_DIR}/msp/config.yaml ${TARGET}/msp
+  cp ${DATA_ROOT}/crypto/msp/config.yaml ${TARGET}/msp
   mv ${TARGET}/msp/signcerts/cert.pem ${TARGET}/msp/signcerts/${NODE_NAME}-cert.pem
 
   # copy tls data
   mkdir -p ${TARGET}/tls
-  cp ${MSP_DIR}/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem ${TARGET}/tls/ca.crt
+  cp ${DATA_ROOT}/crypto/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem ${TARGET}/tls/ca.crt
   cp ${SOURCE}/tls/signcerts/cert.pem ${TARGET}/tls/${TLSTYPE}.crt
   for f in ${SOURCE}/tls/keystore/*_sk; do
     cp ${f} ${TARGET}/tls/${TLSTYPE}.key
   done
+}
+
+function copyToolCrypto {
+  mkdir -p ${DATA_ROOT}/crypto/tool
+  cp -R ${DATA_ROOT}/crypto/msp -p ${DATA_ROOT}/crypto/tool
+
+  for ord in "${ORDERERS[@]}"; do
+    mkdir -p ${DATA_ROOT}/crypto/tool/orderers/${ord}.${FABRIC_ORG}/tls
+    cp -R ${DATA_ROOT}/crypto/orderers/${ord}.${FABRIC_ORG}/tls/server.crt ${DATA_ROOT}/crypto/tool/orderers/${ord}.${FABRIC_ORG}/tls
+  done
+}
+
+function copyCliCrypto {
+  mkdir -p ${DATA_ROOT}/crypto/cli/${ORDERERS[0]}.${FABRIC_ORG}/msp
+  cp -R ${DATA_ROOT}/crypto/orderers/${ORDERERS[0]}.${FABRIC_ORG}/msp/tlscacerts ${DATA_ROOT}/crypto/cli/${ORDERERS[0]}.${FABRIC_ORG}/msp
+
+  for p in "${PEERS[@]}"; do
+    mkdir -p ${DATA_ROOT}/crypto/cli/${p}.${FABRIC_ORG}
+    cp -R ${DATA_ROOT}/crypto/peers/${p}.${FABRIC_ORG}/tls ${DATA_ROOT}/crypto/cli/${p}.${FABRIC_ORG}
+  done
+
+  ADMIN=${ADMIN_USER:-"Admin"}
+  mkdir -p ${DATA_ROOT}/crypto/cli/${ADMIN}\@${FABRIC_ORG}
+  cp -R ${DATA_ROOT}/crypto/users/${ADMIN}\@${FABRIC_ORG}/msp ${DATA_ROOT}/crypto/cli/${ADMIN}\@${FABRIC_ORG}
 }
 
 # set list of orderers from config
@@ -144,15 +177,15 @@ function getPeers {
 
 function collectAllCrypto {
   # cleanup target MSP folder
-  for f in ca tlsca msp orderers peers users; do
+  for f in ca tlsca msp orderers peers users cli tool; do
     echo "cleanup ${f}"
-    rm -R ${MSP_DIR}/${f}
+    rm -R ${DATA_ROOT}/crypto/${f}
   done
 
   # copy CA
   copyCACrypto ca
   copyCACrypto tlsca
-  printConfigYaml > ${MSP_DIR}/msp/config.yaml
+  printConfigYaml > ${DATA_ROOT}/crypto/msp/config.yaml
 
   # copy orderers
   getOrderers
@@ -175,6 +208,12 @@ function collectAllCrypto {
       copyNodeCrypto ${u} users client
     done
   fi
+
+  # copy crypto for Tools container that bootstraps genesis block and channel tx
+  copyToolCrypto
+
+  # collect crypto for CLI container
+  copyCliCrypto
 }
 
 function main {

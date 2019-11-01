@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
-source env.sh
+source env.sh "$@"
 
 echo "create EKS cluster ${EKS_STACK}"
 echo "it may take 15 minutes ..."

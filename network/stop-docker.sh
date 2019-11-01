@@ -6,11 +6,10 @@
 # use config parameters specified in ../config/netop1.env
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
-source $(dirname "${SCRIPT_DIR}")/config/${1:-"netop1"}.env
-MSP_DIR=$(dirname "${SCRIPT_DIR}")/${FABRIC_ORG}
+source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${1:-"netop1"} docker
 
-# shutdown fabric network
-docker-compose -f ${MSP_DIR}/network/docker-compose.yaml -f ${MSP_DIR}/network/docker-compose-ca.yaml down --volumes --remove-orphans
+# shutdown fabric network, and cleanup persisent volumes
+docker-compose -f ${DATA_ROOT}/network/docker/docker-compose.yaml -f ${DATA_ROOT}/network/docker/docker-compose-ca.yaml down --volumes --remove-orphans
 
 # cleanup chaincode containers and images
 docker rm $(docker ps -a | grep dev-peer | awk '{print $1}')

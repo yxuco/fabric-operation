@@ -63,7 +63,7 @@ services:
     volumes:
         - /var/run/:/host/var/run/
         - ./../chaincode/:/opt/gopath/src/github.com/chaincode:cached
-        - ./../netop1.com/:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
+        - ./../netop1.com/crypto/:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
         - ./channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
     depends_on:
       - orderer-0.netop1.com

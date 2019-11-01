@@ -1,7 +1,7 @@
 #!/bin/bash
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
-source env.sh
+source env.sh "$@"
 
 # check if the bucket exists already
 aws s3api list-buckets --query "Buckets[].Name" --out text | grep ${S3_BUCKET}

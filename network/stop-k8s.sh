@@ -1,13 +1,15 @@
 #!/bin/bash
 # stop fabric network for Mac docker-desktop Kubernetes
-# usage: stop-k8s.sh <org_name>
+# usage: stop-k8s.sh <org_name> <env> [true|false]
 # it uses config parameters of the specified org as defined in ../config/org.env, e.g.
 #   stop-k8s.sh netop1
 # using config parameters specified in ../config/netop1.env
+# second parameter env can be k8s or aws to use local host or efs persistence, default k8s for local persistence
+# cleanup persistent data if the third parameter is true.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
-source ${SCRIPT_DIR}/setup.sh ${1:-"netop1"} k8s
-MSP_DIR=$(dirname "${SCRIPT_DIR}")/${FABRIC_ORG}
+ENV_TYPE=${2:-"k8s"}
+source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${1:-"netop1"} ${ENV_TYPE}
 
 # set list of orderers from config
 function getOrderers {
@@ -20,18 +22,38 @@ function getOrderers {
   done
 }
 
+# set list of peers from config
+function getPeers {
+  PEERS=()
+  seq=${PEER_MIN:-"0"}
+  max=${PEER_MAX:-"0"}
+  until [ "${seq}" -ge "${max}" ]; do
+    PEERS+=("peer-${seq}")
+    seq=$((${seq}+1))
+  done
+}
+
 echo "stop cli pod ..."
-kubectl delete -f ${MSP_DIR}/network/k8s-cli.yaml
+kubectl delete -f ${DATA_ROOT}/network/k8s/cli.yaml
+kubectl delete -f ${DATA_ROOT}/network/k8s/cli-pv.yaml
 
 echo "stop fabric network ..."
-kubectl delete -f ${MSP_DIR}/network/k8s-peer.yaml
-kubectl delete -f ${MSP_DIR}/network/k8s-peer-pv.yaml
-kubectl delete -f ${MSP_DIR}/network/k8s-orderer.yaml
-kubectl delete -f ${MSP_DIR}/network/k8s-orderer-pv.yaml
-kubectl delete -f ${MSP_DIR}/network/k8s-namespace.yaml
+kubectl delete -f ${DATA_ROOT}/network/k8s/peer.yaml
+kubectl delete -f ${DATA_ROOT}/network/k8s/peer-pv.yaml
+kubectl delete -f ${DATA_ROOT}/network/k8s/orderer.yaml
+kubectl delete -f ${DATA_ROOT}/network/k8s/orderer-pv.yaml
+kubectl delete -f ${DATA_ROOT}/network/k8s/namespace.yaml
 
-echo "clean up orderer ledger files ..."
-getOrderers
-for ord in "${ORDERERS[@]}"; do
-  rm -R ${MSP_DIR}/k8s/data/${ord}/*
-done
+if [ "${2}" == "true" ]; then
+  echo "clean up orderer ledger files ..."
+  getOrderers
+  for ord in "${ORDERERS[@]}"; do
+    rm -R ${DATA_ROOT}/data/${ord}/*
+  done
+
+  echo "clean up peer ledger files ..."
+  getPeers
+  for p in "${PEERS[@]}"; do
+    rm -R ${DATA_ROOT}/data/${p}/*
+  done
+fi

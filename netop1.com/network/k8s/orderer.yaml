@@ -1,0 +1,130 @@
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: orderer
+  namespace: netop1
+  labels:
+    app: orderer
+spec:
+  selector:
+    app: orderer
+  ports:
+  - port: 7050
+    name: server
+  # headless service for orderer StatefulSet
+  clusterIP: None
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: orderer
+  namespace: netop1
+spec:
+  selector:
+    matchLabels:
+      app: orderer
+  serviceName: orderer
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: orderer
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: orderer
+        imagePullPolicy: Always
+        image: hyperledger/fabric-orderer:1.4.3
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: 500m
+        ports:
+        - containerPort: 7050
+          name: server
+        command:
+        - orderer
+        env:
+        - name: FABRIC_LOGGING_SPEC
+          value: INFO
+        - name: ORDERER_GENERAL_LISTENADDRESS
+          value: 0.0.0.0
+        - name: ORDERER_GENERAL_GENESISMETHOD
+          value: file
+        - name: ORDERER_FILELEDGER_LOCATION
+          value: /var/hyperledger/production/orderer
+        - name: ORDERER_GENERAL_GENESISFILE
+          value: /var/hyperledger/orderer/artifacts/genesis.block
+        - name: ORDERER_GENERAL_LOCALMSPID
+          value: netop1OrdererMSP
+        - name: ORDERER_GENERAL_LOCALMSPDIR
+          value: /var/hyperledger/orderer/config/msp
+        - name: ORDERER_GENERAL_TLS_ENABLED
+          value: "true"
+        - name: ORDERER_GENERAL_TLS_PRIVATEKEY
+          value: /var/hyperledger/orderer/config/tls/server.key
+        - name: ORDERER_GENERAL_TLS_CERTIFICATE
+          value: /var/hyperledger/orderer/config/tls/server.crt
+        - name: ORDERER_GENERAL_TLS_ROOTCAS
+          value: /var/hyperledger/orderer/config/tls/ca.crt
+        - name: ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE
+          value: /var/hyperledger/orderer/config/tls/server.crt
+        - name: ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY
+          value: /var/hyperledger/orderer/config/tls/server.key
+        - name: ORDERER_GENERAL_CLUSTER_ROOTCAS
+          value: /var/hyperledger/orderer/config/tls/server.crt
+        - name: GODEBUG
+          value: netdns=go
+        volumeMounts:
+        # persistent volume matches FileLedger.Location in orderer.yaml or the above env
+        - mountPath: /var/hyperledger/production/orderer
+          name: data
+        - mountPath: /var/hyperledger/orderer/config
+          name: config
+        - mountPath: /var/hyperledger/orderer/artifacts
+          name: artifacts
+        workingDir: /opt/gopath/src/github.com/hyperledger/fabric/orderer
+      volumes:
+      - name: artifacts
+        persistentVolumeClaim:
+          claimName: artifacts-orderer
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: "orderer-data-class"
+      resources:
+        requests:
+          storage: 500Mi
+  - metadata:
+      name: config
+    spec:
+      accessModes: 
+      - ReadWriteOnce
+      storageClassName: "orderer-data-class"
+      resources:
+        requests:
+          storage: 100Mi
+---
+apiVersion: v1
+kind: Service
+# open service port for orderers, so peer/client of other orgs of different network can access
+metadata:
+  name: orderer-public
+  namespace: netop1
+spec:
+  type: NodePort
+# use Local if service is for a single POD, so proxy will not route other PODs 
+  externalTrafficPolicy: Local
+  selector:
+# use pod-name to restrict to a single POD
+    statefulset.kubernetes.io/pod-name: orderer-0
+    app: orderer
+  ports:
+  - protocol: TCP
+    port: 7050
+    targetPort: server
+    nodePort: 30750
