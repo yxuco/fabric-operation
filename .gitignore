@@ -5,3 +5,7 @@ aws/config/*
 **/orderer*/data/*
 **/peer*/data/*
 **/crypto/**
+**/cli/
+**/canet/ca-server/
+**/canet/tlsca-server/
+**/genesis.block
