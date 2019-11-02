@@ -131,9 +131,9 @@ function printOrdererService {
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: orderer
     volumes:
-        - ${DATA_ROOT}/artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
-        - ${DATA_ROOT}/crypto/orderers/${ord}.${FABRIC_ORG}/msp:/var/hyperledger/orderer/msp
-        - ${DATA_ROOT}/crypto/orderers/${ord}.${FABRIC_ORG}/tls/:/var/hyperledger/orderer/tls
+        - ${DATA_ROOT}/tool/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
+        - ${DATA_ROOT}/orderers/${ord}/crypto/msp/:/var/hyperledger/orderer/msp
+        - ${DATA_ROOT}/orderers/${ord}/crypto/tls/:/var/hyperledger/orderer/tls
         - ${ord}.${FABRIC_ORG}:/var/hyperledger/production/orderer
     ports:
       - ${PORT}:7050
@@ -194,8 +194,8 @@ function printPeerService {
     command: peer node start
     volumes:
         - /var/run/:/host/var/run/
-        - ${DATA_ROOT}/crypto/peers/${p}.${FABRIC_ORG}/msp:/etc/hyperledger/fabric/msp
-        - ${DATA_ROOT}/crypto/peers/${p}.${FABRIC_ORG}/tls/:/etc/hyperledger/fabric/tls
+        - ${DATA_ROOT}/peers/${p}/crypto/msp/:/etc/hyperledger/fabric/msp
+        - ${DATA_ROOT}/peers/${p}/crypto/tls/:/etc/hyperledger/fabric/tls
         - ${p}.${FABRIC_ORG}:/var/hyperledger/production
     ports:
       - ${PORT}:7051
@@ -255,19 +255,18 @@ function printCliService {
       - CORE_PEER_ADDRESS=${PEERS[0]}.${FABRIC_ORG}:7051
       - CORE_PEER_LOCALMSPID=${ORG_MSP}
       - CORE_PEER_TLS_ENABLED=true
-      - CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/${PEERS[0]}.${FABRIC_ORG}/tls/server.crt
-      - CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/${PEERS[0]}.${FABRIC_ORG}/tls/server.key
-      - CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/${PEERS[0]}.${FABRIC_ORG}/tls/ca.crt
-      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/${admin}@${FABRIC_ORG}/msp
-      - ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/${ORDERERS[0]}.${FABRIC_ORG}/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/cli/crypto/${PEERS[0]}/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/cli/crypto/${PEERS[0]}/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/cli/crypto/${PEERS[0]}/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/cli/crypto/${admin}@${FABRIC_ORG}/msp
+      - ORDERER_CA=/etc/hyperledger/cli/crypto/${ORDERERS[0]}/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem
       - ORDERER_URL=${ORDERERS[0]}.${FABRIC_ORG}:7050
-    working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
+    working_dir: /etc/hyperledger/cli
     command: /bin/bash
     volumes:
       - /var/run/:/host/var/run/
-      - ${DATA_ROOT}/artifacts/:/opt/gopath/src/github.com/hyperledger/fabric/peer/artifacts/
-      - ${DATA_ROOT}/crypto/cli/:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
-      - ${DATA_ROOT}/chaincode/:/opt/gopath/src/github.com/chaincode:cached
+      - ${DATA_ROOT}/cli/:/etc/hyperledger/cli/
+      - ${DATA_ROOT}/cli/chaincode/:/opt/gopath/src/github.com/chaincode:cached
     networks:
       - ${ORG}
     depends_on:"
@@ -353,13 +352,20 @@ function main {
   local chaincode=$(dirname "${SCRIPT_DIR}")/chaincode
   if [ -d "${chaincode}" ]; then
     echo "copy chaincode from ${chaincode}"
-    cp -R ${chaincode} ${DATA_ROOT}
+    cp -R ${chaincode} ${DATA_ROOT}/cli
   fi
 
   # copy test-sample script to artifacts
   if [ -f "${SCRIPT_DIR}/test-sample.sh" ]; then
     echo "copy smoke test script ${SCRIPT_DIR}/test-sample.sh"
-    cp ${SCRIPT_DIR}/test-sample.sh ${DATA_ROOT}/artifacts
+    cp ${SCRIPT_DIR}/test-sample.sh ${DATA_ROOT}/cli
+  fi
+
+  # copy channel tx
+  if [ -f "${DATA_ROOT}/tool/channel.tx" ]; then
+    echo "copy channel tx from ${DATA_ROOT}/tool/channel.tx"
+    cp ${DATA_ROOT}/tool/channel.tx ${DATA_ROOT}/cli
+    cp ${DATA_ROOT}/tool/anchors.tx ${DATA_ROOT}/cli
   fi
 
   docker-compose ${COMPOSE_FILES} up -d

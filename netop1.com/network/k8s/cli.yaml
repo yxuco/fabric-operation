@@ -10,9 +10,11 @@ spec:
     image: hyperledger/fabric-tools
     imagePullPolicy: Always
     command:
-    - bash
+    - /bin/bash
     - -c
-    - "while true; do sleep 30; done"
+    - |
+      cp -R /etc/hyperledger/cli/store/chaincode /opt/gopath/src/github.com
+      while true; do sleep 30; done
     env:
     - name: CORE_PEER_ADDRESS
       value: peer-0.peer.netop1.svc.cluster.local:7051
@@ -21,15 +23,15 @@ spec:
     - name: CORE_PEER_LOCALMSPID
       value: netop1MSP
     - name: CORE_PEER_MSPCONFIGPATH
-      value: /etc/hyperledger/cli/crypto/Admin@netop1.com/msp
+      value: /etc/hyperledger/cli/store/crypto/Admin@netop1.com/msp
     - name: CORE_PEER_TLS_CERT_FILE
-      value: /etc/hyperledger/cli/crypto/peer-0.netop1.com/tls/server.crt
+      value: /etc/hyperledger/cli/store/crypto/peer-0/tls/server.crt
     - name: CORE_PEER_TLS_ENABLED
       value: "true"
     - name: CORE_PEER_TLS_KEY_FILE
-      value: /etc/hyperledger/cli/crypto/peer-0.netop1.com/tls/server.key
+      value: /etc/hyperledger/cli/store/crypto/peer-0/tls/server.key
     - name: CORE_PEER_TLS_ROOTCERT_FILE
-      value: /etc/hyperledger/cli/crypto/peer-0.netop1.com/tls/ca.crt
+      value: /etc/hyperledger/cli/store/crypto/peer-0/tls/ca.crt
     - name: CORE_VM_ENDPOINT
       value: unix:///host/var/run/docker.sock
     - name: FABRIC_LOGGING_SPEC
@@ -37,7 +39,7 @@ spec:
     - name: GOPATH
       value: /opt/gopath
     - name: ORDERER_CA
-      value: /etc/hyperledger/cli/crypto/orderer-0.netop1.com/msp/tlscacerts/tlsca.netop1.com-cert.pem
+      value: /etc/hyperledger/cli/store/crypto/orderer-0/msp/tlscacerts/tlsca.netop1.com-cert.pem
     - name: ORDERER_TYPE
       value: etcdraft
     - name: ORDERER_URL
@@ -48,27 +50,17 @@ spec:
       value: netop1-channel
     - name: TEST_CHANNEL
       value: mychannel
-    workingDir: /etc/hyperledger/cli/artifacts
+    workingDir: /etc/hyperledger/cli/store
     volumeMounts:
     - mountPath: /host/var/run
       name: docker-sock
-    - mountPath: /etc/hyperledger/cli/artifacts
-      name: artifacts
-    - mountPath: /opt/gopath/src/github.com/chaincode
-      name: chaincode
-    - mountPath: /etc/hyperledger/cli/crypto
-      name: crypto
+    - mountPath: /etc/hyperledger/cli/store
+      name: data
   volumes:
   - name: docker-sock
     hostPath:
       path: /var/run
       type: Directory
-  - name: artifacts
+  - name: data
     persistentVolumeClaim:
-      claimName: artifacts-cli
-  - name: crypto
-    persistentVolumeClaim:
-      claimName: crypto-cli
-  - name: chaincode
-    persistentVolumeClaim:
-      claimName: chaincode-cli
+      claimName: data-cli-pvc

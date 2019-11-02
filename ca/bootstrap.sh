@@ -54,6 +54,7 @@ function printConfigYaml {
 
 # copyCACrypto ca|tlsca
 function copyCACrypto {
+  echo "copy crypto for ${1}"
   CA_NAME=${1}
   TARGET=${DATA_ROOT}/crypto/${CA_NAME}
   mkdir -p ${TARGET}/tls
@@ -99,17 +100,19 @@ function copyCACrypto {
 # copyNodeCrypto <node-namme> peers|orderers|users client|server - copy crypto data of an orderer or a peer
 # e.g., copyNodeCrypto peer-1 peers server
 function copyNodeCrypto {
+  echo "copy crypto for ${1}"
   NODE=${1}
   FOLDER=${2}
   TLSTYPE=${3}
   if [ "${FOLDER}" == "users" ]; then
     NODE_NAME=${NODE}\@${FABRIC_ORG}
     SOURCE=${ORG_DIR}/ca-client/${NODE_NAME}
+    TARGET=${DATA_ROOT}/crypto/${FOLDER}/${NODE_NAME}
   else
     NODE_NAME=${NODE}.${FABRIC_ORG}
     SOURCE=${ORG_DIR}/ca-client/${NODE}
+    TARGET=${DATA_ROOT}/${FOLDER}/${NODE}/crypto
   fi
-  TARGET=${DATA_ROOT}/crypto/${FOLDER}/${NODE_NAME}
 
   # copy msp data
   mkdir -p ${TARGET}/msp
@@ -124,33 +127,36 @@ function copyNodeCrypto {
   mkdir -p ${TARGET}/tls
   cp ${DATA_ROOT}/crypto/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem ${TARGET}/tls/ca.crt
   cp ${SOURCE}/tls/signcerts/cert.pem ${TARGET}/tls/${TLSTYPE}.crt
+  # there should be only one file, otherwise, take the last file
   for f in ${SOURCE}/tls/keystore/*_sk; do
     cp ${f} ${TARGET}/tls/${TLSTYPE}.key
   done
 }
 
 function copyToolCrypto {
-  mkdir -p ${DATA_ROOT}/crypto/tool
-  cp -R ${DATA_ROOT}/crypto/msp -p ${DATA_ROOT}/crypto/tool
+  echo "copy tools crypto"
+  mkdir -p ${DATA_ROOT}/tool/crypto
+  cp -R ${DATA_ROOT}/crypto/msp ${DATA_ROOT}/tool/crypto
 
   for ord in "${ORDERERS[@]}"; do
-    mkdir -p ${DATA_ROOT}/crypto/tool/orderers/${ord}.${FABRIC_ORG}/tls
-    cp -R ${DATA_ROOT}/crypto/orderers/${ord}.${FABRIC_ORG}/tls/server.crt ${DATA_ROOT}/crypto/tool/orderers/${ord}.${FABRIC_ORG}/tls
+    mkdir -p ${DATA_ROOT}/tool/crypto/orderers/${ord}/tls
+    cp ${DATA_ROOT}/orderers/${ord}/crypto/tls/server.crt ${DATA_ROOT}/tool/crypto/orderers/${ord}/tls
   done
 }
 
 function copyCliCrypto {
-  mkdir -p ${DATA_ROOT}/crypto/cli/${ORDERERS[0]}.${FABRIC_ORG}/msp
-  cp -R ${DATA_ROOT}/crypto/orderers/${ORDERERS[0]}.${FABRIC_ORG}/msp/tlscacerts ${DATA_ROOT}/crypto/cli/${ORDERERS[0]}.${FABRIC_ORG}/msp
+  echo "copy cli crypto"
+  mkdir -p ${DATA_ROOT}/cli/crypto/${ORDERERS[0]}/msp
+  cp -R ${DATA_ROOT}/orderers/${ORDERERS[0]}/crypto/msp/tlscacerts ${DATA_ROOT}/cli/crypto/${ORDERERS[0]}/msp
 
   for p in "${PEERS[@]}"; do
-    mkdir -p ${DATA_ROOT}/crypto/cli/${p}.${FABRIC_ORG}
-    cp -R ${DATA_ROOT}/crypto/peers/${p}.${FABRIC_ORG}/tls ${DATA_ROOT}/crypto/cli/${p}.${FABRIC_ORG}
+    mkdir -p ${DATA_ROOT}/cli/crypto/${p}
+    cp -R ${DATA_ROOT}/peers/${p}/crypto/tls ${DATA_ROOT}/cli/crypto/${p}
   done
 
   ADMIN=${ADMIN_USER:-"Admin"}
-  mkdir -p ${DATA_ROOT}/crypto/cli/${ADMIN}\@${FABRIC_ORG}
-  cp -R ${DATA_ROOT}/crypto/users/${ADMIN}\@${FABRIC_ORG}/msp ${DATA_ROOT}/crypto/cli/${ADMIN}\@${FABRIC_ORG}
+  mkdir -p ${DATA_ROOT}/cli/crypto/${ADMIN}\@${FABRIC_ORG}
+  cp -R ${DATA_ROOT}/crypto/users/${ADMIN}\@${FABRIC_ORG}/msp ${DATA_ROOT}/cli/crypto/${ADMIN}\@${FABRIC_ORG}
 }
 
 # set list of orderers from config
@@ -175,12 +181,36 @@ function getPeers {
   done
 }
 
-function collectAllCrypto {
+function cleanupCrypto {
   # cleanup target MSP folder
-  for f in ca tlsca msp orderers peers users cli tool; do
+  for f in ca tlsca msp users; do
     echo "cleanup ${f}"
     rm -R ${DATA_ROOT}/crypto/${f}
   done
+
+  # cleanup tool and cli crypto folders
+  for f in tool cli; do
+    echo "cleanup ${f} crypto"
+    rm -R ${DATA_ROOT}/${f}/crypto
+  done
+
+  # cleanup crypto of orderers
+  for ord in "${ORDERERS[@]}"; do
+    echo "cleanup crypto of ${ord}"
+    rm -R ${DATA_ROOT}/orderers/${ord}/crypto
+  done
+
+  # cleanup crypto of peers
+  for p in "${PEERS[@]}"; do
+    echo "cleanup crypto of ${p}"
+    rm -R ${DATA_ROOT}/peers/${p}/crypto
+  done
+}
+
+function collectAllCrypto {
+  getOrderers
+  getPeers
+  cleanupCrypto
 
   # copy CA
   copyCACrypto ca
@@ -188,13 +218,11 @@ function collectAllCrypto {
   printConfigYaml > ${DATA_ROOT}/crypto/msp/config.yaml
 
   # copy orderers
-  getOrderers
   for ord in "${ORDERERS[@]}"; do
     copyNodeCrypto ${ord} orderers server
   done
 
   # copy peers
-  getPeers
   for p in "${PEERS[@]}"; do
     copyNodeCrypto ${p} peers server
   done
@@ -218,6 +246,10 @@ function collectAllCrypto {
 
 function main {
   genCrypto
+  if [ "${ENV_TYPE}" == "aws" ]; then
+    # efs data created by k8s pods are owned by root, so make them available
+    sudo chown -R ec2-user:ec2-user ${DATA_ROOT}
+  fi
   collectAllCrypto
 }
 

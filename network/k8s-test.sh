@@ -15,31 +15,23 @@ SYS_CHANNEL=${SYS_CHANNEL:-"${ORG}-channel"}
 TEST_CHANNEL=${TEST_CHANNEL:-"mychannel"}
 ORDERER_TYPE=${ORDERER_TYPE:-"solo"}
 
-# printCliPV artifacts|crypto|chaincode
-function printCliPV {
-    if [ "${1}" == "artifacts" ]; then
-    FOLDER="artifacts"
-  elif [ "${1}" == "crypto" ]; then
-    FOLDER="crypto/cli"
-  else
-    # chaincode
-    FOLDER="chaincode"
-  fi
+# printDataPV "data-cli"
+function printDataPV {
 
   echo "---
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: ${1}-cli
+  name: ${1}-pv
   labels:
-    app: ${1}-cli
+    app: ${1}
     org: ${ORG}
 spec:
   capacity:
     storage: 100Mi
   volumeMode: Filesystem
   accessModes:
-  - ReadOnlyMany
+  - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   storageClassName: cli-data-class"
 
@@ -48,10 +40,10 @@ spec:
     driver: efs.csi.aws.com
     volumeHandle: ${AWS_FSID}
     volumeAttributes:
-      path: /${FABRIC_ORG}/${FOLDER}"
+      path: /${FABRIC_ORG}/cli"
   else
     echo "  hostPath:
-    path: ${DATA_ROOT}/${FOLDER}
+    path: ${DATA_ROOT}/cli
     type: Directory"
   fi
 
@@ -59,18 +51,18 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: ${1}-cli
+  name: ${1}-pvc
   namespace: ${ORG}
 spec:
   storageClassName: cli-data-class
   accessModes:
-    - ReadOnlyMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 100Mi
   selector:
     matchLabels:
-      app: ${1}-cli
+      app: ${1}
       org: ${ORG}"
 }
 
@@ -99,9 +91,7 @@ function printCliStorageYaml {
   printStorageClass "cli-data-class"
 
   # PV and PVC for cli data
-  printCliPV artifacts
-  printCliPV crypto
-  printCliPV chaincode
+  printDataPV "data-cli"
 }
 
 # printCliYaml <test-peer>
@@ -120,9 +110,12 @@ spec:
     image: hyperledger/fabric-tools
     imagePullPolicy: Always
     command:
-    - bash
+    - /bin/bash
     - -c
-    - \"while true; do sleep 30; done\"
+    - |
+      mkdir -p /opt/gopath/src/github.com
+      cp -R /etc/hyperledger/cli/store/chaincode /opt/gopath/src/github.com
+      while true; do sleep 30; done
     env:
     - name: CORE_PEER_ADDRESS
       value: ${1}.peer.${SVC_DOMAIN}:7051
@@ -131,15 +124,15 @@ spec:
     - name: CORE_PEER_LOCALMSPID
       value: ${ORG_MSP}
     - name: CORE_PEER_MSPCONFIGPATH
-      value: /etc/hyperledger/cli/crypto/${admin}@${FABRIC_ORG}/msp
+      value: /etc/hyperledger/cli/store/crypto/${admin}@${FABRIC_ORG}/msp
     - name: CORE_PEER_TLS_CERT_FILE
-      value: /etc/hyperledger/cli/crypto/${1}.${FABRIC_ORG}/tls/server.crt
+      value: /etc/hyperledger/cli/store/crypto/${1}/tls/server.crt
     - name: CORE_PEER_TLS_ENABLED
       value: \"true\"
     - name: CORE_PEER_TLS_KEY_FILE
-      value: /etc/hyperledger/cli/crypto/${1}.${FABRIC_ORG}/tls/server.key
+      value: /etc/hyperledger/cli/store/crypto/${1}/tls/server.key
     - name: CORE_PEER_TLS_ROOTCERT_FILE
-      value: /etc/hyperledger/cli/crypto/${1}.${FABRIC_ORG}/tls/ca.crt
+      value: /etc/hyperledger/cli/store/crypto/${1}/tls/ca.crt
     - name: CORE_VM_ENDPOINT
       value: unix:///host/var/run/docker.sock
     - name: FABRIC_LOGGING_SPEC
@@ -147,7 +140,7 @@ spec:
     - name: GOPATH
       value: /opt/gopath
     - name: ORDERER_CA
-      value: /etc/hyperledger/cli/crypto/${TEST_ORDERER}.${FABRIC_ORG}/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem
+      value: /etc/hyperledger/cli/store/crypto/${TEST_ORDERER}/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem
     - name: ORDERER_TYPE
       value: ${ORDERER_TYPE}
     - name: ORDERER_URL
@@ -158,30 +151,20 @@ spec:
       value: ${SYS_CHANNEL}
     - name: TEST_CHANNEL
       value: ${TEST_CHANNEL}
-    workingDir: /etc/hyperledger/cli/artifacts
+    workingDir: /etc/hyperledger/cli/store
     volumeMounts:
     - mountPath: /host/var/run
       name: docker-sock
-    - mountPath: /etc/hyperledger/cli/artifacts
-      name: artifacts
-    - mountPath: /opt/gopath/src/github.com/chaincode
-      name: chaincode
-    - mountPath: /etc/hyperledger/cli/crypto
-      name: crypto
+    - mountPath: /etc/hyperledger/cli/store
+      name: data
   volumes:
   - name: docker-sock
     hostPath:
       path: /var/run
       type: Directory
-  - name: artifacts
+  - name: data
     persistentVolumeClaim:
-      claimName: artifacts-cli
-  - name: crypto
-    persistentVolumeClaim:
-      claimName: crypto-cli
-  - name: chaincode
-    persistentVolumeClaim:
-      claimName: chaincode-cli"
+      claimName: data-cli-pvc"
 }
 
 function main {
@@ -194,13 +177,20 @@ function main {
   local chaincode=$(dirname "${SCRIPT_DIR}")/chaincode
   if [ -d "${chaincode}" ]; then
     echo "copy chaincode from ${chaincode}"
-    cp -R ${chaincode} ${DATA_ROOT}
+    cp -R ${chaincode} ${DATA_ROOT}/cli
   fi
 
   # copy test-sample script to artifacts
   if [ -f "${SCRIPT_DIR}/test-sample.sh" ]; then
     echo "copy smoke test script ${SCRIPT_DIR}/test-sample.sh"
-    cp ${SCRIPT_DIR}/test-sample.sh ${DATA_ROOT}/artifacts
+    cp ${SCRIPT_DIR}/test-sample.sh ${DATA_ROOT}/cli
+  fi
+
+  # copy channel tx
+  if [ -f "${DATA_ROOT}/tool/channel.tx" ]; then
+    echo "copy channel tx from ${DATA_ROOT}/tool/channel.tx"
+    cp ${DATA_ROOT}/tool/channel.tx ${DATA_ROOT}/cli
+    cp ${DATA_ROOT}/tool/anchors.tx ${DATA_ROOT}/cli
   fi
 
   echo "start cli POD"
@@ -209,7 +199,7 @@ function main {
 
   echo "wait 15s for cli pod to start ..."
   sleep 15
-  kubectl exec -it cli -- bash -c '/etc/hyperledger/cli/artifacts/test-sample.sh'
+  kubectl exec -it cli -- bash -c './test-sample.sh'
 }
 
 main

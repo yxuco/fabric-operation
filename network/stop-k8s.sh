@@ -44,16 +44,16 @@ kubectl delete -f ${DATA_ROOT}/network/k8s/orderer.yaml
 kubectl delete -f ${DATA_ROOT}/network/k8s/orderer-pv.yaml
 kubectl delete -f ${DATA_ROOT}/network/k8s/namespace.yaml
 
-if [ "${2}" == "true" ]; then
+if [ "${3}" == "true" ]; then
   echo "clean up orderer ledger files ..."
   getOrderers
   for ord in "${ORDERERS[@]}"; do
-    rm -R ${DATA_ROOT}/data/${ord}/*
+    rm -R ${DATA_ROOT}/orderers/${ord}/data/*
   done
 
   echo "clean up peer ledger files ..."
   getPeers
   for p in "${PEERS[@]}"; do
-    rm -R ${DATA_ROOT}/data/${p}/*
+    rm -R ${DATA_ROOT}/peers/${p}/data/*
   done
 fi

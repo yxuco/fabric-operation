@@ -11,7 +11,7 @@ ORG=${FABRIC_ORG%%.*}
 
 # AWS EFS variables populated by aws startup
 AWS_MOUNT_POINT=opt/share
-AWS_FSID=fs-0a0219a1
+AWS_FSID=fs-aec3d805
 
 target=${2:-"docker"}
 if [ "${target}" == "docker" ]; then

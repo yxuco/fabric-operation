@@ -41,36 +41,27 @@ function getPeers {
   done
 }
 
-# print k8s persistent volume for an orderer
+# print k8s persistent volume for an orderer or peer
 # even though volumeClaimTemplates can generate PVC automatically, 
 # we define all PVCs here to guarantee that they match the corresponding PVs
-# e.g., printOrdererPV orderer-1 data|config
-function printOrdererPV {
-  if [ "${2}" == "data" ]; then
-    STORAGE="500Mi"
-    FOLDER="data/${1}"
-    PATH_TYPE="DirectoryOrCreate"
-    MODE="ReadWriteOnce"
-  elif [ "${2}" == "config" ]; then
-    STORAGE="100Mi"
-    FOLDER="crypto/orderers/${1}.${FABRIC_ORG}"
-    PATH_TYPE="Directory"
-    MODE="ReadWriteOnce"
-  else
-    # for orderer artifacts
-    STORAGE="100Mi"
-    FOLDER="artifacts"
-    PATH_TYPE="Directory"
-    MODE="ReadOnlyMany"
+# e.g., printDataPV "orderer-1" "orderer-data-class"
+function printDataPV {
+  STORAGE="500Mi"
+  PATH_TYPE="Directory"
+  MODE="ReadWriteOnce"
+  if [ "${2}" == "orderer-data-class" ]; then
+    FOLDER="orderers/${1}"
+  elif [ "${2}" == "peer-data-class" ]; then
+    FOLDER="peers/${1}"
   fi
 
   echo "---
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: ${2}-${1}
+  name: data-${1}
   labels:
-    app: ${2}-${1}
+    app: data-${1}
     org: ${ORG}
 spec:
   capacity:
@@ -79,7 +70,7 @@ spec:
   accessModes:
   - ${MODE}
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: orderer-data-class"
+  storageClassName: ${2}"
 
   if [ "${K8S_PERSISTENCE}" == "efs" ]; then
     echo "  csi:
@@ -97,10 +88,10 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: ${2}-${1}
+  name: data-${1}
   namespace: ${ORG}
 spec:
-  storageClassName: orderer-data-class
+  storageClassName: ${2}
   accessModes:
     - ${MODE}
   resources:
@@ -108,7 +99,7 @@ spec:
       storage: ${STORAGE}
   selector:
     matchLabels:
-      app: ${2}-${1}
+      app: data-${1}
       org: ${ORG}"
 }
 
@@ -138,79 +129,12 @@ function printOrdererStorageYaml {
 
   # PV and PVC for orderer config and data
   for ord in "${ORDERERS[@]}"; do
-    printOrdererPV ${ord} data
-    printOrdererPV ${ord} config
+    printDataPV ${ord} "orderer-data-class"
     if [ "${ORDERER_TYPE}" == "solo" ]; then
       # create only the first orderer for solo consensus
       break
     fi
   done
-
-  # PV and PVC for orderer artifacts
-  printOrdererPV "orderer" "artifacts"
-}
-
-# print k8s persistent volume for a peer
-# even though volumeClaimTemplates can generate PVC automatically, 
-# we define all PVCs here to guarantee that they match the corresponding PVs
-# e.g., printPeerPV peer-1 data|config
-function printPeerPV {
-  if [ "${2}" == "data" ]; then
-    STORAGE="500Mi"
-    FOLDER="data/${1}"
-    PATH_TYPE="DirectoryOrCreate"
-  else
-    STORAGE="100Mi"
-    FOLDER="crypto/peers/${1}.${FABRIC_ORG}"
-    PATH_TYPE="Directory"
-  fi
-
-  echo "---
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: ${2}-${1}
-  labels:
-    app: ${2}-${1}
-    org: ${ORG}
-spec:
-  capacity:
-    storage: ${STORAGE}
-  volumeMode: Filesystem
-  accessModes:
-  - ReadWriteOnce
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: peer-data-class"
-
-  if [ "${K8S_PERSISTENCE}" == "efs" ]; then
-    echo "  csi:
-    driver: efs.csi.aws.com
-    volumeHandle: ${AWS_FSID}
-    volumeAttributes:
-      path: /${FABRIC_ORG}/${FOLDER}"
-  else
-    echo "  hostPath:
-    path: ${DATA_ROOT}/${FOLDER}
-    type: ${PATH_TYPE}"
-  fi
-
-  echo "---
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: ${2}-${1}
-  namespace: ${ORG}
-spec:
-  storageClassName: peer-data-class
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: ${STORAGE}
-  selector:
-    matchLabels:
-      app: ${2}-${1}
-      org: ${ORG}"
 }
 
 function printPeerStorageYaml {
@@ -219,18 +143,18 @@ function printPeerStorageYaml {
 
   # PV and PVC for peer config and data
   for p in "${PEERS[@]}"; do
-    printPeerPV ${p} "data"
-    printPeerPV ${p} "config"
+    printDataPV ${p} "peer-data-class"
   done
 }
 
 function configPersistentData {
   for ord in "${ORDERERS[@]}"; do
-    mkdir -p ${DATA_ROOT}/data/${ord}
+    mkdir -p ${DATA_ROOT}/orderers/${ord}/data
+    cp ${DATA_ROOT}/tool/genesis.block ${DATA_ROOT}/orderers/${ord}
   done
 
   for p in "${PEERS[@]}"; do
-    mkdir -p ${DATA_ROOT}/data/${p}
+    mkdir -p ${DATA_ROOT}/peers/${p}/data
   done
 }
 
@@ -307,42 +231,33 @@ spec:
         - name: ORDERER_GENERAL_GENESISMETHOD
           value: file
         - name: ORDERER_FILELEDGER_LOCATION
-          value: /var/hyperledger/production/orderer
+          value: /var/hyperledger/orderer/store/data
         - name: ORDERER_GENERAL_GENESISFILE
-          value: /var/hyperledger/orderer/artifacts/genesis.block
+          value: /var/hyperledger/orderer/store/genesis.block
         - name: ORDERER_GENERAL_LOCALMSPID
           value: ${ORDERER_MSP}
         - name: ORDERER_GENERAL_LOCALMSPDIR
-          value: /var/hyperledger/orderer/config/msp
+          value: /var/hyperledger/orderer/store/crypto/msp
         - name: ORDERER_GENERAL_TLS_ENABLED
           value: \"true\"
         - name: ORDERER_GENERAL_TLS_PRIVATEKEY
-          value: /var/hyperledger/orderer/config/tls/server.key
+          value: /var/hyperledger/orderer/store/crypto/tls/server.key
         - name: ORDERER_GENERAL_TLS_CERTIFICATE
-          value: /var/hyperledger/orderer/config/tls/server.crt
+          value: /var/hyperledger/orderer/store/crypto/tls/server.crt
         - name: ORDERER_GENERAL_TLS_ROOTCAS
-          value: /var/hyperledger/orderer/config/tls/ca.crt
+          value: /var/hyperledger/orderer/store/crypto/tls/ca.crt
         - name: ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE
-          value: /var/hyperledger/orderer/config/tls/server.crt
+          value: /var/hyperledger/orderer/store/crypto/tls/server.crt
         - name: ORDERER_GENERAL_CLUSTER_CLIENTPRIVATEKEY
-          value: /var/hyperledger/orderer/config/tls/server.key
+          value: /var/hyperledger/orderer/store/crypto/tls/server.key
         - name: ORDERER_GENERAL_CLUSTER_ROOTCAS
-          value: /var/hyperledger/orderer/config/tls/server.crt
+          value: /var/hyperledger/orderer/store/crypto/tls/server.crt
         - name: GODEBUG
           value: netdns=go
         volumeMounts:
-        # persistent volume matches FileLedger.Location in orderer.yaml or the above env
-        - mountPath: /var/hyperledger/production/orderer
+        - mountPath: /var/hyperledger/orderer/store
           name: data
-        - mountPath: /var/hyperledger/orderer/config
-          name: config
-        - mountPath: /var/hyperledger/orderer/artifacts
-          name: artifacts
         workingDir: /opt/gopath/src/github.com/hyperledger/fabric/orderer
-      volumes:
-      - name: artifacts
-        persistentVolumeClaim:
-          claimName: artifacts-orderer
   volumeClaimTemplates:
   - metadata:
       name: data
@@ -352,16 +267,7 @@ spec:
       storageClassName: \"orderer-data-class\"
       resources:
         requests:
-          storage: 500Mi
-  - metadata:
-      name: config
-    spec:
-      accessModes: 
-      - ReadWriteOnce
-      storageClassName: \"orderer-data-class\"
-      resources:
-        requests:
-          storage: 100Mi"
+          storage: 500Mi"
 }
 
 function printPeerYaml {
@@ -440,7 +346,7 @@ spec:
         - name: CORE_PEER_LOCALMSPID
           value: ${ORG_MSP}
         - name: CORE_PEER_MSPCONFIGPATH
-          value: /etc/hyperledger/peer/config/msp
+          value: /etc/hyperledger/peer/store/crypto/msp
         - name: CORE_PEER_LISTENADDRESS
           value: 0.0.0.0:7051
         - name: CORE_PEER_CHAINCODELISTENADDRESS
@@ -460,13 +366,13 @@ spec:
         - name: CORE_PEER_PROFILE_ENABLED
           value: \"true\"
         - name: CORE_PEER_TLS_CERT_FILE
-          value: /etc/hyperledger/peer/config/tls/server.crt
+          value: /etc/hyperledger/peer/store/crypto/tls/server.crt
         - name: CORE_PEER_TLS_KEY_FILE
-          value: /etc/hyperledger/peer/config/tls/server.key
+          value: /etc/hyperledger/peer/store/crypto/tls/server.key
         - name: CORE_PEER_TLS_ROOTCERT_FILE
-          value: /etc/hyperledger/peer/config/tls/ca.crt
+          value: /etc/hyperledger/peer/store/crypto/tls/ca.crt
         - name: CORE_PEER_FILESYSTEMPATH
-          value: /var/hyperledger/production
+          value: /etc/hyperledger/peer/store/data
         - name: GODEBUG
           value: netdns=go
         - name: CORE_PEER_GOSSIP_BOOTSTRAP
@@ -497,10 +403,8 @@ spec:
         volumeMounts:
         - mountPath: /host/var/run
           name: docker-sock
-        - mountPath: /var/hyperledger/production
+        - mountPath: /etc/hyperledger/peer/store
           name: data
-        - mountPath: /etc/hyperledger/peer/config
-          name: config
       volumes:
       - name: docker-sock
         hostPath:
@@ -515,16 +419,7 @@ spec:
       storageClassName: \"peer-data-class\"
       resources:
         requests:
-          storage: 500Mi
-  - metadata:
-      name: config
-    spec:
-      accessModes: 
-      - ReadWriteOnce
-      storageClassName: \"peer-data-class\"
-      resources:
-        requests:
-          storage: 100Mi"
+          storage: 500Mi"
 }
 
 function main {

@@ -3,7 +3,6 @@ kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
   name: cli-data-class
-# use localhost data folder
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
 
@@ -11,107 +10,35 @@ volumeBindingMode: WaitForFirstConsumer
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: artifacts-cli
+  name: data-cli-pv
   labels:
-    app: artifacts-cli
+    app: data-cli
     org: netop1
 spec:
   capacity:
     storage: 100Mi
   volumeMode: Filesystem
   accessModes:
-  - ReadOnlyMany
+  - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
   storageClassName: cli-data-class
   hostPath:
-    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/artifacts
+    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/cli
     type: Directory
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: artifacts-cli
+  name: data-cli-pvc
   namespace: netop1
 spec:
   storageClassName: cli-data-class
   accessModes:
-    - ReadOnlyMany
+    - ReadWriteOnce
   resources:
     requests:
       storage: 100Mi
   selector:
     matchLabels:
-      app: artifacts-cli
-      org: netop1
----
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: crypto-cli
-  labels:
-    app: crypto-cli
-    org: netop1
-spec:
-  capacity:
-    storage: 100Mi
-  volumeMode: Filesystem
-  accessModes:
-  - ReadOnlyMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: cli-data-class
-  hostPath:
-    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/crypto/cli
-    type: Directory
----
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: crypto-cli
-  namespace: netop1
-spec:
-  storageClassName: cli-data-class
-  accessModes:
-    - ReadOnlyMany
-  resources:
-    requests:
-      storage: 100Mi
-  selector:
-    matchLabels:
-      app: crypto-cli
-      org: netop1
----
-kind: PersistentVolume
-apiVersion: v1
-metadata:
-  name: chaincode-cli
-  labels:
-    app: chaincode-cli
-    org: netop1
-spec:
-  capacity:
-    storage: 100Mi
-  volumeMode: Filesystem
-  accessModes:
-  - ReadOnlyMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: cli-data-class
-  hostPath:
-    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/chaincode
-    type: Directory
----
-kind: PersistentVolumeClaim
-apiVersion: v1
-metadata:
-  name: chaincode-cli
-  namespace: netop1
-spec:
-  storageClassName: cli-data-class
-  accessModes:
-    - ReadOnlyMany
-  resources:
-    requests:
-      storage: 100Mi
-  selector:
-    matchLabels:
-      app: chaincode-cli
+      app: data-cli
       org: netop1

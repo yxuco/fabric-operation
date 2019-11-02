@@ -2,5 +2,6 @@
 aws/config/*
 **/*.sh-e
 **/canet/ca-client/*
-**/data/orderer*/*
-**/data/peer*/*
+**/orderer*/data/*
+**/peer*/data/*
+**/crypto/**

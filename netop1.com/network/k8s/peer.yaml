@@ -61,7 +61,7 @@ spec:
         - name: CORE_PEER_LOCALMSPID
           value: netop1MSP
         - name: CORE_PEER_MSPCONFIGPATH
-          value: /etc/hyperledger/peer/config/msp
+          value: /etc/hyperledger/peer/store/crypto/msp
         - name: CORE_PEER_LISTENADDRESS
           value: 0.0.0.0:7051
         - name: CORE_PEER_CHAINCODELISTENADDRESS
@@ -81,13 +81,13 @@ spec:
         - name: CORE_PEER_PROFILE_ENABLED
           value: "true"
         - name: CORE_PEER_TLS_CERT_FILE
-          value: /etc/hyperledger/peer/config/tls/server.crt
+          value: /etc/hyperledger/peer/store/crypto/tls/server.crt
         - name: CORE_PEER_TLS_KEY_FILE
-          value: /etc/hyperledger/peer/config/tls/server.key
+          value: /etc/hyperledger/peer/store/crypto/tls/server.key
         - name: CORE_PEER_TLS_ROOTCERT_FILE
-          value: /etc/hyperledger/peer/config/tls/ca.crt
+          value: /etc/hyperledger/peer/store/crypto/tls/ca.crt
         - name: CORE_PEER_FILESYSTEMPATH
-          value: /var/hyperledger/production
+          value: /etc/hyperledger/peer/store/data
         - name: GODEBUG
           value: netdns=go
         - name: CORE_PEER_GOSSIP_BOOTSTRAP
@@ -118,10 +118,8 @@ spec:
         volumeMounts:
         - mountPath: /host/var/run
           name: docker-sock
-        - mountPath: /var/hyperledger/production
+        - mountPath: /etc/hyperledger/peer/store
           name: data
-        - mountPath: /etc/hyperledger/peer/config
-          name: config
       volumes:
       - name: docker-sock
         hostPath:
@@ -137,12 +135,3 @@ spec:
       resources:
         requests:
           storage: 500Mi
-  - metadata:
-      name: config
-    spec:
-      accessModes: 
-      - ReadWriteOnce
-      storageClassName: "peer-data-class"
-      resources:
-        requests:
-          storage: 100Mi

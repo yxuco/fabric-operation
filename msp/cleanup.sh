@@ -11,6 +11,6 @@ ENV_TYPE=${2:-"k8s"}
 source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${1:-"netop1"} ${ENV_TYPE}
 
 echo "cleanup K8s PVs"
-kubectl delete -f ${DATA_ROOT}/artifacts/k8s/tool.yaml
-kubectl delete -f ${DATA_ROOT}/artifacts/k8s/tool-pv.yaml
-kubectl delete -f ${DATA_ROOT}/artifacts/k8s/namespace.yaml
+kubectl delete -f ${DATA_ROOT}/tool/k8s/tool.yaml
+kubectl delete -f ${DATA_ROOT}/tool/k8s/tool-pv.yaml
+kubectl delete -f ${DATA_ROOT}/tool/k8s/namespace.yaml

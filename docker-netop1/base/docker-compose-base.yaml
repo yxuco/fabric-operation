@@ -14,8 +14,8 @@ services:
       service: orderer-base
     volumes:
         - ./../channel-artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
-        - ./../../netop1.com/crypto/orderers/orderer-0.netop1.com/msp:/var/hyperledger/orderer/msp
-        - ./../../netop1.com/crypto/orderers/orderer-0.netop1.com/tls/:/var/hyperledger/orderer/tls
+        - ./../../netop1.com/orderers/orderer-0/crypto/msp:/var/hyperledger/orderer/msp
+        - ./../../netop1.com/orderers/orderer-0/crypto/tls/:/var/hyperledger/orderer/tls
         - orderer-0.netop1.com:/var/hyperledger/production/orderer
     ports:
       - 7050:7050
@@ -27,8 +27,8 @@ services:
       service: orderer-base
     volumes:
         - ./../channel-artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
-        - ./../../netop1.com/crypto/orderers/orderer-1.netop1.com/msp:/var/hyperledger/orderer/msp
-        - ./../../netop1.com/crypto/orderers/orderer-1.netop1.com/tls/:/var/hyperledger/orderer/tls
+        - ./../../netop1.com/orderers/orderer-1/crypto/msp:/var/hyperledger/orderer/msp
+        - ./../../netop1.com/orderers/orderer-1/crypto/tls/:/var/hyperledger/orderer/tls
         - orderer-1.netop1.com:/var/hyperledger/production/orderer
     ports:
       - 8050:7050
@@ -40,8 +40,8 @@ services:
       service: orderer-base
     volumes:
         - ./../channel-artifacts/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
-        - ./../../netop1.com/crypto/orderers/orderer-2.netop1.com/msp:/var/hyperledger/orderer/msp
-        - ./../../netop1.com/crypto/orderers/orderer-2.netop1.com/tls/:/var/hyperledger/orderer/tls
+        - ./../../netop1.com/orderers/orderer-2/crypto/msp:/var/hyperledger/orderer/msp
+        - ./../../netop1.com/orderers/orderer-2/crypto/tls/:/var/hyperledger/orderer/tls
         - orderer-2.netop1.com:/var/hyperledger/production/orderer
     ports:
       - 9050:7050
@@ -62,8 +62,8 @@ services:
       - CORE_PEER_LOCALMSPID=Org1
     volumes:
         - /var/run/:/host/var/run/
-        - ./../../netop1.com/crypto/peers/peer-0.netop1.com/msp:/etc/hyperledger/fabric/msp
-        - ./../../netop1.com/crypto/peers/peer-0.netop1.com/tls:/etc/hyperledger/fabric/tls
+        - ./../../netop1.com/peers/peer-0/crypto/msp:/etc/hyperledger/fabric/msp
+        - ./../../netop1.com/peers/peer-0/crypto/tls:/etc/hyperledger/fabric/tls
         - peer-0.netop1.com:/var/hyperledger/production
     ports:
       - 7051:7051
@@ -84,8 +84,8 @@ services:
       - CORE_PEER_LOCALMSPID=Org1
     volumes:
         - /var/run/:/host/var/run/
-        - ./../../netop1.com/crypto/peers/peer-1.netop1.com/msp:/etc/hyperledger/fabric/msp
-        - ./../../netop1.com/crypto/peers/peer-1.netop1.com/tls:/etc/hyperledger/fabric/tls
+        - ./../../netop1.com/peers/peer-1/crypto/msp:/etc/hyperledger/fabric/msp
+        - ./../../netop1.com/peers/peer-1/crypto/tls:/etc/hyperledger/fabric/tls
         - peer-1.netop1.com:/var/hyperledger/production
 
     ports:
