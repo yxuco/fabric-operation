@@ -27,7 +27,7 @@ and `$HOME/.aws/credentials`, which looks like
 aws_access_key_id = ABCDEFGHIJ1234567890
 aws_secret_access_key = abcdefghijklmnopqrstuvwxyz1234567890ABCD
 ```
-If you need to work with a role for a different AWS account, you can add a `profile` definition to the `config` file, similar to the `prod` profile in the above sample.  To use the profile `prod` as the default, you can set the environment variable, e.g.,
+If you need to work with a role for a different AWS account, you can add a `profile` definition to the `config` file, similar to the `prod` profile in the above sample (Your AWS administrator can provide you the `role_arn`).  To use the profile `prod` as the default, you can set the environment variable, e.g.,
 ```
 export AWS_PROFILE=prod
 ```
@@ -76,6 +76,16 @@ kube-system   efs-csi-node-8c94c              3/3     Running             0     
 kube-system   efs-csi-node-cg224              3/3     Running             0          39s
 ```
 You can now follow the steps [here](../README.md) to build and start a Hyperledger Fabric network.
+
+## Clean up all AWS artifacts
+You can clean up every thing created in AWS when they are no longer used, i.e.,
+```
+cd ./aws
+./cleanup-all.sh
+```
+This will clean up the EKS cluster and EFS and/or S3 compoents created in the previous steps.  Make sure that you supply the same parameters to the `cleanup-all.sh` as that of the previous call to the `create-all.sh` if they are different from the default values.  The `AWS_PROFILE` env should also be set the same as that when `create-all.sh` was called previously.
+
+It may take a while for AWS actually cleans up everything.  If AWS prints out errors, you can re-run this script to make sure that you are not charged by Amazon for processes haning around in AWS.
 
 ## TIP
 The containers created by the scripts will use the name of the sample operating company, `netop1`, as the Kubernetes namespace.  To save you from repeatedly typing the namespace in `kubectl` commands, you can set the namespace `netop1` as the default by using the following commands:

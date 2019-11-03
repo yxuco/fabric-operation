@@ -70,7 +70,9 @@ You may also try to verify if the scripts would work on [Minikube](https://kuber
 After the smoke test succeeds, you should see a test result of `90` printed out on the screen. If you used `docker-compose` for this excersize, you can look at the blockchain state via the `CouchDB` futon UI at `http://localhost:7056/_utils`, which we did not expose when Kubernetes is used.
 
 ## TODO
+Stay tuned for more updates on the following items:
 * Add new orderer org and orderer nodes;
 * Add new peer org and peer nodes;
 * Support Microsoft AKS
 * Support Google GKE
+* Deploy new chaincode
