@@ -55,7 +55,7 @@ export EKS_STACK=${ENV_NAME}-eks-stack
 export EFS_STACK=${ENV_NAME}-efs-client
 export S3_BUCKET=${ENV_NAME}-s3-share
 export EFS_VOLUME=vol-${ENV_NAME}
-export BASTION=ec2-54-218-185-186.us-west-2.compute.amazonaws.com
+export BASTION=
 
 export SCRIPT_HOME=$(getScriptDir)
 export KUBECONFIG=${SCRIPT_HOME}/config/config-${ENV_NAME}.yaml

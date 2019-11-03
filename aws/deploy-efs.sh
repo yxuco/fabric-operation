@@ -29,5 +29,5 @@ sed -i -e "s/^export EFS_STACK=.*/export EFS_STACK=${EFS_STACK}/" ./setup/env.sh
 sed -i -e "s|^export MOUNT_POINT=.*|export MOUNT_POINT=${mountpoint}|" ./setup/env.sh
 
 # update fabric config env
-sed -i -e "s|^AWS_MOUNT_POINT=.*|AWS_MOUNT_POINT=${mountpoint}|" ../config/setup.sh
-sed -i -e "s|^AWS_FSID=.*|AWS_FSID=${filesysid}|" ../config/setup.sh
+sed -i -e "s|^export AWS_MOUNT_POINT=.*|export AWS_MOUNT_POINT=${mountpoint}|" ./setup/env.sh
+sed -i -e "s|^export AWS_FSID=.*|export AWS_FSID=${filesysid}|" ./setup/env.sh

@@ -14,4 +14,8 @@ export SSH_PRIVKEY=fab-keypair.pem
 
 # user role if creating network in an assumed role
 export AWS_PROFILE=prod
-export BASTION=ec2-54-218-185-186.us-west-2.compute.amazonaws.com
+export BASTION=
+
+# these 2 variables should be copied to fabric setup script: ~fabric-operation/config/setup.sh
+export AWS_MOUNT_POINT=opt/share
+export AWS_FSID=fs-aec3d805
