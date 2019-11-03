@@ -67,7 +67,7 @@ If you are not using a Mac, you can run these scripts using `docker-compose` or 
 * `./start-ca.sh netop1 aws` when executing the commands on the `bastion host` of Amazon EC2 intance, which is described in the folder [aws](./aws).
 You may also try to verify if the scripts would work on [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/).
 
-After the smoke test succeeds, you should see a test result of `90` printed out on the screen. If you used `docker-compose` for this excersize, you can look at the blockchain state via the `CouchDB` futon UI at `http://localhost:7056/_utils`, which we did not expose when Kubernetes is used.
+After the smoke test succeeds, you should see a test result of `90` printed out on the screen. If you used `docker-compose` for this excersize, you can look at the blockchain state via the `CouchDB` futon UI at `http://localhost:7056/_utils`, which is exposed for `docker-compose` only because it is not recommended to expose `CouchDB` in production configuration using Kubernetes.
 
 ## TODO
 Stay tuned for more updates on the following items:
