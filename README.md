@@ -29,7 +29,7 @@ These scripts take 2 additional parameters, e.g.,
 ```
 ./start-ca.sh config_file env_type
 ```
-where `config_file` is file in the [config](.config) folder with a suffix `.env` that contains the fabric network specification; `env_type` can be `k8s`, `docker`, or `aws`. 
+where `config_file` is file in the [config](./config) folder with a suffix `.env` that contains the fabric network specification; `env_type` can be `k8s`, `docker`, or `aws`. 
 * `k8s` uses the local `docker-desktop` kubernetes on Mac, 
 * `docker` uses `docker-compose`, and 
 * `aws` uses AWS EKS when executed on a `bastion` host of an EC2 instance.

@@ -1,9 +1,9 @@
 # Setup Amazon EKS cluster
 
-The scripts of this section will launch an EKS cluster, setup a EFS file system for persistence, and configure a `bastion` host that you can login and start a Hyperledger Fabric network.  The configuration file [env.sh](.env.sh) specifies the number and type of EC2 instances by the EKS cluster, e.g., 3 `t2.medium` instances are used by the default configuration.
+The scripts of this section will launch an EKS cluster, setup a EFS file system for persistence, and configure a `bastion` host that you can login and start a Hyperledger Fabric network.  The configuration file [env.sh](./env.sh) specifies the number and type of EC2 instances by the EKS cluster, e.g., 3 `t2.medium` instances are used by the default configuration.
 
 ## Configure AWS account connection
-Install AWS [CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) if you have not already done so.  Mac users can use the [bundled installer](https://docs.aws.amazon.com/cli/latest/userguide/install-macos.html).
+Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html) if you have not already done so.  Mac users can use the [bundled installer](https://docs.aws.amazon.com/cli/latest/userguide/install-macos.html).
 
 Create AWS user `access key` if you do not already have one or do not remember the key.  In a web browser, login to [IAM console](https://console.aws.amazon.com/iam/home). On the user page, `Users > your-name@your-company.com`, choose `Security credentials` tab, and click `Create access key`. Take a note of the key-id and access-key before closing the window, and use the following AWS CLI command to configure your AWS connection:
 ```
@@ -27,7 +27,7 @@ and `$HOME/.aws/credentials`, which looks like
 aws_access_key_id = ABCDEFGHIJ1234567890
 aws_secret_access_key = abcdefghijklmnopqrstuvwxyz1234567890ABCD
 ```
-If you need to work with a role for a different AWS account, you can add a `profile` definition to the `config` file, similar to the `prod` profile in the above sample.  To use the profile `prod` as the default, you can set the environment varialbe, e.g.,
+If you need to work with a role for a different AWS account, you can add a `profile` definition to the `config` file, similar to the `prod` profile in the above sample.  To use the profile `prod` as the default, you can set the environment variable, e.g.,
 ```
 export AWS_PROFILE=prod
 ```
@@ -65,7 +65,7 @@ The [~/env.sh](./setup/env.sh) contains 2 variables that specify the EFS file sy
 export AWS_MOUNT_POINT=opt/share
 export AWS_FSID=fs-aec3d805
 ```
-The values in this file will be different everytime you restart the system, and they must be used to replace the corresponding values in the downloaded `fabric-operation` config file, i.e., [`~/fabric-operation/config/setup.sh](../config/setup.sh).
+The values in this file will be different everytime you restart the system, and they must be used to replace the corresponding values in the downloaded `fabric-operation` config file, i.e., [`~/fabric-operation/config/setup.sh`](../config/setup.sh).
 
 Verify that the EFS CSI driver is installed successfully, i.e., the following pods are running:
 ```
