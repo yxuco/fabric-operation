@@ -90,11 +90,11 @@ It may take a while for AWS actually cleans up everything.  If AWS prints out er
 ## TIPs
 
 ### Use kubectl from localhost
-If your local workstation has `kubctl` installed, and you want to execute `kubectl` commands directly from the localhost, instead of go through the `bastion` host, you can set the env,
+If your local workstation has `kubctl` installed, and you want to execute `kubectl` commands directly from the localhost, instead of going through the `bastion` host, you can set the env,
 ```
 export KUBECONFIG=/path/to/fabric-operation/aws/config/config-fab.yaml
 ```
-where the `/path/to` is the location of this project on your localhost, and `config-fab.yaml` is named after the `ENV_NAME` configured in [`env.sh`](./env.sh).  The file is created for you when you execute the `create-all.sh`, and it is valid only when the EKS cluster is running.
+where the `/path/to` is the location of this project on your localhost, and `config-fab.yaml` is named after the `ENV_NAME` configured in [`env.sh`](./env.sh).  The file is created for you when you execute the `create-all.sh`, and it is valid only while the EKS cluster is running.
 
 You can then use `kubectl` commands against the Amazon EKS cluster from your localhost directly, e.g.,
 ```
