@@ -45,7 +45,7 @@ would create a EKS cluster with name prefix of `fab`, in the AWS region of `us-w
 
 Wait 20-30 minutes for the cluster nodes to startup.  When the cluster is up, it will print out a line, such as:
 ```
-ssh -i ./config/fab-keypair.pem ec2-user@ec2-34-213-140-181.us-west-2.compute.amazonaws.com
+ssh -i ./fabric-operation/aws/config/fab-keypair.pem ec2-user@ec2-34-213-140-181.us-west-2.compute.amazonaws.com
 ```
 You can use this command to login to the `bastion` EC2 instance and create a Hyperledger Fabric network in the EKS cluster.  You may need to set the env variable `AWS_PROFILE` if you need to work as a different AWS role.
 
@@ -87,7 +87,20 @@ This will clean up the EKS cluster and EFS and/or S3 compoents created in the pr
 
 It may take a while for AWS actually cleans up everything.  If AWS prints out errors, you can re-run this script to make sure that you are not charged by Amazon for processes haning around in AWS.
 
-## TIP
+## TIPs
+
+### Use kubectl from localhost
+If your local workstation has `kubctl` installed, and you want to execute `kubectl` commands directly from the localhost, instead of go through the `bastion` host, you can set the env,
+```
+export KUBECONFIG=/path/to/fabric-operation/aws/config/config-fab.yaml
+```
+where the `/path/to` is the location of this project on your localhost, and `config-fab.yaml` is named after the `ENV_NAME` configured in [`env.sh`](./env.sh).  The file is created for you when you execute the `create-all.sh`, and it is valid only when the EKS cluster is running.
+
+You can then use `kubectl` commands against the Amazon EKS cluster from your localhost directly, e.g.,
+```
+kubectl get pod,svc --all-namespaces
+```
+### Set default Kubernetes namespace
 The containers created by the scripts will use the name of the sample operating company, `netop1`, as the Kubernetes namespace.  To save you from repeatedly typing the namespace in `kubectl` commands, you can set the namespace `netop1` as the default by using the following commands:
 ```
 kubectl config view
