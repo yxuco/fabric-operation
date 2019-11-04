@@ -85,7 +85,7 @@ cd ./aws
 ```
 This will clean up the EKS cluster and EFS and/or S3 compoents created in the previous steps.  Make sure that you supply the same parameters to the `cleanup-all.sh` as that of the previous call to the `create-all.sh` if they are different from the default values.  The `AWS_PROFILE` env should also be set the same as that when `create-all.sh` was called previously.
 
-It may take a while for AWS actually cleans up everything.  If AWS prints out errors, you can re-run this script to make sure that you are not charged by Amazon for processes haning around in AWS.
+It may take a while for AWS actually cleans up everything.  If AWS prints out errors, you can re-run this script to make sure that everything is deleted so that you are not charged by Amazon for processes hanging around in AWS.
 
 ## TIPs
 
