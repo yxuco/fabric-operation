@@ -1,6 +1,6 @@
 #!/bin/bash
 # start fabric-ca server and client for a specified org,
-#   with optional target env, i.e., docker, k8s, aws, etc, to provide extra SVC_DOMAIN config
+#   with optional target env, i.e., docker, k8s, aws, az, etc, to provide extra SVC_DOMAIN config
 # usage: start-ca.sh <org_name> <env>
 # where config parameters for the org are specified in ../config/org_name.env, e.g.
 #   start-ca.sh netop1
@@ -95,6 +95,8 @@ metadata:
 function printK8sStorageClass {
   if [ "${K8S_PERSISTENCE}" == "efs" ]; then
     PROVISIONER="efs.csi.aws.com"
+  elif [ "${K8S_PERSISTENCE}" == "azf" ]; then
+    PROVISIONER="kubernetes.io/azure-file"
   else
     # default to local host
     PROVISIONER="kubernetes.io/no-provisioner"
@@ -106,8 +108,21 @@ apiVersion: storage.k8s.io/v1
 metadata:
   name: ${1}
 provisioner: ${PROVISIONER}
-volumeBindingMode: WaitForFirstConsumer
-"
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer"
+
+  if [ "${K8S_PERSISTENCE}" == "azf" ]; then
+    echo "mountOptions:
+  - dir_mode=0777
+  - file_mode=0777
+  - uid=1000
+  - gid=1000
+  - mfsymlinks
+  - nobrl
+  - cache=none
+parameters:
+  skuName: Standard_LRS"
+  fi
 }
 
 # print local k8s PV and PVC for ca server or client client
@@ -146,6 +161,11 @@ spec:
     volumeHandle: ${AWS_FSID}
     volumeAttributes:
       path: /${FABRIC_ORG}/canet/${PV_NAME}"
+  elif [ "${K8S_PERSISTENCE}" == "azf" ]; then
+    echo"  azureFile:
+    secretName: azure-secret
+    shareName: ${AZ_STORAGE_SHARE}/${FABRIC_ORG}/canet/${PV_NAME}
+    readOnly: false"
   else
     echo "  hostPath:
     path: ${ORG_DIR}/${PV_NAME}

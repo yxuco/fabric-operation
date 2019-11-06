@@ -30,9 +30,6 @@ ssh -i ${SSH_PRIVKEY} -o "StrictHostKeyChecking no" ec2-user@${bastionHost} << E
   ./setup-eks-node.sh
 EOF
 
-# echo "copy admin scripts to EFS ..."
-# scp -i ${SSH_PRIVKEY} -q -r ../admin ec2-user@${bastionHost}:/opt/share/scripts
-
 echo "setup completed in $(($(date +%s)-starttime)) seconds."
 echo "login on bastion host using the following command:"
 echo "  ssh -i ${SSH_PRIVKEY} ec2-user@${bastionHost}"

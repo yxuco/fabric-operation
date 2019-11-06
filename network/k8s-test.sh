@@ -41,6 +41,11 @@ spec:
     volumeHandle: ${AWS_FSID}
     volumeAttributes:
       path: /${FABRIC_ORG}/cli"
+  elif [ "${K8S_PERSISTENCE}" == "azf" ]; then
+    echo"  azureFile:
+    secretName: azure-secret
+    shareName: ${AZ_STORAGE_SHARE}/${FABRIC_ORG}/cli
+    readOnly: false"
   else
     echo "  hostPath:
     path: ${DATA_ROOT}/cli
@@ -71,6 +76,8 @@ spec:
 function printStorageClass {
   if [ "${K8S_PERSISTENCE}" == "efs" ]; then
     PROVISIONER="efs.csi.aws.com"
+  elif [ "${K8S_PERSISTENCE}" == "azf" ]; then
+    PROVISIONER="kubernetes.io/azure-file"
   else
     # default to local host
     PROVISIONER="kubernetes.io/no-provisioner"
@@ -82,8 +89,20 @@ apiVersion: storage.k8s.io/v1
 metadata:
   name: ${1}
 provisioner: ${PROVISIONER}
-volumeBindingMode: WaitForFirstConsumer
-"
+volumeBindingMode: WaitForFirstConsumer"
+
+  if [ "${K8S_PERSISTENCE}" == "azf" ]; then
+    echo "mountOptions:
+  - dir_mode=0777
+  - file_mode=0777
+  - uid=1000
+  - gid=1000
+  - mfsymlinks
+  - nobrl
+  - cache=none
+parameters:
+  skuName: Standard_LRS"
+  fi
 }
 
 function printCliStorageYaml {

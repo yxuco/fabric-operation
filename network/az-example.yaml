@@ -1,0 +1,185 @@
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: orderer-data-class
+provisioner: kubernetes.io/azure-file
+reclaimPolicy: Retain
+volumeBindingMode: WaitForFirstConsumer
+mountOptions:
+  - dir_mode=0777
+  - file_mode=0777
+  - uid=1000
+  - gid=1000
+  - mfsymlinks
+  - nobrl
+  - cache=none
+parameters:
+  skuName: Standard_LRS
+---
+kind: PersistentVolume
+apiVersion: v1
+# create one PV for each orderer instance
+metadata:
+  name: data-orderer-0
+  labels:
+    node: orderer-0
+    org: netop1
+spec:
+  capacity:
+    storage: 500Mi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: orderer-data-class
+  azureFile:
+    secretName: azure-secret
+    shareName: fabshare/netop1.com/orderer-0
+    readOnly: false
+---
+kind: PersistentVolume
+apiVersion: v1
+# create one PV for each orderer instance
+metadata:
+  name: data-orderer-1
+  labels:
+    node: orderer-1
+    org: netop1
+spec:
+  capacity:
+    storage: 500Mi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: orderer-data-class
+  azureFile:
+    secretName: azure-secret
+    shareName: fabshare/netop1.com/orderer-1
+    readOnly: false
+---
+kind: PersistentVolume
+apiVersion: v1
+# create one PV for each orderer instance
+metadata:
+  name: data-orderer-2
+  labels:
+    node: orderer-2
+    org: netop1
+spec:
+  capacity:
+    storage: 500Mi
+  volumeMode: Filesystem
+  accessModes:
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: orderer-data-class
+  azureFile:
+    secretName: azure-secret
+    shareName: fabshare/netop1.com/orderer-2
+    readOnly: false
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: data-orderer-0
+  namespace: netop1
+spec:
+  storageClassName: orderer-data-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+  selector:
+    matchLabels:
+      node: orderer-0
+      org: netop1
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: data-orderer-1
+  namespace: netop1
+spec:
+  storageClassName: orderer-data-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+  selector:
+    matchLabels:
+      node: orderer-1
+      org: netop1
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: data-orderer-2
+  namespace: netop1
+spec:
+  storageClassName: orderer-data-class
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+  selector:
+    matchLabels:
+      node: orderer-2
+      org: netop1
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: orderer
+  namespace: netop1
+spec:
+  selector:
+    matchLabels:
+      app: orderer
+  serviceName: orderer
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: orderer
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+      - name: orderer
+        image: hyperledger/fabric-orderer:1.4.3
+        command:
+        - "/bin/sh"
+        - "-c"
+        - while true; do echo $(date -u) >> /az-data/out.txt; sleep 5; done
+        volumeMounts:
+        - name: data
+          mountPath: /az-data
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: "orderer-data-class"
+      resources:
+        requests:
+          storage: 500Mi
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: orderer
+  namespace: netop1
+  labels:
+    app: orderer
+spec:
+  selector:
+    app: orderer
+  ports:
+  - port: 7050
+    name: server
+  # headless service for orderer StatefulSet
+  clusterIP: None

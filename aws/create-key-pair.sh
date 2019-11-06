@@ -3,6 +3,7 @@
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 source env.sh "$@"
+sed -i -e "s/^export SSH_PRIVKEY=.*/export SSH_PRIVKEY=${KEYNAME}.pem/g" ./setup/env.sh
 
 function createKeyPair {
   # check key pair if it exists
