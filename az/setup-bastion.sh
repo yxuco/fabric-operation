@@ -7,7 +7,9 @@ sudo snap install kubectl --classic
 
 # setup working files
 mkdir -p .kube
-mv config.yaml .kube/config
+if [ -f "config.yaml" ]; then
+  mv config.yaml .kube/config
+fi
 mkdir -p .azure
 echo "STORAGE_ACCT=${STORAGE_ACCT}" > .azure/store-secret
 echo "STORAGE_KEY=${STORAGE_KEY}" >> .azure/store-secret
@@ -27,10 +29,10 @@ cred=/etc/smbcredentials/${STORAGE_ACCT}.cred
 echo "username=${STORAGE_ACCT}" | sudo tee ${cred} > /dev/null
 echo "password=${STORAGE_KEY}" | sudo tee -a ${cred} > /dev/null
 sudo chmod 600 ${cred}
-check=$(grep "//${STORAGE_ACCT}.file.core.windows.net/${STORAGE_SHARE} /mnt/share" /etc/fstab)
-if [ -z "${check}" ]; then
+check=$(grep "${SMB_PATH} /${mnt_point}" /etc/fstab)
+if [ ! -z "${check}" ]; then
   echo "skip update of /etc/fstab to avoid mount conflict"
 else
-  echo "//${STORAGE_ACCT}.file.core.windows.net/${STORAGE_SHARE} /${mnt_point} cifs nofail,vers=3.0,credentials=${cred},serverino" | sudo tee -a /etc/fstab > /dev/null
+  echo "${SMB_PATH} /${mnt_point} cifs nofail,vers=3.0,credentials=${cred},serverino" | sudo tee -a /etc/fstab > /dev/null
 fi
 sudo mount -a

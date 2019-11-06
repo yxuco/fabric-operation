@@ -41,6 +41,19 @@ data:
   azurestorageaccountkey: ${key}"
 }
 
+# set k8s default namespace
+function setDefaultNamespace {
+  local curr=$(kubectl config current-context)
+  local c_namespace=$(kubectl config view -o=jsonpath="{.contexts[?(@.name=='${curr}')].context.namespace}")
+  if [ "${c_namespace}" != "${ORG}" ]; then
+    local c_user=$(kubectl config view -o=jsonpath="{.contexts[?(@.name=='${curr}')].context.user}")
+    local c_cluster=$(kubectl config view -o=jsonpath="{.contexts[?(@.name=='${curr}')].context.cluster}")
+  fi
+  echo "set default kube namespace ${ORG} for cluster ${c_cluster} and user ${c_user}"
+  kubectl config set-context ${ORG} --namespace=${ORG} --cluster=${c_cluster} --user=${c_user}
+  kubectl config use-context ${ORG}
+}
+
 function main {
   ${sumd} -p ${DATA_ROOT}/namespace/k8s
 
@@ -54,10 +67,8 @@ function main {
     printAzureSecretYaml | ${stee} ${DATA_ROOT}/namespace/k8s/azure-secret.yaml > /dev/null
     kubectl create -f ${DATA_ROOT}/namespace/k8s/azure-secret.yaml
   fi
-}
 
-# TODO: set default namespace
-#kubectl config set-context ${ns} --namespace=${ns} --cluster=${AKS_CLUSTER} --user=clusterUser_${RESOURCE_GROUP}_${AKS_CLUSTER}
-#kubectl config use-context ${ns}
+  setDefaultNamespace
+}
 
 main

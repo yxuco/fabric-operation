@@ -10,7 +10,7 @@ echo "create bastion host ${BASTION_HOST}"
 starttime=$(date +%s)
 
 # create bastion host if it does not exist already
-check=$(az vm show -n fabBastion -g fabRG --query "provisioningState" -o tsv)
+check=$(az vm show -n ${BASTION_HOST} -g ${RESOURCE_GROUP} --query "provisioningState" -o tsv)
 if [ "${check}" == "Succeeded" ]; then
   echo "bastion host ${BASTION_HOST} is already provisioned"
 else
