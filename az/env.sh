@@ -41,13 +41,13 @@ fi
 export RESOURCE_GROUP=${ENV_NAME}RG
 export STORAGE_ACCT=${ENV_NAME}store
 # storage account secret key will be updated when storage is created
-export STORAGE_KEY=+WQuW4gKHk/+d3birZ9/E9PcJ/xPIgu2ABXbfMo3el7znKV9pi3/3hVY4lekFTlqd3G0OSp6OQGlfXaOGwAhpQ==
+export STORAGE_KEY=
 export STORAGE_SHARE=${ENV_NAME}share
 export SMB_PATH=//${STORAGE_ACCT}.file.core.windows.net/${STORAGE_SHARE}
 export AKS_CLUSTER=${ENV_NAME}AKSCluster
 export BASTION_HOST=${ENV_NAME}Bastion
 # public IP will be updated when bastion host is created
-export BASTION_IP=51.141.165.30
+export BASTION_IP=
 export BASTION_USER=${ENV_NAME}
 
 export SCRIPT_HOME=$(getScriptDir)
