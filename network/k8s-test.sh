@@ -42,7 +42,7 @@ spec:
     volumeAttributes:
       path: /${FABRIC_ORG}/cli"
   elif [ "${K8S_PERSISTENCE}" == "azf" ]; then
-    echo"  azureFile:
+    echo "  azureFile:
     secretName: azure-secret
     shareName: ${AZ_STORAGE_SHARE}/${FABRIC_ORG}/cli
     readOnly: false

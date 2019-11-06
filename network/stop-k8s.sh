@@ -47,12 +47,12 @@ if [ "${3}" == "true" ]; then
   echo "clean up orderer ledger files ..."
   getOrderers
   for ord in "${ORDERERS[@]}"; do
-    rm -R ${DATA_ROOT}/orderers/${ord}/data/*
+    ${surm} -R ${DATA_ROOT}/orderers/${ord}/data/*
   done
 
   echo "clean up peer ledger files ..."
   getPeers
   for p in "${PEERS[@]}"; do
-    rm -R ${DATA_ROOT}/peers/${p}/data/*
+    ${surm} -R ${DATA_ROOT}/peers/${p}/data/*
   done
 fi

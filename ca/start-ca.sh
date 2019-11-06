@@ -144,7 +144,7 @@ spec:
     volumeAttributes:
       path: /${FABRIC_ORG}/canet/${PV_NAME}"
   elif [ "${K8S_PERSISTENCE}" == "azf" ]; then
-    echo"  azureFile:
+    echo "  azureFile:
     secretName: azure-secret
     shareName: ${AZ_STORAGE_SHARE}/${FABRIC_ORG}/canet/${PV_NAME}
     readOnly: false

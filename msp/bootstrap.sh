@@ -1,6 +1,6 @@
 #!/bin/bash
 # create MSP configuration, channel profile, and orderer genesis block
-#   for target environment, i.e., docker, k8s, aws, etc
+#   for target environment, i.e., docker, k8s, aws, az, etc
 # usage: bootstrap.sh <org_name> <env>
 # it uses config parameters of the specified org as defined in ../config/org.env, e.g.
 #   bootstrap.sh netop1
@@ -360,7 +360,7 @@ spec:
     volumeAttributes:
       path: /${FABRIC_ORG}/tool"
   elif [ "${K8S_PERSISTENCE}" == "azf" ]; then
-    echo"  azureFile:
+    echo "  azureFile:
     secretName: azure-secret
     shareName: ${AZ_STORAGE_SHARE}/${FABRIC_ORG}/tool
     readOnly: false
@@ -480,7 +480,7 @@ function runDocker {
 function main {
   # print out configtx.yaml
   echo "create ${DATA_ROOT}/tool/configtx.yaml"
-  printConfigTx > ${DATA_ROOT}/tool/configtx.yaml
+  printConfigTx | ${stee} ${DATA_ROOT}/tool/configtx.yaml > /dev/null
 
   if [ "${ENV_TYPE}" == "docker" ]; then
     runDocker
