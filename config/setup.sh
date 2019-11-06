@@ -29,6 +29,11 @@ else
   echo "setup Kubernetes with service domain ${SVC_DOMAIN}, and DNS ${DNS_IP}"
 fi
 
+sumd="sudo mkdir"
+sucp="sudo cp"
+surm="sudo rm"
+sumv="sudo mv"
+stee="sudo tee"
 if [ "${target}" == "aws" ]; then
   DATA_ROOT="/${AWS_MOUNT_POINT}/${FABRIC_ORG}"
   # Kubernetes persistence type: local | efs | azf
@@ -39,6 +44,11 @@ elif [ "${target}" == "az" ]; then
 else
   DATA_ROOT=$(dirname "${curr_dir}")/${FABRIC_ORG}
   K8S_PERSISTENCE="local"
+  sumd="mkdir"
+  sucp="cp"
+  surm="rm"
+  sumv="mv"
+  stee="tee"
 fi
 echo "set persistent data root ${DATA_ROOT}"
-mkdir -p ${DATA_ROOT}
+${sumd} -p ${DATA_ROOT}

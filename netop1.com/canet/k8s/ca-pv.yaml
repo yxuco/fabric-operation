@@ -5,7 +5,6 @@ metadata:
   name: ca-data-class
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
-
 ---
 kind: PersistentVolume
 apiVersion: v1

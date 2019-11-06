@@ -51,7 +51,7 @@ function printServerService {
 # printClientService - print docker yaml for ca client
 function printClientService {
   CLIENT_NAME="caclient.${FABRIC_ORG}"
-  mkdir -p "${ORG_DIR}/ca-client"
+  ${sumd} -p "${ORG_DIR}/ca-client"
 
   echo "
   ${CLIENT_NAME}:
@@ -112,15 +112,7 @@ reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer"
 
   if [ "${K8S_PERSISTENCE}" == "azf" ]; then
-    echo "mountOptions:
-  - dir_mode=0777
-  - file_mode=0777
-  - uid=1000
-  - gid=1000
-  - mfsymlinks
-  - nobrl
-  - cache=none
-parameters:
+    echo "parameters:
   skuName: Standard_LRS"
   fi
 }
@@ -165,7 +157,14 @@ spec:
     echo"  azureFile:
     secretName: azure-secret
     shareName: ${AZ_STORAGE_SHARE}/${FABRIC_ORG}/canet/${PV_NAME}
-    readOnly: false"
+    readOnly: false
+  mountOptions:
+  - dir_mode=0777
+  - file_mode=0777
+  - uid=10000
+  - gid=10000
+  - mfsymlinks
+  - nobrl"
   else
     echo "  hostPath:
     path: ${ORG_DIR}/${PV_NAME}
@@ -192,7 +191,7 @@ spec:
 }
 
 function printK8sClient {
-  mkdir -p "${ORG_DIR}/ca-client"
+  ${sumd} -p "${ORG_DIR}/ca-client"
 
   echo "---
 apiVersion: apps/v1
@@ -332,15 +331,16 @@ function printK8sCAPods {
 function setServerConfig {
   CA_NAME=${1}
   SERVER_DIR="${ORG_DIR}/${CA_NAME}-server"
-  mkdir -p ${SERVER_DIR}
-  cp ${SCRIPT_DIR}/fabric-ca-server-config.yaml ${SERVER_DIR}/fabric-ca-server-config.yaml
-  sed -i -e "s/%%admin%%/${ADMIN}/" ${SERVER_DIR}/fabric-ca-server-config.yaml
-  sed -i -e "s/%%adminpw%%/${PASSWD}/" ${SERVER_DIR}/fabric-ca-server-config.yaml
-  sed -i -e "s/%%country%%/${CSR_COUNTRY}/" ${SERVER_DIR}/fabric-ca-server-config.yaml
-  sed -i -e "s/%%state%%/${CSR_STATE}/" ${SERVER_DIR}/fabric-ca-server-config.yaml
-  sed -i -e "s/%%city%%/${CSR_CITY}/" ${SERVER_DIR}/fabric-ca-server-config.yaml
-  sed -i -e "s/%%org%%/${FABRIC_ORG}/" ${SERVER_DIR}/fabric-ca-server-config.yaml
-  rm ${SERVER_DIR}/fabric-ca-server-config.yaml-e
+  ${sumd} -p ${SERVER_DIR}
+  cp ${SCRIPT_DIR}/fabric-ca-server-config.yaml ${SCRIPT_DIR}/fabric-ca-server-config.tmp
+  sed -i -e "s/%%admin%%/${ADMIN}/" ${SCRIPT_DIR}/fabric-ca-server-config.tmp
+  sed -i -e "s/%%adminpw%%/${PASSWD}/" ${SCRIPT_DIR}/fabric-ca-server-config.tmp
+  sed -i -e "s/%%country%%/${CSR_COUNTRY}/" ${SCRIPT_DIR}/fabric-ca-server-config.tmp
+  sed -i -e "s/%%state%%/${CSR_STATE}/" ${SCRIPT_DIR}/fabric-ca-server-config.tmp
+  sed -i -e "s/%%city%%/${CSR_CITY}/" ${SCRIPT_DIR}/fabric-ca-server-config.tmp
+  sed -i -e "s/%%org%%/${FABRIC_ORG}/" ${SCRIPT_DIR}/fabric-ca-server-config.tmp
+  ${sumv} ${SCRIPT_DIR}/fabric-ca-server-config.tmp ${SERVER_DIR}/fabric-ca-server-config.yaml
+  rm ${SCRIPT_DIR}/fabric-ca-server-config.tmp*
 }
 
 function startDocker {
@@ -354,10 +354,10 @@ function startDocker {
 
 function startK8s {
   # create k8s yaml for CA server and client
-  mkdir -p "${ORG_DIR}/k8s"
-  printK8sNamespace > ${ORG_DIR}/k8s/namespace.yaml
-  printK8sStorageYaml > ${ORG_DIR}/k8s/ca-pv.yaml
-  printK8sCAPods > ${ORG_DIR}/k8s/ca.yaml
+  ${sumd} -p "${ORG_DIR}/k8s"
+  printK8sNamespace | ${stee} ${ORG_DIR}/k8s/namespace.yaml > /dev/null
+  printK8sStorageYaml | ${stee} ${ORG_DIR}/k8s/ca-pv.yaml > /dev/null
+  printK8sCAPods | ${stee} ${ORG_DIR}/k8s/ca.yaml > /dev/null
 
   # start CA server and client
   kubectl create -f ${ORG_DIR}/k8s/namespace.yaml

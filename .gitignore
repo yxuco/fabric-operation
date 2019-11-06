@@ -1,5 +1,6 @@
 **/.DS_Store
 aws/config/*
+az/config/*
 **/*.sh-e
 **/canet/ca-client/*
 **/orderer*/data/*

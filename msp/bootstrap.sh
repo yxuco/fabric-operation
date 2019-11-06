@@ -332,15 +332,7 @@ reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer"
 
   if [ "${K8S_PERSISTENCE}" == "azf" ]; then
-    echo "mountOptions:
-  - dir_mode=0777
-  - file_mode=0777
-  - uid=1000
-  - gid=1000
-  - mfsymlinks
-  - nobrl
-  - cache=none
-parameters:
+    echo "parameters:
   skuName: Standard_LRS"
   fi
 }
@@ -381,7 +373,14 @@ spec:
     echo"  azureFile:
     secretName: azure-secret
     shareName: ${AZ_STORAGE_SHARE}/${FABRIC_ORG}/tool
-    readOnly: false"
+    readOnly: false
+  mountOptions:
+  - dir_mode=0777
+  - file_mode=0777
+  - uid=10000
+  - gid=10000
+  - mfsymlinks
+  - nobrl"
   else
     echo "  hostPath:
     path: ${DATA_ROOT}/tool
@@ -466,10 +465,10 @@ spec:
 function runK8s {
   echo "use kubernetes"
   # print k8s yaml for tool job
-  mkdir -p "${DATA_ROOT}/tool/k8s"
-  printK8sNamespace > ${DATA_ROOT}/tool/k8s/namespace.yaml
-  printK8sStorageYaml > ${DATA_ROOT}/tool/k8s/tool-pv.yaml
-  printK8sJob > ${DATA_ROOT}/tool/k8s/tool.yaml
+  ${sumd} -p "${DATA_ROOT}/tool/k8s"
+  printK8sNamespace | ${stee} ${DATA_ROOT}/tool/k8s/namespace.yaml > /dev/null
+  printK8sStorageYaml | ${stee} ${DATA_ROOT}/tool/k8s/tool-pv.yaml > /dev/null
+  printK8sJob | ${stee} ${DATA_ROOT}/tool/k8s/tool.yaml > /dev/null
 
   # run tool job
   kubectl create -f ${DATA_ROOT}/tool/k8s/namespace.yaml

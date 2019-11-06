@@ -45,7 +45,14 @@ spec:
     echo"  azureFile:
     secretName: azure-secret
     shareName: ${AZ_STORAGE_SHARE}/${FABRIC_ORG}/cli
-    readOnly: false"
+    readOnly: false
+  mountOptions:
+  - dir_mode=0777
+  - file_mode=0777
+  - uid=10000
+  - gid=10000
+  - mfsymlinks
+  - nobrl"
   else
     echo "  hostPath:
     path: ${DATA_ROOT}/cli
@@ -92,15 +99,7 @@ provisioner: ${PROVISIONER}
 volumeBindingMode: WaitForFirstConsumer"
 
   if [ "${K8S_PERSISTENCE}" == "azf" ]; then
-    echo "mountOptions:
-  - dir_mode=0777
-  - file_mode=0777
-  - uid=1000
-  - gid=1000
-  - mfsymlinks
-  - nobrl
-  - cache=none
-parameters:
+    echo "parameters:
   skuName: Standard_LRS"
   fi
 }

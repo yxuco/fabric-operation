@@ -15,13 +15,13 @@ ORG=${FABRIC_ORG%%.*}
 ORG_DIR=${DATA_ROOT}/canet
 
 function genCrypto {
-  mkdir -p ${ORG_DIR}/ca-client/caadmin
-  mkdir -p ${ORG_DIR}/ca-client/tlsadmin
+  ${sumd} -p ${ORG_DIR}/ca-client/caadmin
+  ${sumd} -p ${ORG_DIR}/ca-client/tlsadmin
 
-  cp $(dirname "${SCRIPT_DIR}")/config/${ORG_ENV}.env ${ORG_DIR}/ca-client/org.env
-  cp ${SCRIPT_DIR}/gen-crypto.sh ${ORG_DIR}/ca-client
-  cp ${ORG_DIR}/ca-server/tls-cert.pem ${ORG_DIR}/ca-client/caadmin
-  cp ${ORG_DIR}/tlsca-server/tls-cert.pem ${ORG_DIR}/ca-client/tlsadmin
+  ${sucp} $(dirname "${SCRIPT_DIR}")/config/${ORG_ENV}.env ${ORG_DIR}/ca-client/org.env
+  ${sucp} ${SCRIPT_DIR}/gen-crypto.sh ${ORG_DIR}/ca-client
+  ${sucp} ${ORG_DIR}/ca-server/tls-cert.pem ${ORG_DIR}/ca-client/caadmin
+  ${sucp} ${ORG_DIR}/tlsca-server/tls-cert.pem ${ORG_DIR}/ca-client/tlsadmin
 
   # generate crypto data
   if [ "${ENV_TYPE}" == "docker" ]; then
@@ -57,15 +57,15 @@ function copyCACrypto {
   echo "copy crypto for ${1}"
   CA_NAME=${1}
   TARGET=${DATA_ROOT}/crypto/${CA_NAME}
-  mkdir -p ${TARGET}/tls
+  ${sumd} -p ${TARGET}/tls
 
   SOURCE=${ORG_DIR}/${CA_NAME}-server
   KEYSTORE=${SOURCE}/msp/keystore
   CERTFILE=${SOURCE}/ca-cert.pem
-  cp ${CERTFILE} ${TARGET}/${CA_NAME}.${FABRIC_ORG}-cert.pem
-  cp ${SOURCE}/tls-cert.pem ${TARGET}/tls/server.crt
-  mkdir -p ${DATA_ROOT}/crypto/msp/${CA_NAME}certs
-  cp ${CERTFILE} ${DATA_ROOT}/crypto/msp/${CA_NAME}certs/${CA_NAME}.${FABRIC_ORG}-cert.pem
+  ${sucp} ${CERTFILE} ${TARGET}/${CA_NAME}.${FABRIC_ORG}-cert.pem
+  ${sucp} ${SOURCE}/tls-cert.pem ${TARGET}/tls/server.crt
+  ${sumd} -p ${DATA_ROOT}/crypto/msp/${CA_NAME}certs
+  ${sucp} ${CERTFILE} ${DATA_ROOT}/crypto/msp/${CA_NAME}certs/${CA_NAME}.${FABRIC_ORG}-cert.pem
 
   # checksum command for Linux
   CHECKSUM=sha256sum
@@ -88,10 +88,10 @@ function copyCACrypto {
     sum=$(openssl pkey -in ${f} -pubout -outform pem | ${CHECKSUM})
     echo "checksum from private key: ${sum}"
     if [ "${sum}" == "${pubsum}" ]; then
-      cp ${f} ${TARGET}/${CA_NAME}.${FABRIC_ORG}-key.pem
+      ${sucp} ${f} ${TARGET}/${CA_NAME}.${FABRIC_ORG}-key.pem
       echo "Got CA private key: ${f}"
     elif [ "${sum}" == "${tlssum}" ]; then
-      cp ${f} ${TARGET}/tls/server.key
+      ${sucp} ${f} ${TARGET}/tls/server.key
       echo "Got CA TLS private key: ${f}"
     fi
   done
@@ -115,48 +115,48 @@ function copyNodeCrypto {
   fi
 
   # copy msp data
-  mkdir -p ${TARGET}/msp
-  cp -R ${DATA_ROOT}/crypto/msp/cacerts ${TARGET}/msp
-  cp -R ${DATA_ROOT}/crypto/msp/tlscacerts ${TARGET}/msp
-  cp -R ${SOURCE}/msp/signcerts ${TARGET}/msp
-  cp -R ${SOURCE}/msp/keystore ${TARGET}/msp
-  cp ${DATA_ROOT}/crypto/msp/config.yaml ${TARGET}/msp
-  mv ${TARGET}/msp/signcerts/cert.pem ${TARGET}/msp/signcerts/${NODE_NAME}-cert.pem
+  ${sumd} -p ${TARGET}/msp
+  ${sucp} -R ${DATA_ROOT}/crypto/msp/cacerts ${TARGET}/msp
+  ${sucp} -R ${DATA_ROOT}/crypto/msp/tlscacerts ${TARGET}/msp
+  ${sucp} -R ${SOURCE}/msp/signcerts ${TARGET}/msp
+  ${sucp} -R ${SOURCE}/msp/keystore ${TARGET}/msp
+  ${sucp} ${DATA_ROOT}/crypto/msp/config.yaml ${TARGET}/msp
+  ${sumv} ${TARGET}/msp/signcerts/cert.pem ${TARGET}/msp/signcerts/${NODE_NAME}-cert.pem
 
   # copy tls data
   mkdir -p ${TARGET}/tls
-  cp ${DATA_ROOT}/crypto/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem ${TARGET}/tls/ca.crt
-  cp ${SOURCE}/tls/signcerts/cert.pem ${TARGET}/tls/${TLSTYPE}.crt
+  ${sucp} ${DATA_ROOT}/crypto/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem ${TARGET}/tls/ca.crt
+  ${sucp} ${SOURCE}/tls/signcerts/cert.pem ${TARGET}/tls/${TLSTYPE}.crt
   # there should be only one file, otherwise, take the last file
   for f in ${SOURCE}/tls/keystore/*_sk; do
-    cp ${f} ${TARGET}/tls/${TLSTYPE}.key
+    ${sucp} ${f} ${TARGET}/tls/${TLSTYPE}.key
   done
 }
 
 function copyToolCrypto {
   echo "copy tools crypto"
-  mkdir -p ${DATA_ROOT}/tool/crypto
-  cp -R ${DATA_ROOT}/crypto/msp ${DATA_ROOT}/tool/crypto
+  ${sumd} -p ${DATA_ROOT}/tool/crypto
+  ${sucp} -R ${DATA_ROOT}/crypto/msp ${DATA_ROOT}/tool/crypto
 
   for ord in "${ORDERERS[@]}"; do
-    mkdir -p ${DATA_ROOT}/tool/crypto/orderers/${ord}/tls
-    cp ${DATA_ROOT}/orderers/${ord}/crypto/tls/server.crt ${DATA_ROOT}/tool/crypto/orderers/${ord}/tls
+    ${sumd} -p ${DATA_ROOT}/tool/crypto/orderers/${ord}/tls
+    ${sucp} ${DATA_ROOT}/orderers/${ord}/crypto/tls/server.crt ${DATA_ROOT}/tool/crypto/orderers/${ord}/tls
   done
 }
 
 function copyCliCrypto {
   echo "copy cli crypto"
-  mkdir -p ${DATA_ROOT}/cli/crypto/${ORDERERS[0]}/msp
-  cp -R ${DATA_ROOT}/orderers/${ORDERERS[0]}/crypto/msp/tlscacerts ${DATA_ROOT}/cli/crypto/${ORDERERS[0]}/msp
+  ${sumd} -p ${DATA_ROOT}/cli/crypto/${ORDERERS[0]}/msp
+  ${sucp} -R ${DATA_ROOT}/orderers/${ORDERERS[0]}/crypto/msp/tlscacerts ${DATA_ROOT}/cli/crypto/${ORDERERS[0]}/msp
 
   for p in "${PEERS[@]}"; do
-    mkdir -p ${DATA_ROOT}/cli/crypto/${p}
-    cp -R ${DATA_ROOT}/peers/${p}/crypto/tls ${DATA_ROOT}/cli/crypto/${p}
+    ${sumd} -p ${DATA_ROOT}/cli/crypto/${p}
+    ${sucp} -R ${DATA_ROOT}/peers/${p}/crypto/tls ${DATA_ROOT}/cli/crypto/${p}
   done
 
   ADMIN=${ADMIN_USER:-"Admin"}
-  mkdir -p ${DATA_ROOT}/cli/crypto/${ADMIN}\@${FABRIC_ORG}
-  cp -R ${DATA_ROOT}/crypto/users/${ADMIN}\@${FABRIC_ORG}/msp ${DATA_ROOT}/cli/crypto/${ADMIN}\@${FABRIC_ORG}
+  ${sumd} -p ${DATA_ROOT}/cli/crypto/${ADMIN}\@${FABRIC_ORG}
+  ${sucp} -R ${DATA_ROOT}/crypto/users/${ADMIN}\@${FABRIC_ORG}/msp ${DATA_ROOT}/cli/crypto/${ADMIN}\@${FABRIC_ORG}
 }
 
 # set list of orderers from config
@@ -185,25 +185,25 @@ function cleanupCrypto {
   # cleanup target MSP folder
   for f in ca tlsca msp users; do
     echo "cleanup ${f}"
-    rm -R ${DATA_ROOT}/crypto/${f}
+    ${surm} -R ${DATA_ROOT}/crypto/${f}
   done
 
   # cleanup tool and cli crypto folders
   for f in tool cli; do
     echo "cleanup ${f} crypto"
-    rm -R ${DATA_ROOT}/${f}/crypto
+    ${surm} -R ${DATA_ROOT}/${f}/crypto
   done
 
   # cleanup crypto of orderers
   for ord in "${ORDERERS[@]}"; do
     echo "cleanup crypto of ${ord}"
-    rm -R ${DATA_ROOT}/orderers/${ord}/crypto
+    ${surm} -R ${DATA_ROOT}/orderers/${ord}/crypto
   done
 
   # cleanup crypto of peers
   for p in "${PEERS[@]}"; do
     echo "cleanup crypto of ${p}"
-    rm -R ${DATA_ROOT}/peers/${p}/crypto
+    ${surm} -R ${DATA_ROOT}/peers/${p}/crypto
   done
 }
 
@@ -246,10 +246,6 @@ function collectAllCrypto {
 
 function main {
   genCrypto
-  if [ "${ENV_TYPE}" == "aws" ]; then
-    # efs data created by k8s pods are owned by root, so make them available
-    sudo chown -R ec2-user:ec2-user ${DATA_ROOT}
-  fi
   collectAllCrypto
 }
 

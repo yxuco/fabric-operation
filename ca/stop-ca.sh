@@ -22,4 +22,4 @@ else
 fi
 
 echo "cleanup ca-client"
-rm -R ${ORG_DIR}/ca-client/*
+${surm} -R ${ORG_DIR}/ca-client/*
