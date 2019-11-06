@@ -48,17 +48,23 @@ function setDefaultNamespace {
   if [ "${c_namespace}" != "${ORG}" ]; then
     local c_user=$(kubectl config view -o=jsonpath="{.contexts[?(@.name=='${curr}')].context.user}")
     local c_cluster=$(kubectl config view -o=jsonpath="{.contexts[?(@.name=='${curr}')].context.cluster}")
+    if [ ! -z "${c_cluster}" ]; then
+      echo "set default kube namespace ${ORG} for cluster ${c_cluster} and user ${c_user}"
+      kubectl config set-context ${ORG} --namespace=${ORG} --cluster=${c_cluster} --user=${c_user}
+      kubectl config use-context ${ORG}
+    else
+      echo "failed to set default context for namespace ${ORG}"
+    fi
+  else
+    echo "namespace ${ORG} is already set as default"
   fi
-  echo "set default kube namespace ${ORG} for cluster ${c_cluster} and user ${c_user}"
-  kubectl config set-context ${ORG} --namespace=${ORG} --cluster=${c_cluster} --user=${c_user}
-  kubectl config use-context ${ORG}
 }
 
 function main {
   ${sumd} -p ${DATA_ROOT}/namespace/k8s
 
   echo "create k8s namespace ${ORG}"
-  printNamespaceYaml | ${stee} ${DATA_ROOT}/namespace/k8s/namespace.yaml > /dev/null
+  printK8sNamespace | ${stee} ${DATA_ROOT}/namespace/k8s/namespace.yaml > /dev/null
   kubectl create -f ${DATA_ROOT}/namespace/k8s/namespace.yaml
 
   if [ "${ENV_TYPE}" == "az" ]; then
