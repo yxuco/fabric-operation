@@ -188,27 +188,27 @@ spec:
 function main {
   echo "generate k8s yaml for cli"
   TEST_ORDERER=orderer-0
-  printCliStorageYaml > ${DATA_ROOT}/network/k8s/cli-pv.yaml
-  printCliYaml peer-0 > ${DATA_ROOT}/network/k8s/cli.yaml
+  printCliStorageYaml | ${stee} ${DATA_ROOT}/network/k8s/cli-pv.yaml > /dev/null
+  printCliYaml peer-0 | ${stee} ${DATA_ROOT}/network/k8s/cli.yaml > /dev/null
 
   # copy test chaincode
   local chaincode=$(dirname "${SCRIPT_DIR}")/chaincode
   if [ -d "${chaincode}" ]; then
     echo "copy chaincode from ${chaincode}"
-    cp -R ${chaincode} ${DATA_ROOT}/cli
+    ${sucp} -R ${chaincode} ${DATA_ROOT}/cli
   fi
 
   # copy test-sample script to artifacts
   if [ -f "${SCRIPT_DIR}/test-sample.sh" ]; then
     echo "copy smoke test script ${SCRIPT_DIR}/test-sample.sh"
-    cp ${SCRIPT_DIR}/test-sample.sh ${DATA_ROOT}/cli
+    ${sucp} ${SCRIPT_DIR}/test-sample.sh ${DATA_ROOT}/cli
   fi
 
   # copy channel tx
   if [ -f "${DATA_ROOT}/tool/channel.tx" ]; then
     echo "copy channel tx from ${DATA_ROOT}/tool/channel.tx"
-    cp ${DATA_ROOT}/tool/channel.tx ${DATA_ROOT}/cli
-    cp ${DATA_ROOT}/tool/anchors.tx ${DATA_ROOT}/cli
+    ${sucp} ${DATA_ROOT}/tool/channel.tx ${DATA_ROOT}/cli
+    ${sucp} ${DATA_ROOT}/tool/anchors.tx ${DATA_ROOT}/cli
   fi
 
   echo "start cli POD"

@@ -300,16 +300,6 @@ networks:
 "
 }
 
-function printK8sNamespace {
-  echo "
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: ${ORG}
-  labels:
-    use: hyperledger"
-}
-
 # printK8sStorageClass <name>
 # storage class for local host, or AWS EFS
 function printK8sStorageClass {
@@ -466,12 +456,10 @@ function runK8s {
   echo "use kubernetes"
   # print k8s yaml for tool job
   ${sumd} -p "${DATA_ROOT}/tool/k8s"
-  printK8sNamespace | ${stee} ${DATA_ROOT}/tool/k8s/namespace.yaml > /dev/null
   printK8sStorageYaml | ${stee} ${DATA_ROOT}/tool/k8s/tool-pv.yaml > /dev/null
   printK8sJob | ${stee} ${DATA_ROOT}/tool/k8s/tool.yaml > /dev/null
 
   # run tool job
-  kubectl create -f ${DATA_ROOT}/tool/k8s/namespace.yaml
   kubectl create -f ${DATA_ROOT}/tool/k8s/tool-pv.yaml
   kubectl create -f ${DATA_ROOT}/tool/k8s/tool.yaml
 }

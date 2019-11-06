@@ -5,13 +5,24 @@ source ./env.sh
 # install kubectl
 sudo snap install kubectl --classic
 
+# setup working files
+mkdir -p .kube
+mv config.yaml .kube/config
+mkdir -p .azure
+echo "STORAGE_ACCT=${STORAGE_ACCT}" > .azure/store-secret
+echo "STORAGE_KEY=${STORAGE_KEY}" >> .azure/store-secret
+
+mnt_point=mnt/share
+
 # download fabric operation project
 git clone https://github.com/yxuco/fabric-operation.git
+sed -i -e "s|^AZ_MOUNT_POINT=.*|AZ_MOUNT_POINT=${mnt_point}|" ./fabric-operation/config/setup.sh
+sed -i -e "s|^AZ_STORAGE_SHARE=.*|AZ_STORAGE_SHARE=${STORAGE_SHARE}|" ./fabric-operation/config/setup.sh
 
 # mount Azure file
-sudo mkdir /mnt/share
+sudo mkdir -p /${mnt_point}
 
-sudo mkdir /etc/smbcredentials
+sudo mkdir -p /etc/smbcredentials
 cred=/etc/smbcredentials/${STORAGE_ACCT}.cred
 echo "username=${STORAGE_ACCT}" | sudo tee ${cred} > /dev/null
 echo "password=${STORAGE_KEY}" | sudo tee -a ${cred} > /dev/null
@@ -20,6 +31,6 @@ check=$(grep "//${STORAGE_ACCT}.file.core.windows.net/${STORAGE_SHARE} /mnt/shar
 if [ -z "${check}" ]; then
   echo "skip update of /etc/fstab to avoid mount conflict"
 else
-  echo "//${STORAGE_ACCT}.file.core.windows.net/${STORAGE_SHARE} /mnt/share cifs nofail,vers=3.0,credentials=${cred},serverino" | sudo tee -a /etc/fstab > /dev/null
+  echo "//${STORAGE_ACCT}.file.core.windows.net/${STORAGE_SHARE} /${mnt_point} cifs nofail,vers=3.0,credentials=${cred},serverino" | sudo tee -a /etc/fstab > /dev/null
 fi
 sudo mount -a

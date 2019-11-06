@@ -42,7 +42,6 @@ kubectl delete -f ${DATA_ROOT}/network/k8s/peer.yaml
 kubectl delete -f ${DATA_ROOT}/network/k8s/peer-pv.yaml
 kubectl delete -f ${DATA_ROOT}/network/k8s/orderer.yaml
 kubectl delete -f ${DATA_ROOT}/network/k8s/orderer-pv.yaml
-kubectl delete -f ${DATA_ROOT}/network/k8s/namespace.yaml
 
 if [ "${3}" == "true" ]; then
   echo "clean up orderer ledger files ..."

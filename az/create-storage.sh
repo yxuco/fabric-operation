@@ -19,11 +19,17 @@ else
 fi
 echo "collect account secret key for ${STORAGE_ACCT} ..."
 skey=$(az storage account keys list -g ${RESOURCE_GROUP} -n ${STORAGE_ACCT} --query "[0].value" -o tsv)
-sed -i -e "s|^export STORAGE_KEY=.*|export STORAGE_KEY=${skey}|" ./env.sh
-sed -i -e "s|^export STORAGE_KEY=.*|export STORAGE_KEY=${skey}|" ./config/env.sh
-sed -i -e "s/^export STORAGE_ACCT=.*/export STORAGE_ACCT=${STORAGE_ACCT}/" ./config/env.sh
-sed -i -e "s/^export STORAGE_SHARE=.*/export STORAGE_SHARE=${STORAGE_SHARE}/" ./config/env.sh
-sed -i -e "s|^export SMB_PATH=.*|export SMB_PATH=${SMB_PATH}|" ./config/env.sh
+
+# store env for bastion setup
+echo "export STORAGE_ACCT=${STORAGE_ACCT}" > ./config/env.sh
+echo "export STORAGE_SHARE=${STORAGE_SHARE}" >> ./config/env.sh
+echo "export SMB_PATH=${SMB_PATH}" >> ./config/env.sh
+echo "export STORAGE_KEY=${skey}" >> ./config/env.sh
+
+# store Azure secret in $HOME/.azure/store-secret
+mkdir -p ${HOME}/.azure
+echo "STORAGE_ACCT=${STORAGE_ACCT}" > ${HOME}/.azure/store-secret
+echo "STORAGE_KEY=${skey}" >> ${HOME}/.azure/store-secret
 
 # create Azure file share if it does not exist already
 conn=$(az storage account show-connection-string -n ${STORAGE_ACCT} -g ${RESOURCE_GROUP} -o tsv)

@@ -40,8 +40,6 @@ fi
 
 export RESOURCE_GROUP=${ENV_NAME}RG
 export STORAGE_ACCT=${ENV_NAME}store
-# storage account secret key will be updated when storage is created
-export STORAGE_KEY=
 export STORAGE_SHARE=${ENV_NAME}share
 export SMB_PATH=//${STORAGE_ACCT}.file.core.windows.net/${STORAGE_SHARE}
 export AKS_CLUSTER=${ENV_NAME}AKSCluster

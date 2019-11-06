@@ -30,8 +30,7 @@ sed -i -e "s/^export BASTION_IP=.*/export BASTION_IP=${pubip}/" ./env.sh
 # setup bastion host
 scp -q -o "StrictHostKeyChecking no" ./config/config-${ENV_NAME}.yaml ${BASTION_USER}@${pubip}:config.yaml
 scp -q -o "StrictHostKeyChecking no" ./config/env.sh ${BASTION_USER}@${pubip}:env.sh
-scp -q -o "StrictHostKeyChecking no" ./config/setup.sh ${BASTION_USER}@${pubip}:setup.sh
-scp -q -o "StrictHostKeyChecking no" ./config/kube-setup.sh ${BASTION_USER}@${pubip}:kube-setup.sh
+scp -q -o "StrictHostKeyChecking no" ./setup-bastion.sh ${BASTION_USER}@${pubip}:setup.sh
 
 if [ "${check}" == "Succeeded" ]; then
   echo "skip setup for existing bastion host"

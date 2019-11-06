@@ -18,7 +18,6 @@ else
   echo "stop k8s CA PODs"
   kubectl delete -f ${ORG_DIR}/k8s/ca.yaml
   kubectl delete -f ${ORG_DIR}/k8s/ca-pv.yaml
-  kubectl delete -f ${ORG_DIR}/k8s/namespace.yaml
 fi
 
 echo "cleanup ca-client"

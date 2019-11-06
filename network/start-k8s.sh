@@ -167,24 +167,13 @@ function printPeerStorageYaml {
 
 function configPersistentData {
   for ord in "${ORDERERS[@]}"; do
-    mkdir -p ${DATA_ROOT}/orderers/${ord}/data
-    cp ${DATA_ROOT}/tool/genesis.block ${DATA_ROOT}/orderers/${ord}
+    ${sumd} -p ${DATA_ROOT}/orderers/${ord}/data
+    ${sucp} ${DATA_ROOT}/tool/genesis.block ${DATA_ROOT}/orderers/${ord}
   done
 
   for p in "${PEERS[@]}"; do
-    mkdir -p ${DATA_ROOT}/peers/${p}/data
+    ${sumd} -p ${DATA_ROOT}/peers/${p}/data
   done
-}
-
-function printNamespaceYaml {
-  echo "
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: netop1
-  labels:
-    use: hyperledger
-"
 }
 
 function printOrdererYaml {
@@ -441,18 +430,16 @@ spec:
 }
 
 function main {
-  mkdir -p ${DATA_ROOT}/network/k8s
+  ${sumd} -p ${DATA_ROOT}/network/k8s
   getOrderers
   getPeers
   configPersistentData
-  printNamespaceYaml > ${DATA_ROOT}/network/k8s/namespace.yaml
-  printOrdererStorageYaml > ${DATA_ROOT}/network/k8s/orderer-pv.yaml
-  printOrdererYaml > ${DATA_ROOT}/network/k8s/orderer.yaml
-  printPeerStorageYaml > ${DATA_ROOT}/network/k8s/peer-pv.yaml
-  printPeerYaml > ${DATA_ROOT}/network/k8s/peer.yaml
+  printOrdererStorageYaml | ${stee} ${DATA_ROOT}/network/k8s/orderer-pv.yaml > /dev/null
+  printOrdererYaml | ${stee} ${DATA_ROOT}/network/k8s/orderer.yaml > /dev/null
+  printPeerStorageYaml | ${stee} ${DATA_ROOT}/network/k8s/peer-pv.yaml > /dev/null
+  printPeerYaml | ${stee} ${DATA_ROOT}/network/k8s/peer.yaml > /dev/null
 
   # start network
-  kubectl create -f ${DATA_ROOT}/network/k8s/namespace.yaml
   kubectl create -f ${DATA_ROOT}/network/k8s/orderer-pv.yaml
   kubectl create -f ${DATA_ROOT}/network/k8s/peer-pv.yaml
   kubectl create -f ${DATA_ROOT}/network/k8s/orderer.yaml

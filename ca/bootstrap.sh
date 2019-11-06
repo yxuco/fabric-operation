@@ -124,7 +124,7 @@ function copyNodeCrypto {
   ${sumv} ${TARGET}/msp/signcerts/cert.pem ${TARGET}/msp/signcerts/${NODE_NAME}-cert.pem
 
   # copy tls data
-  mkdir -p ${TARGET}/tls
+  ${sumd} -p ${TARGET}/tls
   ${sucp} ${DATA_ROOT}/crypto/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem ${TARGET}/tls/ca.crt
   ${sucp} ${SOURCE}/tls/signcerts/cert.pem ${TARGET}/tls/${TLSTYPE}.crt
   # there should be only one file, otherwise, take the last file
@@ -215,7 +215,7 @@ function collectAllCrypto {
   # copy CA
   copyCACrypto ca
   copyCACrypto tlsca
-  printConfigYaml > ${DATA_ROOT}/crypto/msp/config.yaml
+  printConfigYaml | ${stee} ${DATA_ROOT}/crypto/msp/config.yaml > /dev/null
 
   # copy orderers
   for ord in "${ORDERERS[@]}"; do

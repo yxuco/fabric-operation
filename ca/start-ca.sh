@@ -80,16 +80,6 @@ services:"
   printClientService
 }
 
-function printK8sNamespace {
-  echo "
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: ${ORG}
-  labels:
-    use: hyperledger"
-}
-
 # printK8sStorageClass <name>
 # storage class for local host, or AWS EFS
 function printK8sStorageClass {
@@ -355,12 +345,10 @@ function startDocker {
 function startK8s {
   # create k8s yaml for CA server and client
   ${sumd} -p "${ORG_DIR}/k8s"
-  printK8sNamespace | ${stee} ${ORG_DIR}/k8s/namespace.yaml > /dev/null
   printK8sStorageYaml | ${stee} ${ORG_DIR}/k8s/ca-pv.yaml > /dev/null
   printK8sCAPods | ${stee} ${ORG_DIR}/k8s/ca.yaml > /dev/null
 
   # start CA server and client
-  kubectl create -f ${ORG_DIR}/k8s/namespace.yaml
   kubectl create -f ${ORG_DIR}/k8s/ca-pv.yaml
   kubectl create -f ${ORG_DIR}/k8s/ca.yaml
 }
