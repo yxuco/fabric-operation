@@ -9,4 +9,4 @@ az/config/
 **/cli/
 **/canet/ca-server/
 **/canet/tlsca-server/
-**/genesis.block
+**/orderers/*/genesis.block
