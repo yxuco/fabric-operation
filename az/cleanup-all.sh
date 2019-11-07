@@ -1,6 +1,6 @@
 #!/bin/bash
-# cleanup Azure Files storage for a specified $ENV_NAME and $AZ_REGION
-# usage: cleanup-storage.sh env region
+# cleanup Azure nodes and storage data for a specified $ENV_NAME and $AZ_REGION
+# usage: cleanup-all.sh env region
 # default value: ENV_NAME="fab", AZ_REGION="westus2"
 
 cd "$( dirname "${BASH_SOURCE[0]}" )"
