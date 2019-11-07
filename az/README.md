@@ -9,7 +9,7 @@ Once your Azure account is setup, you can login by typing the command:
 ```
 az login
 ```
-Enter your account info in a pop-up window.  Note that you may lookup your account details by using the [Azure Portal](https://portal.azure.com), although it is not absolutely necessary since we use only `Azure CLI` scripts.
+Enter your account info in a pop-up browser window.  Note that you may lookup your account details by using the [Azure Portal](https://portal.azure.com), although it is not absolutely necessary since we use only `Azure CLI` scripts.
 
 ## Start AKS cluster
 Create and start the AKS cluster with all defaults:
@@ -42,11 +42,11 @@ ssh fab@51.143.17.95
 ```
 After login, you'll notice that everything is automatically setup for you.  You may verify the following configurations.
 * `df` command should show that an `Azure File` storage is already mounted at `/mnt/share`;
-* `kubectl get pod/svc --all-namespaces` should show you the Kubernetes system services and PODs;
+* `kubectl get pod,svc --all-namespaces` should show you the Kubernetes system services and PODs;
 * `ls ~` should show you that the latest code of this project is already downloaded at `$HOME/fabric-operation`.
 
 ## Start and test Hyperledger Fabric network
-Following steps will start and smoke test the default Hyperledger network with 2 peers, and 3 orderers using `etcd raft` consensus. You can learn about the details [here](../README.md).
+Following steps will start and smoke test the default Hyperledger Fabric network with 2 peers, and 3 orderers using `etcd raft` consensus. You can learn about more details [here](../README.md).
 
 ### Create namespace for the network operator
 ```
@@ -65,7 +65,7 @@ cd ../ca
 ./bootstrap.sh netop1 az
 ```
 This command starts 2 CA servers and a CA client, and generates crypto data according to the network specification, [netop1.env](../config/netop1.env).  You can verify the result using the following commands:
-* `kubectl get pods` should lists 3 running PODs: `ca-server`, `tlsca-server`, and `ca-client`;
+* `kubectl get pods` should list 3 running PODs: `ca-server`, `tlsca-server`, and `ca-client`;
 * `ls /mnt/share/netop1.com/` should list folders containing crypto data, i.e., `crypto`, `orderers`, `peers`, `cli`, and `tool`.
 
 ### Generate genesis block and channel creation tx
@@ -92,7 +92,7 @@ This command starts the orderers and peers using the crypto and genesis block cr
 cd ../network
 ./k8s-test.sh netop1 az
 ```
-This command creates the test channel `mychannel`, installs a test chaincode and instantiates the chaincode, and then execute a transaction and a query to verify the working network.  You can verify the result as follows:
+This command creates the test channel `mychannel`, installs and instantiates a test chaincode, and then executes a transaction and a query to verify the working network.  You can verify the result as follows:
 * The last result printed out by the test should be `90`;
 * Orderer data folder, e.g., `/mnt/share/netop1.com/orderers/orderer-0/data` would show a new channel folder `mychannel`;
 * Peer data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would show a new chaincode and transactions.
@@ -102,9 +102,9 @@ This command creates the test channel `mychannel`, installs a test chaincode and
 cd ../network
 ./stop-k8s.sh netop1 az true
 ```
-This command shuts down orderers and peers, and the last parameter `true` means to delete all persistent data as well.  If you do not provide the 3rd parameter, you would keep the test ledger, and so you can use the data after the network restart the next time.  You can verify the result using the following command.
+This command shuts down orderers and peers, and the last argument `true` means to delete all persistent data as well.  If you do not provide the 3rd argument, you would keep the test ledger, and so it can be loaded when the network restarts.  You can verify the result using the following command.
 * `kubectl get svc,pod` should not list any running orderers or peers;
-* The orderers and peers' persistent data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would be deleted if the 3rd parameter of the above command is `true`.
+* The orderers and peers' persistent data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would be deleted if the 3rd argument of the above command is `true`.
 
 ## Clean up all Azure processes and storage
 You can clean up every thing created in Azure when they are no longer used, i.e.,
