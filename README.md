@@ -14,10 +14,23 @@ The scripts support both `docker-compose` and `kubernetes`.  All steps are done 
   * For AWS, refer the scripts and instructions in the [aws folder](./aws).
   * For Azure, refer the scripts and instructions in the [az folder](./az).
 
+## Prepare Kubernetes namespace
+```
+cd ./namespace
+./k8s-namespace.sh
+```
+This command creates a namespace for the default Fabric operator company, `netop1`. It also sets `netop1` as the default namespace, so you won't have to specify the namespace in the following `kubectl` commands.
+
+To revoke to the default namespace for `docker-desktop`, you can use the following command:
+```
+kubectl config use-context docker-desktop
+```
 ## Start CA server and generate crypto data
 Following steps use `docker-desktop` Kubernetes on Mac to start `fabric-ca` PODs and generate crypto data required by the sample network, `netop1`.
 ```
 cd ./ca
+# cleanup old ca-server data
+rm -R ../netop1.com/canet
 ./start-ca.sh
 ./bootstrap.sh
 ./stop-ca.sh
@@ -71,6 +84,13 @@ If you are not using a Mac, you can run these scripts using `docker-compose`, `A
 * `./start-ca.sh netop1 az` to use Azure as described in the folder [az](./az), or
 * try to verify if the scripts would work on [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/).
 
+When `docker` is used, start and test the Fabric network using the following commands:
+```
+cd ./network
+./start-docker.sh
+./docker-test.sh
+./stop-docker.sh
+```
 ## TODO
 Stay tuned for more updates on the following items:
 * Add new orderer org and orderer nodes;

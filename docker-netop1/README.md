@@ -40,11 +40,11 @@ configtxlator proto_decode --input ./channel-artifacts/genesis.block --type comm
 configtxlator proto_decode --input ./channel-artifacts/channel.tx --type common.Envelope --output ./channel-artifacts/channel.json
 ```
 ## Start sample Fabric network
-For development, start Fabric network using `solo` consensus:
+For development, you may start Fabric network using `solo` consensus, (but do not do it here):
 ```
 docker-compose -f docker-compose.yaml up -d
 ```
-Or for production, start Fabric network using `etcdraft` consensus and `couchdb`:
+We generated the genesis block for `etcdraft` consensus, so you can start Fabric network using `etcdraft` consensus and `couchdb`:
 ```
 docker-compose -f docker-compose.yaml -f docker-compose-etcdraft.yaml -f docker-compose-couch.yaml up -d
 ```
@@ -56,15 +56,12 @@ docker exec -it cli bash
 In the `cli` container, verify that the following environment variables are already configured.
 ```
 CORE_PEER_LOCALMSPID="Org1"
-CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peers/peer-0.netop1.com/tls/ca.crt
+CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/peer-0/tls/ca.crt
 CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/users/Admin@netop1.com/msp
 CORE_PEER_ADDRESS=peer-0.netop1.com:7051
 ```
 Test the fabric network using the `cli` container as follows.
 ```
-# set orderer certificate for TLS
-ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/orderers/orderer-0.netop1.com/msp/tlscacerts/tlsca.netop1.com-cert.pem
-
 # create channel and join the node peer-0 to the channel, and then update the anchor peer
 peer channel create -o orderer-0.netop1.com:7050 -c mychannel -f ./channel-artifacts/channel.tx --tls --cafile $ORDERER_CA
 peer channel join -b mychannel.block
@@ -75,7 +72,6 @@ peer channel fetch config ./channel-artifacts/mychannel.pb -o orderer-0.netop1.c
 configtxlator proto_decode --input ./channel-artifacts/mychannel.pb --type common.Block --output ./channel-artifacts/mychannel.json
 
 # install and instantiate a sample chaincode
-CC_SRC_PATH="github.com/chaincode/chaincode_example02/go/"
 peer chaincode install -n mycc -v 1.0 -l golang -p ${CC_SRC_PATH}
 peer chaincode instantiate -o orderer-0.netop1.com:7050 --tls --cafile $ORDERER_CA -C mychannel -n mycc -l golang -v 1.0 -c '{"Args":["init","a","100","b","200"]}' -P "OR ('Org1.peer')"
 

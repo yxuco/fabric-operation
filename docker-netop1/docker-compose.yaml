@@ -54,16 +54,18 @@ services:
       - CORE_PEER_ADDRESS=peer-0.netop1.com:7051
       - CORE_PEER_LOCALMSPID=Org1
       - CORE_PEER_TLS_ENABLED=true
-      - CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peers/peer-0.netop1.com/tls/server.crt
-      - CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peers/peer-0.netop1.com/tls/server.key
-      - CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peers/peer-0.netop1.com/tls/ca.crt
-      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/users/Admin@netop1.com/msp
+      - CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peer-0/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peer-0/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peer-0/tls/ca.crt
+      - CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/Admin@netop1.com/msp
+      - ORDERER_CA=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/orderer-0/msp/tlscacerts/tlsca.netop1.com-cert.pem
+      - CC_SRC_PATH=github.com/chaincode/chaincode_example02/go/
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric/peer
     command: /bin/bash
     volumes:
         - /var/run/:/host/var/run/
         - ./../chaincode/:/opt/gopath/src/github.com/chaincode:cached
-        - ./../netop1.com/crypto/:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
+        - ./../netop1.com/cli/crypto/:/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/
         - ./channel-artifacts:/opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts
     depends_on:
       - orderer-0.netop1.com

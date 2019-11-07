@@ -2,11 +2,12 @@
 aws/config/
 az/config/
 **/*.sh-e
-**/canet/ca-client/*
-**/orderer*/data/*
-**/peer*/data/*
+**/orderer*/data/
+**/peer*/data/
 **/crypto/**
 **/cli/
+**/canet/ca-client/
 **/canet/ca-server/
 **/canet/tlsca-server/
-**/orderers/*/genesis.block
+**/genesis.block
+**/*.tx
