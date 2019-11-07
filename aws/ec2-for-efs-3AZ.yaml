@@ -425,13 +425,6 @@ Resources:
           commands:
             01_createdir:
               command: !Sub "mkdir -p /${MountPoint}"
-        mount:
-          commands:
-            01_mount:
-              command: !Sub >
-                sudo mount -t nfs4 -o nfsvers=4.1 ${FileSystem}.efs.${AWS::Region}.amazonaws.com:/ /${MountPoint}
-            02_permissions:
-              command: !Sub "sudo chown ec2-user:ec2-user /${MountPoint}"
         install:
           commands:
             01_git:

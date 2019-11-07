@@ -14,6 +14,3 @@ if [ $? -ne 0 ]; then
 else
   echo "s3 bucket ${S3_BUCKET} already exists, skip."
 fi
-
-echo "configure S3_BUCKET for bastion host setup"
-sed -i -e "s/^export S3_BUCKET=.*/export S3_BUCKET=${S3_BUCKET}/" ./setup/env.sh

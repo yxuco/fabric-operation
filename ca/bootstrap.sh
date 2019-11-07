@@ -83,9 +83,13 @@ function copyCACrypto {
   echo "public tls key checksum: ${tlssum}"
 
   # find CA private key with the same public key checksum as the CA certificate
+  local s=""
+  if [ "${ENV_TYPE}" == "aws" ]; then
+    s="sudo "
+  fi
   for f in ${KEYSTORE}/*_sk; do
     echo ${f}
-    sum=$(openssl pkey -in ${f} -pubout -outform pem | ${CHECKSUM})
+    sum=$(${s}openssl pkey -in ${f} -pubout -outform pem | ${CHECKSUM})
     echo "checksum from private key: ${sum}"
     if [ "${sum}" == "${pubsum}" ]; then
       ${sucp} ${f} ${TARGET}/${CA_NAME}.${FABRIC_ORG}-key.pem
@@ -112,6 +116,10 @@ function copyNodeCrypto {
     NODE_NAME=${NODE}.${FABRIC_ORG}
     SOURCE=${ORG_DIR}/ca-client/${NODE}
     TARGET=${DATA_ROOT}/${FOLDER}/${NODE}/crypto
+  fi
+
+  if [ "${ENV_TYPE}" == "aws" ]; then
+    sudo chmod -R 755 ${SOURCE}
   fi
 
   # copy msp data

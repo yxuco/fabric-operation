@@ -10,7 +10,7 @@ array=( ${subnetIds} )
 echo "create EFS volume for vpcId: ${vpcId} and subnets: ${array[0]} ${array[1]} ${array[2]}"
 echo "it may take 6 minutes ..."
 
-mountpoint=opt/share
+mountpoint=mnt/share
 
 starttime=$(date +%s)
 sed "s/{{ec2-instance}}/${EFS_STACK}-instance/g" ec2-for-efs-3AZ.yaml > ${EFS_CONFIG}
@@ -20,14 +20,34 @@ aws cloudformation deploy --stack-name ${EFS_STACK} --template-file ${EFS_CONFIG
 KeyName=${KEYNAME} VolumeName=${EFS_VOLUME} MountPoint=${mountpoint} \
 --region ${AWS_REGION}
 
-echo "EFS volume ${EFS_VOLUME} created in $(($(date +%s)-starttime)) seconds."
-
+# set env for bastion host configuration
 filesysid=$(aws efs describe-file-systems --query 'FileSystems[?Name==`'${EFS_VOLUME}'`].FileSystemId' --output text)
-echo "configure EFS_SERVER for filesystem id: ${filesysid}"
-sed -i -e "s/^export EFS_SERVER=.*/export EFS_SERVER=${filesysid}.efs.${AWS_REGION}.amazonaws.com/" ./setup/env.sh
-sed -i -e "s/^export EFS_STACK=.*/export EFS_STACK=${EFS_STACK}/" ./setup/env.sh
-sed -i -e "s|^export MOUNT_POINT=.*|export MOUNT_POINT=${mountpoint}|" ./setup/env.sh
+echo "created EFS_SERVER for filesystem id: ${filesysid}"
+echo "export EKS_STACK=${EKS_STACK}" > ./config/env.sh
+echo "export EFS_SERVER=${filesysid}.efs.${AWS_REGION}.amazonaws.com" >> ./config/env.sh
+echo "export AWS_FSID=${filesysid}" >> ./config/env.sh
+echo "export MOUNT_POINT=${mountpoint}" >> ./config/env.sh
+echo "export SSH_PRIVKEY=${KEYNAME}.pem" >> ./config/env.sh
+if [[ ! -z "${AWS_PROFILE}" ]]; then
+  echo "export AWS_PROFILE=${AWS_PROFILE}" >> ./config/env.sh
+fi
 
-# update fabric config env
-sed -i -e "s|^export AWS_MOUNT_POINT=.*|export AWS_MOUNT_POINT=${mountpoint}|" ./setup/env.sh
-sed -i -e "s|^export AWS_FSID=.*|export AWS_FSID=${filesysid}|" ./setup/env.sh
+# set limited SSH rule for bastion host
+mycidr=$(curl ifconfig.me)/32
+bastionSgid=$(aws ec2 describe-security-groups --filters Name=group-name,Values=${EFS_STACK}-InstanceSecurityGroup* --query 'SecurityGroups[*].GroupId' --output text)
+echo "set ssh rule for ${mycidr} to access bastion host ${bastionSgid}"
+aws ec2 revoke-security-group-ingress --group-id ${bastionSgid} --protocol tcp --port 80 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id ${bastionSgid} --protocol tcp --port 22 --cidr ${mycidr}
+
+# set limited NFS rules for EFS mount
+mountSgid=$(aws ec2 describe-security-groups --filters Name=group-name,Values=${EFS_STACK}-MountTargetSecurityGroup* --query 'SecurityGroups[*].GroupId' --output text)
+nodeSgid=$(aws ec2 describe-security-groups --filters Name=group-name,Values=eksctl-${EKS_STACK}-nodegroup-ng* --query 'SecurityGroups[*].GroupId' --output text)
+echo "set NFS rule for bastion sg ${bastionSgid} and node sg ${nodeSgid} to access EFS mount ${mountSgid}"
+aws ec2 authorize-security-group-ingress --group-id ${mountSgid} --protocol tcp --port 2049 --source-group ${bastionSgid}
+aws ec2 authorize-security-group-ingress --group-id ${mountSgid} --protocol tcp --port 2049 --source-group ${nodeSgid}
+
+# allow bastion host ssh into nodes
+echo "set ssh rule for bastion sg ${bastionSgid} to access nodes ${nodeSgid}"
+aws ec2 authorize-security-group-ingress --group-id ${nodeSgid} --protocol tcp --port 22 --source-group ${bastionSgid}
+
+echo "EFS volume ${EFS_VOLUME} created in $(($(date +%s)-starttime)) seconds."

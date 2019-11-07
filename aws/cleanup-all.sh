@@ -8,7 +8,7 @@ source env.sh "$@"
 
 ./cleanup-efs.sh
 ./cleanup-cluster.sh
-./delete-s3-bucket.sh
+#./delete-s3-bucket.sh
 
 # cleanup EC2 volumes
 vols=$(aws ec2 describe-volumes --filter Name=status,Values=available --query Volumes[*].VolumeId --out text)

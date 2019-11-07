@@ -23,7 +23,7 @@ This script accepts 2 parameters for you to specify a different Azure environmen
 ```
 would create an AKS cluster with name prefix of `fab`, at the Azure location of `westus2`.
 
-Wait 10 minutes for the cluster nodes to startup.  When the cluster is up, it will print out a line, such as:
+Wait 10 minutes for the cluster nodes to startup.  When the cluster is up, it will print a line, such as:
 ```
 ssh fab@51.143.17.95
 ```
@@ -46,14 +46,14 @@ After login, you'll notice that everything is automatically setup for you.  You 
 * `ls ~` should show you that the latest code of this project is already downloaded at `$HOME/fabric-operation`.
 
 ## Start and test Hyperledger Fabric network
-Following steps will start and smoke test the default Hyperledger Fabric network with 2 peers, and 3 orderers using `etcd raft` consensus. You can learn about more details [here](../README.md).
+Following steps will start and smoke test the default Hyperledger Fabric network with 2 peers, and 3 orderers using `etcd raft` consensus. You can learn more details about these commands [here](../README.md).
 
 ### Create namespace for the network operator
 ```
 cd ../namespace
 ./k8s-namespace.sh netop1 az
 ```
-This command creates a namespace for the default operator company, `netop1`, and sets it as the default namespace.  It also creates Kubernetes secret for accessing Azure Files storage for persistence.  You can verify this step using the following commands:
+This command creates a namespace for the default Fabric operator company, `netop1`, and sets it as the default namespace.  It also creates Kubernetes secret for accessing Azure Files storage for persistence.  You can verify this step using the following commands:
 * `kubectl get namespaces` should show a list of namespaces, including the new namespace `netop1`;
 * `kubectl get secret` should show that a secret named `azure-secret` is created;
 * `kubectl config current-context` should show that the default namespace is set to `netop1`.
@@ -73,8 +73,8 @@ This command starts 2 CA servers and a CA client, and generates crypto data acco
 cd ../msp
 ./bootstrap.sh netop1 az
 ```
-This command starts a Kubernetes Job to generate the genesus block and transactions for a test channel `mychannel` based on the network specification.  You can verify the result using the following commands:
-* `kubectl get jobs` should list a completed `job/tool`;
+This command starts a Kubernetes Job to generate the genesus block and transaction for creating a test channel `mychannel` based on the network specification.  You can verify the result using the following commands:
+* `kubectl get jobs` should list a completed `job/tool` (note that you may need to wait for a few seconds before it shows 1 completion);
 * `ls /mnt/share/netop1.com/tool` should show the generated artifacts: `genesis.block`, `channel.tx`, `anchors.tx`, and `configtx.yaml`.
 
 ### Start Fabric network
@@ -84,6 +84,7 @@ cd ../network
 ```
 This command starts the orderers and peers using the crypto and genesis block created in the previous steps.  You can verify the network status using the following commands:
 * `kubectl get pods` should list 3 running orderers and 2 running peers;
+* `kubectl logs peer-1 -c peer` should show the logs of `peer-1`, that shows its successfully completed gossip communications with `peer-0`.
 * `ls /mnt/share/netop1.com/orderers/orderer-0/data` shows persistent storage of the `orderer-0`, similar to other orderer nodes;
 * `ls /mnt/share/netop1.com/peers/peer-0/data` shows persistent storage of the `peer-0`, similar to other peer nodes.
 
@@ -94,15 +95,15 @@ cd ../network
 ```
 This command creates the test channel `mychannel`, installs and instantiates a test chaincode, and then executes a transaction and a query to verify the working network.  You can verify the result as follows:
 * The last result printed out by the test should be `90`;
-* Orderer data folder, e.g., `/mnt/share/netop1.com/orderers/orderer-0/data` would show a new channel folder `mychannel`;
-* Peer data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would show a new chaincode and transactions.
+* Orderer data folder, e.g., `/mnt/share/netop1.com/orderers/orderer-0/data` would show a block file added under the chain of a new channel `mychannel`;
+* Peer data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would show a new chaincode `mycc.1.0` added to the chaincode folder, and a transaction block file created under the chain of `mychannel`.
 
 ### Stop Fabric network and cleanup persistent data
 ```
 cd ../network
 ./stop-k8s.sh netop1 az true
 ```
-This command shuts down orderers and peers, and the last argument `true` means to delete all persistent data as well.  If you do not provide the 3rd argument, you would keep the test ledger, and so it can be loaded when the network restarts.  You can verify the result using the following command.
+This command shuts down orderers and peers, and the last argument `true` means to delete all persistent data as well.  If you do not provide the 3rd argument, it would keep the test ledger in the `Azure Files` storage, and so it can be loaded when the network restarts.  You can verify the result using the following command.
 * `kubectl get svc,pod` should not list any running orderers or peers;
 * The orderers and peers' persistent data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would be deleted if the 3rd argument of the above command is `true`.
 
