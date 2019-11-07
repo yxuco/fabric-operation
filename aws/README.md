@@ -88,8 +88,8 @@ This command starts 2 CA servers and a CA client, and generates crypto data acco
 cd ../msp
 ./bootstrap.sh netop1 aws
 ```
-This command starts a Kubernetes Job to generate the genesus block and transaction for creating a test channel `mychannel` based on the network specification.  You can verify the result using the following commands:
-* `kubectl get jobs` should list a completed `job/tool` (note that you may need to wait for a few seconds before it shows 1 completion);
+This command starts a Kubernetes Job to generate the genesis block and transaction for creating a test channel `mychannel` based on the network specification.  You can verify the result using the following commands:
+* `kubectl get jobs` should list a completed `job/tool` (note that you may need to wait a few seconds before it shows 1 completion);
 * `ls /mnt/share/netop1.com/tool` should show the generated artifacts: `genesis.block`, `channel.tx`, `anchors.tx`, and `configtx.yaml`.
 
 ### Start Fabric network
@@ -118,7 +118,7 @@ This command creates the test channel `mychannel`, installs and instantiates a t
 cd ../network
 ./stop-k8s.sh netop1 aws true
 ```
-This command shuts down orderers and peers, and the last argument `true` means to delete all persistent data as well.  If you do not provide the 3rd argument, it would keep the test ledger on the 'EFS` file system, and so it can be loaded when the network restarts.  You can verify the result using the following command.
+This command shuts down orderers and peers, and the last argument `true` means to delete all persistent data as well.  If you do not provide the 3rd argument, it would keep the test ledger on the `EFS` file system, and so it can be loaded when the network restarts.  You can verify the result using the following command.
 * `kubectl get svc,pod` should not list any running orderers or peers;
 * The orderers and peers' persistent data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would be deleted if the 3rd argument of the above command is `true`.
 
