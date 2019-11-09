@@ -51,7 +51,7 @@ Usage:
     -u <user name> - space-delimited admin/client user names
   ca-crypto.sh -h (print this message)
 ```
-When this command is used on `AWS` or `Azure`, the generated crypto data will be stored in a cloud file system mounted on the `bastion` host, i.e., an `EFS` file system on `AWS` or an `Azure Files` storage on `Azure`.
+When this command is used on `AWS` or `Azure`, the generated crypto data will be stored in a cloud file system mounted on the `bastion` host, e.g., a mounted folder `/mnt/share/netop1.com` in an `EFS` file system on `AWS` or an `Azure Files` storage on `Azure`.
 
 ## Add crypto of new orderer nodes
 Example:
@@ -86,3 +86,11 @@ cd ./ca
 This will create crypto data for 2 new admin users, `Super@netop1.com` and `Hero@netop1.com`.
 
 Note that the current implementation specifies only a couple of fixed attributes in user certificates. You may customize the attributes if your application requires.  We may enhance the scripts in the future to make it easier to customize user attributes.
+
+## Shutdown and cleanup
+Example:
+```
+cd ./ca
+./ca-server.sh shutdown -p netop1 -t k8s
+```
+This shuts down the ca-server and ca-client containers, but keep the state of 2 ca servers, so you can add more users/nodes using the same root CA.  If you want to delete all state and start from scratch, however, you can add the option `-d` when shuting down the servers.  You should keep a copy of the ca-server folders, e.g., `netop1.com/canet/ca-server` and `netop1.com/canet/tlsca-server`, if you want to generate additional crypto data for a running Fabric network.
