@@ -31,17 +31,16 @@ Following steps use `docker-desktop` Kubernetes on Mac to start `fabric-ca` PODs
 cd ./ca
 # cleanup old ca-server data
 rm -R ../netop1.com/canet
-./start-ca.sh
-./bootstrap.sh
-./stop-ca.sh
+./ca-server.sh start
+./ca-crypto.sh bootstrap
 ```
 You can edit the network specification [netop1.env](./config/netop1.env) if you want to use a different operating company name, or make it run more orderer or peer nodes.  The generated crypto data will be stored in the folder [netop1.com](./netop1.com) on localhost, or in a cloud file system, such as Amazon EFS, or Azure Files. 
 
 These scripts take 2 additional parameters, e.g.,
 ```
-./start-ca.sh config_file env_type
+./ca-server.sh start -p <config_file> -t <env_type>
 ```
-where `config_file` is file in the [config](./config) folder with a suffix `.env` that contains the fabric network specification; `env_type` can be `k8s`, `docker`, `aws`, or `az`. 
+where `config_file` is file in the [config](./config) folder with a suffix `.env` that contains the fabric network specification; `env_type` can be `k8s`, `docker`, `aws`, or `az`.  When no parameter is specified, it uses default `-p netop1 -t k8s`.
 * `k8s` uses the local `docker-desktop` kubernetes on Mac.  Non-Mac users may use `docker` option below, or try Minikube (which has not been tested).
 * `docker` uses `docker-compose`.
 * `aws` uses AWS EKS when executed on a `bastion` host of an EC2 instance.  Refer the folder [aws](./aws) for more details on AWS.

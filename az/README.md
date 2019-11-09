@@ -61,8 +61,8 @@ This command creates a namespace for the default Fabric operator company, `netop
 ### Start CA server and create crypto data for the Fabric network
 ```
 cd ../ca
-./start-ca.sh netop1 az
-./bootstrap.sh netop1 az
+./ca-server.sh start -t az
+./ca-crypto.sh bootstrap -t az
 ```
 This command starts 2 CA servers and a CA client, and generates crypto data according to the network specification, [netop1.env](../config/netop1.env).  You can verify the result using the following commands:
 * `kubectl get pods` should list 3 running PODs: `ca-server`, `tlsca-server`, and `ca-client`;

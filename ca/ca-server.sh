@@ -7,11 +7,6 @@
 # use config parameters specified in ../config/netop1.env
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
-ENV_TYPE=${2:-"k8s"}
-source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${1:-"netop1"} ${ENV_TYPE}
-ORG_DIR=${DATA_ROOT}/canet
-CA_PORT=${CA_PORT:-"7054"}
-TLS_PORT=${TLS_PORT:-"7055"}
 
 # printServerService ca|tlsca
 function printServerService {
@@ -353,12 +348,80 @@ function startK8s {
   kubectl create -f ${ORG_DIR}/k8s/ca.yaml
 }
 
-function main {
+function stopServer {
+  if [ "${ENV_TYPE}" == "docker" ]; then
+    echo "stop docker containers"
+    docker-compose -f ${ORG_DIR}/docker/docker-compose.yaml down --volumes --remove-orphans
+  else
+    echo "stop k8s CA PODs"
+    kubectl delete -f ${ORG_DIR}/k8s/ca.yaml
+    kubectl delete -f ${ORG_DIR}/k8s/ca-pv.yaml
+  fi
+
+  if [ ! -z "${CLEANUP}" ]; then
+    echo "cleanup ca-client and ca/tlsca server data"
+    ${surm} -R ${ORG_DIR}
+  else
+    echo "cleanup ca-client data"
+    ${surm} -R ${ORG_DIR}/ca-client/*
+  fi
+}
+
+# Print the usage message
+function printHelp() {
+  echo "Usage: "
+  echo "  ca-server.sh <cmd> [-p <property file>] [-t <env type>] [-d]"
+  echo "    <cmd> - one of 'start', or 'shutdown'"
+  echo "      - 'start' - start ca and tlsca servers and ca client"
+  echo "      - 'shutdown' - shutdown ca and tlsca servers and ca client, and cleanup ca-client data"
+  echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
+  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', or 'az'"
+  echo "    -d - delete all ca/tlsca server data for fresh start next time"
+  echo "  ca-server.sh -h (print this message)"
+}
+
+ORG_ENV="netop1"
+ENV_TYPE="k8s"
+
+CMD=${1}
+shift
+while getopts "h?p:t:d" opt; do
+  case "$opt" in
+  h | \?)
+    printHelp
+    exit 0
+    ;;
+  p)
+    ORG_ENV=$OPTARG
+    ;;
+  t)
+    ENV_TYPE=$OPTARG
+    ;;
+  d)
+    CLEANUP="true"
+    ;;
+  esac
+done
+
+source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${ORG_ENV} ${ENV_TYPE}
+ORG_DIR=${DATA_ROOT}/canet
+CA_PORT=${CA_PORT:-"7054"}
+TLS_PORT=${TLS_PORT:-"7055"}
+
+case "${CMD}" in
+start)
+  echo "start ca server: ${ORG_ENV} ${ENV_TYPE}"
   if [ "${ENV_TYPE}" == "docker" ]; then
     startDocker
   else
     startK8s
   fi
-}
-
-main
+  ;;
+shutdown)
+  echo "shutdown ca server: ${ORG_ENV} ${ENV_TYPE}"
+  stopServer
+  ;;
+*)
+  printHelp
+  exit 1
+esac
