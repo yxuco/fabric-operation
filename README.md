@@ -39,8 +39,9 @@ You can edit the network specification [netop1.env](./config/netop1.env) if you 
 These scripts take 2 additional parameters, e.g.,
 ```
 ./ca-server.sh start -p <config_file> -t <env_type>
+./ca-crypto.sh bootstrap -p <config_file> -t <env_type>
 ```
-where `config_file` is file in the [config](./config) folder with a suffix `.env` that contains the fabric network specification; `env_type` can be `k8s`, `docker`, `aws`, or `az`.  When no parameter is specified, it uses default `-p netop1 -t k8s`.
+where `config_file` is file in the [config](./config) folder with a suffix `.env` that contains the fabric network specification; `env_type` can be `k8s`, `docker`, `aws`, or `az`.  When no parameter is specified, it uses default `-p netop1 -t k8s`.  Refer [ca](./ca) folder for more detailed description of these scripts.
 * `k8s` uses the local `docker-desktop` kubernetes on Mac.  Non-Mac users may use `docker` option below, or try Minikube (which has not been tested).
 * `docker` uses `docker-compose`.
 * `aws` uses AWS EKS when executed on a `bastion` host of an EC2 instance.  Refer the folder [aws](./aws) for more details on AWS.
@@ -56,9 +57,15 @@ You may verify the generated crypto data by using a preconfigured sample network
 The following script generates a genesis block for the sample network in Kubernetes using 2 peers and 3 orderers with `etcd raft` consensus.
 ```
 cd ./msp
-./bootstrap.sh
+./msp-util.sh start
+./msp-util.sh bootstrap
 ```
-It also generates transactions for creating a test channel, `mychannel`, for smoke testing.  Similar to other scripts, this command also accepts 2 parameters, `config-file` and `env-type` so you can specify a different network definition file, or generate artifacts for other deployment environment, e.g., `docker`, `aws`, or `az`.
+It also generates transactions for creating a test channel, `mychannel`, for smoke testing.  Similar to other scripts, this command also accepts 2 parameters, e.g.,
+```
+./msp-util.sh start -p <config_file> -t <env_type>
+./msp-util.sh bootstrap -p <config_file> -t <env_type>
+```
+so you can specify a different network definition file, or generate artifacts for other deployment environment, e.g., `docker`, `aws`, or `az`. Refer [msp](./msp) folder for more detailed description of these scripts.
 
 ## Start and smoke test the Fabric network
 The following script will start and test the sample fabric network by using the `docker-desktop` Kubernetes on a Mac:
@@ -78,9 +85,9 @@ After the smoke test succeeds, you should see a test result of `90` printed on t
 
 ## Non-Mac users
 If you are not using a Mac, you can run these scripts using `docker-compose`, `Amazon EKS`, or `Azure AKS`. Simply add 2 parameters to all the commands, e.g.,
-* `./start-ca.sh netop1 docker` to use `docker-composer`, or
-* `./start-ca.sh netop1 aws` to use AWS as described in the folder [aws](./aws), or
-* `./start-ca.sh netop1 az` to use Azure as described in the folder [az](./az), or
+* `./ca-server.sh start -t docker` to use `docker-composer`, or
+* `./ca-server.sh start -t aws` to use AWS as described in the folder [aws](./aws), or
+* `./ca-server.sh start -t az` to use Azure as described in the folder [az](./az), or
 * try to verify if the scripts would work on [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/).
 
 When `docker` is used, start and test the Fabric network using the following commands:

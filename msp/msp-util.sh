@@ -1,21 +1,10 @@
 #!/bin/bash
 # create MSP configuration, channel profile, and orderer genesis block
 #   for target environment, i.e., docker, k8s, aws, az, etc
-# usage: bootstrap.sh <org_name> <env>
-# it uses config parameters of the specified org as defined in ../config/org.env, e.g.
-#   bootstrap.sh netop1
-# using config parameters specified in ../config/netop1.env
-# second parameter env can be k8s or aws to use local host or efs persistence, default k8s for local persistence
+# usage: msp-util.sh -h
+# to display usage info
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
-ENV_TYPE=${2:-"k8s"}
-source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${1:-"netop1"} ${ENV_TYPE}
-
-ORG_MSP="${ORG}MSP"
-ORDERER_MSP=${ORDERER_MSP:-"${ORG}OrdererMSP"}
-SYS_CHANNEL=${SYS_CHANNEL:-"${ORG}-channel"}
-TEST_CHANNEL=${TEST_CHANNEL:-"mychannel"}
-ORDERER_TYPE=${ORDERER_TYPE:-"solo"}
 
 # e.g., getHostUrl peer-1
 function getHostUrl {
@@ -283,12 +272,13 @@ services:
       - GOPATH=/opt/gopath
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - FABRIC_LOGGING_SPEC=INFO
+      - SYS_CHANNEL=${SYS_CHANNEL}
+      - ORG=${ORG}
+      - ORG_MSP=${ORG_MSP}
+      - ORDERER_TYPE=${ORDERER_TYPE}
+      - TEST_CHANNEL=${TEST_CHANNEL}
     working_dir: /etc/hyperledger/tool
-    command: /bin/bash -c \"
-        configtxgen -profile ${ORDERER_TYPE}OrdererGenesis -channelID ${SYS_CHANNEL} -outputBlock ./genesis.block
-        && configtxgen -profile ${ORG}Channel -outputCreateChannelTx ./channel.tx -channelID ${TEST_CHANNEL}
-        && configtxgen -profile ${ORG}Channel -outputAnchorPeersUpdate ./anchors.tx -channelID ${TEST_CHANNEL} -asOrg ${ORG_MSP}
-      \"
+    command: /bin/bash -c 'while true; do sleep 30; done'
     volumes:
         - /var/run/:/host/var/run/
         - ${DATA_ROOT}/tool/:/etc/hyperledger/tool
@@ -327,7 +317,7 @@ volumeBindingMode: WaitForFirstConsumer"
   fi
 }
 
-# print k8s PV and PVC for tool Job
+# print k8s PV and PVC for tool Pod
 function printK8sStorageYaml {
   printK8sStorageClass "tool-data-class"
   printK8sPV "data-tool"
@@ -396,97 +386,184 @@ spec:
       org: ${ORG}"
 }
 
-function printK8sJob {
+function printK8sPod {
   echo "
-apiVersion: batch/v1
-kind: Job
+apiVersion: v1
+kind: Pod
 metadata:
   name: tool
   namespace: ${ORG}
-  labels:
-    app: tool
 spec:
-#  selector:
-#    matchLabels:
-#      app: tool
-  backoffLimit: 3
-  ttlSecondsAfterFinished: 300
-  template:
-    metadata:
-      labels:
-        app: tool
-    spec:
-      containers:
-      - name: tool
-        image: hyperledger/fabric-tools
-        env:
-        - name: FABRIC_LOGGING_SPEC
-          value: INFO
-        - name: GOPATH
-          value: /opt/gopath
-        - name: FABRIC_CFG_PATH
-          value: /etc/hyperledger/tool
-        - name: CORE_VM_ENDPOINT
-          value: unix:///host/var/run/docker.sock
-        command:
-        - /bin/bash
-        - -c
-        - |
-          configtxgen -profile ${ORDERER_TYPE}OrdererGenesis -channelID ${SYS_CHANNEL} -outputBlock ./genesis.block
-          configtxgen -profile ${ORG}Channel -outputCreateChannelTx ./channel.tx -channelID ${TEST_CHANNEL}
-          configtxgen -profile ${ORG}Channel -outputAnchorPeersUpdate ./anchors.tx -channelID ${TEST_CHANNEL} -asOrg ${ORG_MSP}
-        workingDir: /etc/hyperledger/tool
-        volumeMounts:
-        - mountPath: /host/var/run
-          name: docker-sock
-        - mountPath: /etc/hyperledger/tool
-          name: data
-      restartPolicy: Never
-      volumes:
-      - name: docker-sock
-        hostPath:
-          path: /var/run
-          type: Directory
-      - name: data
-        persistentVolumeClaim:
-          claimName: data-tool-pvc"
+  containers:
+  - name: tool
+    image: hyperledger/fabric-tools
+    imagePullPolicy: Always
+    env:
+    - name: FABRIC_LOGGING_SPEC
+      value: INFO
+    - name: GOPATH
+      value: /opt/gopath
+    - name: FABRIC_CFG_PATH
+      value: /etc/hyperledger/tool
+    - name: CORE_VM_ENDPOINT
+      value: unix:///host/var/run/docker.sock
+    - name: ORDERER_TYPE
+      value: ${ORDERER_TYPE}
+    - name: SYS_CHANNEL
+      value: ${SYS_CHANNEL}
+    - name: ORG
+      value: ${ORG}
+    - name: ORG_MSP
+      value: ${ORG_MSP}
+    - name: TEST_CHANNEL
+      value: ${TEST_CHANNEL}
+    command:
+    - /bin/bash
+    - -c
+    - while true; do sleep 30; done
+    workingDir: /etc/hyperledger/tool
+    volumeMounts:
+    - mountPath: /host/var/run
+      name: docker-sock
+    - mountPath: /etc/hyperledger/tool
+      name: data
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run
+      type: Directory
+  - name: data
+    persistentVolumeClaim:
+      claimName: data-tool-pvc"
 }
 
-function runK8s {
-  echo "use kubernetes"
-  # print k8s yaml for tool job
-  ${sumd} -p "${DATA_ROOT}/tool/k8s"
-  printK8sStorageYaml | ${stee} ${DATA_ROOT}/tool/k8s/tool-pv.yaml > /dev/null
-  printK8sJob | ${stee} ${DATA_ROOT}/tool/k8s/tool.yaml > /dev/null
-
-  # run tool job
-  kubectl create -f ${DATA_ROOT}/tool/k8s/tool-pv.yaml
-  kubectl create -f ${DATA_ROOT}/tool/k8s/tool.yaml
-}
-
-function runDocker {
-  echo "use docker-compose"
-  # start tool container to generate genesis block and channel tx
-  mkdir -p "${DATA_ROOT}/tool/docker"
-  printDockerYaml > ${DATA_ROOT}/tool/docker/docker-compose.yaml
-  docker-compose -f ${DATA_ROOT}/tool/docker/docker-compose.yaml up
-
-  # cleanup tool container and docker network
-  docker network rm docker_${ORG}
-  docker rm tool
-}
-
-# generate orderer genesis block and tx for creating test channel
-function main {
+function startService {
   # print out configtx.yaml
   echo "create ${DATA_ROOT}/tool/configtx.yaml"
   printConfigTx | ${stee} ${DATA_ROOT}/tool/configtx.yaml > /dev/null
 
   if [ "${ENV_TYPE}" == "docker" ]; then
-    runDocker
+    echo "use docker-compose"
+    # start tool container to generate genesis block and channel tx
+    mkdir -p "${DATA_ROOT}/tool/docker"
+    printDockerYaml > ${DATA_ROOT}/tool/docker/docker-compose.yaml
+    docker-compose -f ${DATA_ROOT}/tool/docker/docker-compose.yaml up -d
   else
-    runK8s
+    echo "use kubernetes"
+    # print k8s yaml for tool job
+    ${sumd} -p "${DATA_ROOT}/tool/k8s"
+    printK8sStorageYaml | ${stee} ${DATA_ROOT}/tool/k8s/tool-pv.yaml > /dev/null
+    printK8sPod | ${stee} ${DATA_ROOT}/tool/k8s/tool.yaml > /dev/null
+    # run tool job
+    kubectl create -f ${DATA_ROOT}/tool/k8s/tool-pv.yaml
+    kubectl create -f ${DATA_ROOT}/tool/k8s/tool.yaml
+  fi
+
+  ${sucp} ${SCRIPT_DIR}/gen-artifact.sh ${DATA_ROOT}/tool
+}
+
+function shutdownService {
+  if [ "${ENV_TYPE}" == "docker" ]; then
+    echo "shutdown docker msp tools"
+    docker-compose -f ${DATA_ROOT}/tool/docker/docker-compose.yaml down --volumes --remove-orphans
+  else
+    echo "shutdown K8s msp tools"
+    kubectl delete -f ${DATA_ROOT}/tool/k8s/tool.yaml
+    kubectl delete -f ${DATA_ROOT}/tool/k8s/tool-pv.yaml
   fi
 }
 
-main
+function execCommand {
+  local _cmd="gen-artifact.sh $@"
+  if [ "${ENV_TYPE}" == "docker" ]; then
+    docker exec -it tool bash -c "./${_cmd}"
+  else
+    kubectl exec -it tool -- bash -c "./${_cmd}"
+  fi
+}
+
+# Print the usage message
+function printHelp() {
+  echo "Usage: "
+  echo "  msp-util.sh <cmd> [-p <property file>] [-t <env type>] [-o <consensus type>] [-c <channel name>]"
+  echo "    <cmd> - one of 'start', 'shutdown', 'bootstrap', 'genesis', 'channel'"
+  echo "      - 'start' - start tools container to run msp-util"
+  echo "      - 'shutdown' - shutdown tools container for the msp-util"
+  echo "      - 'bootstrap' - generate bootstrap genesis block and test channel tx defined in network spec"
+  echo "      - 'genesis' - generate genesis block of specified consensus type"
+  echo "      - 'channel' - generate channel creation tx for specified channel name"
+  echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
+  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', or 'az'"
+  echo "    -o <consensus type> - 'solo' or 'etcdraft' used with the 'genesis' command"
+  echo "    -c <channel name> - name of a channel, used with the 'channel' command"
+  echo "  msp-util.sh -h (print this message)"
+}
+
+ORG_ENV="netop1"
+ENV_TYPE="k8s"
+
+CMD=${1}
+shift
+while getopts "h?p:t:o:c:" opt; do
+  case "$opt" in
+  h | \?)
+    printHelp
+    exit 0
+    ;;
+  p)
+    ORG_ENV=$OPTARG
+    ;;
+  t)
+    ENV_TYPE=$OPTARG
+    ;;
+  o)
+    CONS_TYPE=$OPTARG
+    ;;
+  c)
+    CHAN_NAME=$OPTARG
+    ;;
+  esac
+done
+
+source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${ORG_ENV} ${ENV_TYPE}
+ORG_MSP="${ORG}MSP"
+ORDERER_MSP=${ORDERER_MSP:-"${ORG}OrdererMSP"}
+SYS_CHANNEL=${SYS_CHANNEL:-"${ORG}-channel"}
+TEST_CHANNEL=${TEST_CHANNEL:-"mychannel"}
+ORDERER_TYPE=${ORDERER_TYPE:-"solo"}
+
+case "${CMD}" in
+start)
+  echo "start msp util tool: ${ORG_ENV} ${ENV_TYPE}"
+  startService
+  ;;
+shutdown)
+  echo "shutdown msp util tool: ${ORG_ENV} ${ENV_TYPE}"
+  shutdownService
+  ;;
+bootstrap)
+  echo "bootstrap msp artifacts: ${ORG_ENV} ${ENV_TYPE}"
+  execCommand "bootstrap"
+  ;;
+genesis)
+  echo "create genesis block for consensus type: [ ${CONS_TYPE} ]"
+  if [ -z "${CONS_TYPE}" ]; then
+    echo "Error: consensus type not specified"
+    printHelp
+  else
+    execCommand "genesis ${CONS_TYPE}"
+  fi
+  ;;
+channel)
+  echo "create channel tx for channel: [ ${CHAN_NAME} ]"
+  if [ -z "${CHAN_NAME}" ]; then
+    echo "Error: channel name not specified"
+    printHelp
+  else
+    execCommand "channel ${CHAN_NAME}"
+  fi
+  ;;
+*)
+  printHelp
+  exit 1
+esac

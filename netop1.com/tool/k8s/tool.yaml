@@ -1,53 +1,48 @@
 
-apiVersion: batch/v1
-kind: Job
+apiVersion: v1
+kind: Pod
 metadata:
   name: tool
   namespace: netop1
-  labels:
-    app: tool
 spec:
-#  selector:
-#    matchLabels:
-#      app: tool
-  backoffLimit: 3
-  ttlSecondsAfterFinished: 300
-  template:
-    metadata:
-      labels:
-        app: tool
-    spec:
-      containers:
-      - name: tool
-        image: hyperledger/fabric-tools
-        env:
-        - name: FABRIC_LOGGING_SPEC
-          value: INFO
-        - name: GOPATH
-          value: /opt/gopath
-        - name: FABRIC_CFG_PATH
-          value: /etc/hyperledger/tool
-        - name: CORE_VM_ENDPOINT
-          value: unix:///host/var/run/docker.sock
-        command:
-        - /bin/bash
-        - -c
-        - |
-          configtxgen -profile etcdraftOrdererGenesis -channelID netop1-channel -outputBlock ./genesis.block
-          configtxgen -profile netop1Channel -outputCreateChannelTx ./channel.tx -channelID mychannel
-          configtxgen -profile netop1Channel -outputAnchorPeersUpdate ./anchors.tx -channelID mychannel -asOrg netop1MSP
-        workingDir: /etc/hyperledger/tool
-        volumeMounts:
-        - mountPath: /host/var/run
-          name: docker-sock
-        - mountPath: /etc/hyperledger/tool
-          name: data
-      restartPolicy: Never
-      volumes:
-      - name: docker-sock
-        hostPath:
-          path: /var/run
-          type: Directory
-      - name: data
-        persistentVolumeClaim:
-          claimName: data-tool-pvc
+  containers:
+  - name: tool
+    image: hyperledger/fabric-tools
+    imagePullPolicy: Always
+    env:
+    - name: FABRIC_LOGGING_SPEC
+      value: INFO
+    - name: GOPATH
+      value: /opt/gopath
+    - name: FABRIC_CFG_PATH
+      value: /etc/hyperledger/tool
+    - name: CORE_VM_ENDPOINT
+      value: unix:///host/var/run/docker.sock
+    - name: ORDERER_TYPE
+      value: etcdraft
+    - name: SYS_CHANNEL
+      value: netop1-channel
+    - name: ORG
+      value: netop1
+    - name: ORG_MSP
+      value: netop1MSP
+    - name: TEST_CHANNEL
+      value: mychannel
+    command:
+    - /bin/bash
+    - -c
+    - while true; do sleep 30; done
+    workingDir: /etc/hyperledger/tool
+    volumeMounts:
+    - mountPath: /host/var/run
+      name: docker-sock
+    - mountPath: /etc/hyperledger/tool
+      name: data
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run
+      type: Directory
+  - name: data
+    persistentVolumeClaim:
+      claimName: data-tool-pvc

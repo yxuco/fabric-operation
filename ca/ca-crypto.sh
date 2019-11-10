@@ -26,8 +26,13 @@ function genCrypto {
   else
     echo "use k8s - ${_cmd}"
     cpod=$(kubectl get pod -l app=ca-client -o name)
-    echo "generate crypto using ca-client: ${cpod##*/}"
-    kubectl exec -it ${cpod##*/} -- bash -c "/etc/hyperledger/fabric-ca-client/${_cmd}"
+    if [ -z "${cpod}" ]; then
+      echo "Error: ca-client is not running, start ca server and client first"
+      exit 1
+    else
+      echo "generate crypto using ca-client: ${cpod##*/}"
+      kubectl exec -it ${cpod##*/} -- bash -c "./${_cmd}"
+    fi
   fi
 }
 

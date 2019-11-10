@@ -212,6 +212,7 @@ spec:
         - bash
         - -c
         - \"while true; do sleep 30; done\"
+        workingDir: /etc/hyperledger/fabric-ca-client
         volumeMounts:
         - mountPath: /etc/hyperledger/fabric-ca-client
           name: data

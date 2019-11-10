@@ -11,12 +11,13 @@ services:
       - GOPATH=/opt/gopath
       - CORE_VM_ENDPOINT=unix:///host/var/run/docker.sock
       - FABRIC_LOGGING_SPEC=INFO
+      - SYS_CHANNEL=netop1-channel
+      - ORG=netop1
+      - ORG_MSP=netop1MSP
+      - ORDERER_TYPE=etcdraft
+      - TEST_CHANNEL=mychannel
     working_dir: /etc/hyperledger/tool
-    command: /bin/bash -c "
-        configtxgen -profile etcdraftOrdererGenesis -channelID netop1-channel -outputBlock ./genesis.block
-        && configtxgen -profile netop1Channel -outputCreateChannelTx ./channel.tx -channelID mychannel
-        && configtxgen -profile netop1Channel -outputAnchorPeersUpdate ./anchors.tx -channelID mychannel -asOrg netop1MSP
-      "
+    command: /bin/bash -c 'while true; do sleep 30; done'
     volumes:
         - /var/run/:/host/var/run/
         - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/tool/:/etc/hyperledger/tool

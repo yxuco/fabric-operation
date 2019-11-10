@@ -286,7 +286,7 @@ function verifyRequest {
     fi
     ;;
   *)
-    printHelp
+    printUsage
     exit 1
   esac
 }

@@ -86,10 +86,11 @@ This command starts 2 CA servers and a CA client, and generates crypto data acco
 ### Generate genesis block and channel creation tx
 ```
 cd ../msp
-./bootstrap.sh netop1 aws
+./msp-util.sh start -t aws
+./msp-util.sh bootstrap -t aws
 ```
-This command starts a Kubernetes Job to generate the genesis block and transaction for creating a test channel `mychannel` based on the network specification.  You can verify the result using the following commands:
-* `kubectl get jobs` should list a completed `job/tool` (note that you may need to wait a few seconds before it shows 1 completion);
+This command starts a Kubernetes POD to generate the genesis block and transaction for creating a test channel `mychannel` based on the network specification.  You can verify the result using the following commands:
+* `kubectl get pods` should list a running POD `tool`;
 * `ls /mnt/share/netop1.com/tool` should show the generated artifacts: `genesis.block`, `channel.tx`, `anchors.tx`, and `configtx.yaml`.
 
 ### Start Fabric network
