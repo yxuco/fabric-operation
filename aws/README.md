@@ -67,7 +67,7 @@ Following steps will start and smoke test the default Hyperledger Fabric network
 ### Create namespace for the network operator
 ```
 cd ../namespace
-./k8s-namespace.sh netop1 aws
+./k8s-namespace.sh create -t aws
 ```
 This command creates a namespace for the default Fabric operator company, `netop1`, and sets it as the default namespace. You can verify this step using the following commands:
 * `kubectl get namespaces` should show a list of namespaces, including the new namespace `netop1`;
@@ -96,7 +96,7 @@ This command starts a Kubernetes POD to generate the genesis block and transacti
 ### Start Fabric network
 ```
 cd ../network
-./start-k8s.sh netop1 aws
+./network.sh start -t aws
 ```
 This command starts the orderers and peers using the crypto and genesis block created in the previous steps.  You can verify the network status using the following commands:
 * `kubectl get pod,svc` should list 3 running orderers and 2 running peers;
@@ -107,7 +107,7 @@ This command starts the orderers and peers using the crypto and genesis block cr
 ### Smoke test of the Fabric network
 ```
 cd ../network
-./k8s-test.sh netop1 aws
+./network.sh test -t aws
 ```
 This command creates the test channel `mychannel`, installs and instantiates a test chaincode, and then executes a transaction and a query to verify the working network.  You can verify the result as follows:
 * The last result printed out by the test should be `90`;
@@ -117,11 +117,11 @@ This command creates the test channel `mychannel`, installs and instantiates a t
 ### Stop Fabric network and cleanup persistent data
 ```
 cd ../network
-./stop-k8s.sh netop1 aws true
+./network.sh shutdown -t aws -d
 ```
-This command shuts down orderers and peers, and the last argument `true` means to delete all persistent data as well.  If you do not provide the 3rd argument, it would keep the test ledger on the `EFS` file system, and so it can be loaded when the network restarts.  You can verify the result using the following command.
+This command shuts down orderers and peers, and the last argument `-d` means to delete all persistent data as well.  If you do not provide the argument `-d`, it would keep the test ledger files on the `EFS` file system, and so it can be loaded when the network restarts.  You can verify the result using the following command.
 * `kubectl get svc,pod` should not list any running orderers or peers;
-* The orderers and peers' persistent data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would be deleted if the 3rd argument of the above command is `true`.
+* The orderers and peers' persistent data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would be deleted if the argument `-d` is used.
 
 ## Clean up all AWS artifacts
 You can clean up every thing created in AWS when they are no longer used, i.e.,

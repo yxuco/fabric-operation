@@ -15,9 +15,10 @@ The scripts support both `docker-compose` and `kubernetes`.  All steps are done 
   * For Azure, refer the scripts and instructions in the [az folder](./az).
 
 ## Prepare Kubernetes namespace
+This step is necessary only if you use Kubernetes.  So, skip it when `docker-compose` is used.
 ```
 cd ./namespace
-./k8s-namespace.sh
+./k8s-namespace.sh create
 ```
 This command creates a namespace for the default Fabric operator company, `netop1`. It also sets `netop1` as the default namespace, so you won't have to specify the namespace in the following `kubectl` commands.
 
@@ -28,10 +29,11 @@ kubectl config use-context docker-desktop
 ## Start CA server and generate crypto data
 Following steps use `docker-desktop` Kubernetes on Mac to start `fabric-ca` PODs and generate crypto data required by the sample network, `netop1`.
 ```
-cd ./ca
+cd ../ca
 # cleanup old ca-server data
 rm -R ../netop1.com/canet
 ./ca-server.sh start
+# wait until the 3 PODs for ca server and client are in running state
 ./ca-crypto.sh bootstrap
 ```
 You can edit the network specification [netop1.env](./config/netop1.env) if you want to use a different operating company name, or make it run more orderer or peer nodes.  The generated crypto data will be stored in the folder [netop1.com](./netop1.com) on localhost, or in a cloud file system, such as Amazon EFS, or Azure Files. 
@@ -56,8 +58,9 @@ You may verify the generated crypto data by using a preconfigured sample network
 ## Generate MSP definition and genesis block
 The following script generates a genesis block for the sample network in Kubernetes using 2 peers and 3 orderers with `etcd raft` consensus.
 ```
-cd ./msp
+cd ../msp
 ./msp-util.sh start
+# wait until the too POD is running
 ./msp-util.sh bootstrap
 ```
 It also generates transactions for creating a test channel, `mychannel`, for smoke testing.  Similar to other scripts, this command also accepts 2 parameters, e.g.,
@@ -71,20 +74,20 @@ so you can specify a different network definition file, or generate artifacts fo
 The following script will start and test the sample fabric network by using the `docker-desktop` Kubernetes on a Mac:
 ```
 cd ./network
-./start-k8s.sh
-./k8s-test.sh
-./stop-k8s.sh
+./network.sh start
+./network.sh test
+./network.sh shutdown
 ```
-Before you shutdown the network by using [`stop-k8s.sh`](./network/stop-k8s.sh), you can verify the running fabric containers by using `kubectl`, e.g.,
+Before you shutdown the network, you can verify the running fabric containers by using `kubectl`, e.g.,
 ```
 kubectl get pod,svc --namespace netop1
 ```
 Note that the scripts use the operating company name `netop1`, as a Kubernetes namespace, and so they can support multiple member organizations.
 
-After the smoke test succeeds, you should see a test result of `90` printed on the screen. If you used `docker-compose` for this excersize, you can look at the blockchain state via the `CouchDB` futon UI at `http://localhost:7056/_utils`, which is exposed for `docker-compose` only because it is not recommended to expose `CouchDB` in production configuration using Kubernetes.
+After the smoke test succeeds, you should see a test result of `90` printed on the screen. If you used `docker-compose` for this excersize (as described below), you can look at the blockchain state via the `CouchDB` futon UI at `http://localhost:7056/_utils`, which is exposed for `docker-compose` only because it is not recommended to expose `CouchDB` in production configuration using Kubernetes.
 
 ## Non-Mac users
-If you are not using a Mac, you can run these scripts using `docker-compose`, `Amazon EKS`, or `Azure AKS`. Simply add 2 parameters to all the commands, e.g.,
+If you are not using a Mac, you can run these scripts using `docker-compose`, `Amazon EKS`, or `Azure AKS`. Simply add a corresponding `env_type` in all the commands, e.g.,
 * `./ca-server.sh start -t docker` to use `docker-composer`, or
 * `./ca-server.sh start -t aws` to use AWS as described in the folder [aws](./aws), or
 * `./ca-server.sh start -t az` to use Azure as described in the folder [az](./az), or
@@ -93,9 +96,9 @@ If you are not using a Mac, you can run these scripts using `docker-compose`, `A
 When `docker` is used, start and test the Fabric network using the following commands:
 ```
 cd ./network
-./start-docker.sh
-./docker-test.sh
-./stop-docker.sh
+./network.sh start -t docker
+./network.sh test -t docker
+./network.sh shutdown -t docker
 ```
 ## TODO
 Stay tuned for more updates on the following items:

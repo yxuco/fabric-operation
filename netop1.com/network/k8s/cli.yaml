@@ -14,7 +14,6 @@ spec:
     - -c
     - |
       mkdir -p /opt/gopath/src/github.com
-      cp -R /etc/hyperledger/cli/store/chaincode /opt/gopath/src/github.com
       while true; do sleep 30; done
     env:
     - name: CORE_PEER_ADDRESS
@@ -64,4 +63,4 @@ spec:
       type: Directory
   - name: data
     persistentVolumeClaim:
-      claimName: data-cli-pvc
+      claimName: data-cli

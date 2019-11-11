@@ -360,12 +360,12 @@ function stopServer {
   fi
 
   if [ ! -z "${CLEANUP}" ]; then
-    echo "cleanup ca-client and ca/tlsca server data"
-    ${surm} -R ${ORG_DIR}
-  else
-    echo "cleanup ca-client data"
-    ${surm} -R ${ORG_DIR}/ca-client/*
+    echo "cleanup ca/tlsca server data"
+    ${surm} -R ${ORG_DIR}/ca-server
+    ${surm} -R ${ORG_DIR}/tlsca-server
   fi
+  echo "cleanup ca-client data"
+  ${surm} -R ${ORG_DIR}/ca-client/*
 }
 
 # Print the usage message

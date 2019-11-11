@@ -9,7 +9,7 @@ volumeBindingMode: WaitForFirstConsumer
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: data-cli-pv
+  name: data-cli
   labels:
     app: data-cli
     org: netop1
@@ -28,7 +28,7 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: data-cli-pvc
+  name: data-cli
   namespace: netop1
 spec:
   storageClassName: cli-data-class
