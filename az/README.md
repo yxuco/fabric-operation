@@ -136,4 +136,4 @@ kubectl config view
 kubectl config set-context netop1 --namespace=netop1 --cluster=fabAKSCluster --user=clusterUser_fabRG_fabAKSCluster
 kubectl config use-context netop1
 ```
-Note to replace the values of `cluster` and `user` in the second command by the corresponding output from the first command.  This configuration is automatically done on the bastion host when the [`k8s-namespace.sh`](../namespace/k8s-namespace.sh) script is called.
+Note to replace the values of `cluster` and `user` in the second command by the corresponding output from the first command.  This configuration is automatically done on the bastion host when the [`k8s-namespace.sh create`](../namespace/k8s-namespace.sh) script is called.
