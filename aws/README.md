@@ -66,7 +66,7 @@ Following steps will start and smoke test the default Hyperledger Fabric network
 
 ### Create namespace for the network operator
 ```
-cd ../namespace
+cd ./fabric-operation/namespace
 ./k8s-namespace.sh create -t aws
 ```
 This command creates a namespace for the default Fabric operator company, `netop1`, and sets it as the default namespace. You can verify this step using the following commands:
@@ -77,6 +77,7 @@ This command creates a namespace for the default Fabric operator company, `netop
 ```
 cd ../ca
 ./ca-server.sh start -t aws
+# wait until 3 ca server and client PODs are in running state
 ./ca-crypto.sh bootstrap -t aws
 ```
 This command starts 2 CA servers and a CA client, and generates crypto data according to the network specification, [netop1.env](../config/netop1.env).  You can verify the result using the following commands:
@@ -87,6 +88,7 @@ This command starts 2 CA servers and a CA client, and generates crypto data acco
 ```
 cd ../msp
 ./msp-util.sh start -t aws
+# wait until the tool POD is in running state
 ./msp-util.sh bootstrap -t aws
 ```
 This command starts a Kubernetes POD to generate the genesis block and transaction for creating a test channel `mychannel` based on the network specification.  You can verify the result using the following commands:
@@ -111,8 +113,8 @@ cd ../network
 ```
 This command creates the test channel `mychannel`, installs and instantiates a test chaincode, and then executes a transaction and a query to verify the working network.  You can verify the result as follows:
 * The last result printed out by the test should be `90`;
-* Orderer data folder, e.g., `/mnt/share/netop1.com/orderers/orderer-0/data` would show a block file added under the chain of a new channel `mychannel`;
-* Peer data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would show a new chaincode `mycc.1.0` added to the chaincode folder, and a transaction block file created under the chain of `mychannel`.
+* Orderer data folder, e.g., `/mnt/share/netop1.com/orderers/orderer-0/data` would show a block file added under the chain of a new channel `chains/mychannel`;
+* Peer data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would show a new chaincode `mycc.1.0` added in the `chaincodes` folder, and a transaction block file created under `ledgersData/chains/chains/mychannel`.
 
 ### Stop Fabric network and cleanup persistent data
 ```
@@ -124,7 +126,7 @@ This command shuts down orderers and peers, and the last argument `-d` means to 
 * The orderers and peers' persistent data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would be deleted if the argument `-d` is used.
 
 ## Clean up all AWS artifacts
-You can clean up every thing created in AWS when they are no longer used, i.e.,
+You can exit from the `bastion` host, and clean up every thing created in AWS when they are no longer used, i.e.,
 ```
 cd ./aws
 ./aws-util.sh cleanup -n fab -r us-west-2 -p prod
@@ -153,4 +155,4 @@ kubectl config view
 kubectl config set-context netop1 --namespace=netop1 --cluster=fab-eks-stack.us-west-2.eksctl.io --user=1572660907000277000@fab-eks-stack.us-west-2.eksctl.io
 kubectl config use-context netop1
 ```
-Note to replace the values of `cluster` and `user` in the second command by the corresponding output from the first command.  This configuration is automatically done on the bastion host when the [`k8s-namespace.sh create`](../namespace/k8s-namespace.sh) script is called.
+Note to replace the values of `cluster` and `user` in the second command by the corresponding output from the first command.  This configuration is automatically done on the bastion host when the [`k8s-namespace.sh create`](../namespace/k8s-namespace.sh) script is executed.

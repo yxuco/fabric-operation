@@ -50,7 +50,7 @@ Following steps will start and smoke test the default Hyperledger Fabric network
 
 ### Create namespace for the network operator
 ```
-cd ../namespace
+cd ./fabric-operation/namespace
 ./k8s-namespace.sh create -t az
 ```
 This command creates a namespace for the default Fabric operator company, `netop1`, and sets it as the default namespace.  It also creates Kubernetes secret for accessing Azure Files storage for persistence.  You can verify this step using the following commands:
@@ -62,6 +62,7 @@ This command creates a namespace for the default Fabric operator company, `netop
 ```
 cd ../ca
 ./ca-server.sh start -t az
+# wait until 3 ca server and client PODs are in running state
 ./ca-crypto.sh bootstrap -t az
 ```
 This command starts 2 CA servers and a CA client, and generates crypto data according to the network specification, [netop1.env](../config/netop1.env).  You can verify the result using the following commands:
@@ -72,6 +73,7 @@ This command starts 2 CA servers and a CA client, and generates crypto data acco
 ```
 cd ../msp
 ./msp-util.sh start -t az
+# wait until the tool POD is in running state
 ./msp-util.sh bootstrap -t az
 ```
 This command starts a Kubernetes POD to generate the genesis block and transaction for creating a test channel `mychannel` based on the network specification.  You can verify the result using the following commands:
@@ -96,8 +98,8 @@ cd ../network
 ```
 This command creates the test channel `mychannel`, installs and instantiates a test chaincode, and then executes a transaction and a query to verify the working network.  You can verify the result as follows:
 * The last result printed out by the test should be `90`;
-* Orderer data folder, e.g., `/mnt/share/netop1.com/orderers/orderer-0/data` would show a block file added under the chain of a new channel `mychannel`;
-* Peer data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would show a new chaincode `mycc.1.0` added to the chaincode folder, and a transaction block file created under the chain of `mychannel`.
+* Orderer data folder, e.g., `/mnt/share/netop1.com/orderers/orderer-0/data` would show a block file added under the chain of a new channel `chains/mychannel`;
+* Peer data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would show a new chaincode `mycc.1.0` added to the `chaincodes` folder, and a transaction block file created under `ledgersData/chains/chains/mychannel`.
 
 ### Stop Fabric network and cleanup persistent data
 ```
@@ -109,7 +111,7 @@ This command shuts down orderers and peers, and the last argument `-d` means to 
 * The orderers and peers' persistent data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would be deleted if the option `-d` us used.
 
 ## Clean up all Azure processes and storage
-You can clean up every thing created in Azure when they are no longer used, i.e.,
+You can exit from the `bastion` host, and clean up every thing created in Azure when they are no longer used, i.e.,
 ```
 cd ./az
 ./az-util.sh cleanup -n fab -r westus2
@@ -123,7 +125,7 @@ If your local workstation has `kubctl` installed, and you want to execute `kubec
 ```
 export KUBECONFIG=/path/to/fabric-operation/az/config/config-fab.yaml
 ```
-where the `/path/to` is the location of this project on your localhost, and `config-fab.yaml` is named after the `ENV_NAME` specified in [`env.sh`](./env.sh).  The file is created for you when you execute `create-all.sh`, and it is valid only while the AKS cluster is running.
+where the `/path/to` is the location of this project on your localhost, and `config-fab.yaml` is named after the `ENV_NAME` specified in [`env.sh`](./env.sh).  The file is created for you when you execute `az-util.sh create`, and it is valid only while the AKS cluster is running.
 
 You can then use `kubectl` commands against the Azure AKS cluster from your localhost directly, e.g.,
 ```

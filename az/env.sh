@@ -5,9 +5,6 @@
 
 # number of instances to create for the cluster
 export AKS_NODE_COUNT=3
-# type of node instances to create
-export AKS_NODE_SIZE=Standard_DS2_v2
-export AKS_DISK_SIZE=30
 # type of persistent data store
 export STORAGE_TYPE=Standard_LRS
 
@@ -35,7 +32,7 @@ export SMB_PATH=//${STORAGE_ACCT}.file.core.windows.net/${STORAGE_SHARE}
 export AKS_CLUSTER=${ENV_NAME}AKSCluster
 export BASTION_HOST=${ENV_NAME}Bastion
 # public IP will be updated when bastion host is created
-export BASTION_IP=52.183.63.117
+export BASTION_IP=52.191.137.220
 export BASTION_USER=${ENV_NAME}
 
 export SCRIPT_HOME=$(getScriptDir)

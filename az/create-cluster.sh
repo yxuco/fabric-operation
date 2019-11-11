@@ -26,8 +26,7 @@ if [ "${check}" == "Succeeded" ]; then
 else
   echo "create AKS cluster ${AKS_CLUSTER} ..."
   az aks create -g ${RESOURCE_GROUP} -n ${AKS_CLUSTER} -c ${AKS_NODE_COUNT} -u ${ENV_NAME} \
-    --generate-ssh-keys --enable-addons monitoring --nodepool-name ${ENV_NAME} \
-    --node-osdisk-size ${AKS_DISK_SIZE} -s ${AKS_NODE_SIZE}
+    --generate-ssh-keys --enable-addons monitoring --nodepool-name ${ENV_NAME}
   echo "collect cluster config file ${SCRIPT_HOME}/config/config-${ENV_NAME}.yaml ..."
   az aks get-credentials -g ${RESOURCE_GROUP} -n ${AKS_CLUSTER} -f ${SCRIPT_HOME}/config/config-${ENV_NAME}.yaml --overwrite-existing
 fi
