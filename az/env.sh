@@ -25,18 +25,8 @@ function getScriptDir {
   pwd
 }
 
-if [[ ! -z "${1}" ]]; then
-  export ENV_NAME=${1}
-fi
-if [[ -z "${ENV_NAME}" ]]; then
-  export ENV_NAME="fab"
-fi
-if [[ ! -z "${2}" ]]; then
-  export AZ_REGION=${2}
-fi
-if [[ -z "${AKS_REGION}" ]]; then
-  export AZ_REGION="westus2"
-fi
+export ENV_NAME=${1}
+export AZ_REGION=${2}
 
 export RESOURCE_GROUP=${ENV_NAME}RG
 export STORAGE_ACCT=${ENV_NAME}store
@@ -45,7 +35,7 @@ export SMB_PATH=//${STORAGE_ACCT}.file.core.windows.net/${STORAGE_SHARE}
 export AKS_CLUSTER=${ENV_NAME}AKSCluster
 export BASTION_HOST=${ENV_NAME}Bastion
 # public IP will be updated when bastion host is created
-export BASTION_IP=51.143.17.95
+export BASTION_IP=52.183.63.117
 export BASTION_USER=${ENV_NAME}
 
 export SCRIPT_HOME=$(getScriptDir)

@@ -15,11 +15,11 @@ Enter your account info in a pop-up browser window.  Note that you may lookup yo
 Create and start the AKS cluster with all defaults:
 ```
 cd ./az
-./create-all.sh
+./az-util.sh create
 ```
 This script accepts 2 parameters for you to specify a different Azure environment, e.g.,
 ```
-./create-all.sh fab westus2
+./az-util.sh create -n fab -r westus2
 ```
 would create an AKS cluster with name prefix of `fab`, at the Azure location of `westus2`.
 
@@ -112,9 +112,9 @@ This command shuts down orderers and peers, and the last argument `-d` means to 
 You can clean up every thing created in Azure when they are no longer used, i.e.,
 ```
 cd ./az
-./cleanup-all.sh fab westus2
+./az-util.sh cleanup -n fab -r westus2
 ```
-This will clean up the AKS cluster and the Azure Files storage created in the previous steps.  Make sure that you supply the same parameters to the `cleanup-all.sh` as that of the previous call to the `create-all.sh` if they are different from the default values.
+This will clean up the AKS cluster and the Azure Files storage created in the previous steps.  Make sure that you supply the same parameters as that of the previous `az-util.sh create` command if they are different from the default values.
 
 ## TIPs
 

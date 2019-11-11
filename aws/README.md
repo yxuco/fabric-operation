@@ -35,11 +35,11 @@ export AWS_PROFILE=prod
 Create and start the EKS cluster with all defaults:
 ```
 cd ./aws
-./create-all.sh
+./aws-util.sh create
 ```
 This script accepts 3 parameters for you to specify a different AWS environment, e.g.,
 ```
-./create-all.sh fab us-west-2 prod
+./aws-util.sh create -n fab -r us-west-2 -p prod
 ```
 would create an EKS cluster with name prefix of `fab`, in the AWS region of `us-west-2`, using AWS account profile `prod`.
 
@@ -127,9 +127,9 @@ This command shuts down orderers and peers, and the last argument `-d` means to 
 You can clean up every thing created in AWS when they are no longer used, i.e.,
 ```
 cd ./aws
-./cleanup-all.sh fab us-west-2 prod
+./aws-util.sh cleanup -n fab -r us-west-2 -p prod
 ```
-This will clean up the EKS cluster and EFS file system created in the previous steps.  Make sure that you supply the same parameters to the `cleanup-all.sh` as that of the previous call to the `create-all.sh` if they are different from the default values.  The `AWS_PROFILE` env should also be set the same as that when `create-all.sh` was called previously.
+This will clean up the EKS cluster and EFS file system created in the previous steps.  Make sure that you supply the same parameters as that of the previous `aws-util.sh create` command if they are different from the default values.
 
 It may take a while for AWS actually cleans up everything.  If the script prints out errors, you can re-run this script to make sure that everything is deleted so that you are not charged by Amazon for processes hanging around in AWS.
 
@@ -140,7 +140,7 @@ If your local workstation has `kubctl` installed, and you want to execute `kubec
 ```
 export KUBECONFIG=/path/to/fabric-operation/aws/config/config-fab.yaml
 ```
-where the `/path/to` is the location of this project on your localhost, and `config-fab.yaml` is named after the `ENV_NAME` configured in [`env.sh`](./env.sh).  The file is created for you when you execute the `create-all.sh`, and it is valid only while the EKS cluster is running.
+where the `/path/to` is the location of this project on your localhost, and `config-fab.yaml` is named after the `ENV_NAME` configured in [`env.sh`](./env.sh).  The file is created for you when you execute the `aws-util.sh create`, and it is valid only while the EKS cluster is running.
 
 You can then use `kubectl` commands against the Amazon EKS cluster from your localhost directly, e.g.,
 ```
@@ -153,4 +153,4 @@ kubectl config view
 kubectl config set-context netop1 --namespace=netop1 --cluster=fab-eks-stack.us-west-2.eksctl.io --user=1572660907000277000@fab-eks-stack.us-west-2.eksctl.io
 kubectl config use-context netop1
 ```
-Note to replace the values of `cluster` and `user` in the second command by the corresponding output from the first command.  This configuration is automatically done on the bastion host when the [`k8s-namespace.sh`](../namespace/k8s-namespace.sh) script is called.
+Note to replace the values of `cluster` and `user` in the second command by the corresponding output from the first command.  This configuration is automatically done on the bastion host when the [`k8s-namespace.sh create`](../namespace/k8s-namespace.sh) script is called.

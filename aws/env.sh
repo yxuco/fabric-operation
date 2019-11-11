@@ -3,7 +3,7 @@
 # usage: source env.sh env region profile
 # specify profile if aws user assume a role of a different account, the assumed role should be defined in ~/.aws/config
 # you may also set AWS_PROFILE=your_profile, and do not pass any variables to this script to use default config
-# default value: ENV_NAME="fab", AWS_REGION="us-west-2"
+# e.g., ENV_NAME="fab", AWS_REGION="us-west-2"
 
 # number of EC2 instances to create for the cluster
 export EKS_NODE_COUNT=3
@@ -26,28 +26,10 @@ function getScriptDir {
   pwd
 }
 
-if [[ ! -z "${1}" ]]; then
-  export ENV_NAME=${1}
-fi
-if [[ -z "${ENV_NAME}" ]]; then
-  export ENV_NAME="fab"
-fi
+export ENV_NAME=${1}
+export AWS_REGION=${2}
 if [[ ! -z "${3}" ]]; then
   export AWS_PROFILE=${3}
-  echo "set aws profile ${AWS_PROFILE}"
-fi
-if [[ ! -z "${2}" ]]; then
-  export AWS_REGION=${2}
-  echo "set aws region ${AWS_REGION}"
-  aws configure set region ${AWS_REGION}
-fi
-if [[ -z "${AWS_REGION}" ]]; then
-  export AWS_REGION=$(aws configure get region)
-fi
-if [[ -z "${AWS_REGION}" ]]; then
-  export AWS_REGION="us-west-2"
-  echo "set aws region ${AWS_REGION}"
-  aws configure set region ${AWS_REGION}
 fi
 
 export AWS_ZONES=${AWS_REGION}a,${AWS_REGION}b,${AWS_REGION}c
@@ -55,7 +37,7 @@ export EKS_STACK=${ENV_NAME}-eks-stack
 export EFS_STACK=${ENV_NAME}-efs-client
 export S3_BUCKET=${ENV_NAME}-s3-share
 export EFS_VOLUME=vol-${ENV_NAME}
-export BASTION=ec2-54-203-4-240.us-west-2.compute.amazonaws.com
+export BASTION=ec2-54-191-61-231.us-west-2.compute.amazonaws.com
 
 export SCRIPT_HOME=$(getScriptDir)
 export KUBECONFIG=${SCRIPT_HOME}/config/config-${ENV_NAME}.yaml
