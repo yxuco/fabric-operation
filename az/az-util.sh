@@ -1,5 +1,5 @@
 #!/bin/bash
-# create all AKS cluster and Azure File storage
+# create AKS cluster and Azure File storage
 # usage: az-util.sh <cmd> [-n <name>] [-r <region>]
 # e.g., az-util.sh create -n fab -r westus2
 
@@ -12,7 +12,7 @@ function printHelp() {
   echo "    <cmd> - one of 'create', or 'cleanup'"
   echo "      - 'create' - create AKS cluster and Azure Files storage"
   echo "      - 'cleanup' - shutdown AKS cluster and cleanup Azure Files storage"
-  echo "    -n <name> - prefix name of EKS cluster, e.g., fab (default)"
+  echo "    -n <name> - prefix name of AKS cluster, e.g., fab (default)"
   echo "    -r <region> - Azure location to host the cluster, e.g. 'westus2' (default)"
   echo "  az-util.sh -h (print this message)"
 }

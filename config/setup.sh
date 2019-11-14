@@ -10,12 +10,16 @@ source ${curr_dir}/${1:-"netop1"}.env
 ORG=${FABRIC_ORG%%.*}
 
 # AWS EFS variables populated by aws startup
-AWS_MOUNT_POINT=opt/share
+AWS_MOUNT_POINT=mnt/share
 AWS_FSID=fs-aec3d805
 
 # Azure File variables populated by Azure startup
 AZ_MOUNT_POINT=mnt/share
 AZ_STORAGE_SHARE=fabshare
+
+# Google Filestore variables populated by GKE startup
+GKE_MOUNT_POINT=mnt/share
+GKE_STORE_IP=10.216.129.154
 
 target=${2:-"docker"}
 if [ "${target}" == "docker" ]; then

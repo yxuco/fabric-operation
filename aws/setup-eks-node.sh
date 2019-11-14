@@ -15,7 +15,6 @@ mv config.yaml .kube/config
 
 echo "mount EFS volume ${EFS_SERVER} to /${MOUNT_POINT}"
 sudo mount -t nfs4 -o nfsvers=4.1 ${EFS_SERVER}:/ /${MOUNT_POINT}
-#sudo chown ec2-user:ec2-user /${MOUNT_POINT}
 
 if [ "$#" -eq 0 ]; then
   region=$(aws configure get region)

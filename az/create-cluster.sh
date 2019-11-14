@@ -32,5 +32,8 @@ else
 fi
 echo "AKS cluster ${AKS_CLUSTER} created in $(($(date +%s)-starttime)) seconds."
 
-echo "verify nodes in AKS cluster ${AKS_CLUSTER}"
-kubectl get nodes
+hash kubectl
+if [ "$?" -eq 0 ]; then
+  echo "verify nodes in AKS cluster ${AKS_CLUSTER}"
+  kubectl get nodes
+fi

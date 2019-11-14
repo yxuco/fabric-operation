@@ -1,6 +1,7 @@
 **/.DS_Store
 aws/config/
 az/config/
+gke/config/
 **/*.sh-e
 **/orderer*/data/
 **/peer*/data/
