@@ -37,7 +37,7 @@ function printServerService {
     - FABRIC_CA_SERVER_CSR_CN=${CN_NAME}
     - FABRIC_CA_SERVER_CSR_HOSTS=${CN_NAME},localhost
     volumes:
-    - ${ORG_DIR}/${CA_NAME}-server:/etc/hyperledger/fabric-ca-server
+    - ${DATA_ROOT}/canet/${CA_NAME}-server:/etc/hyperledger/fabric-ca-server
     command: sh -c 'fabric-ca-server start -b ${ADMIN}:${PASSWD}'
     networks:
     - ${ORG}"
@@ -46,7 +46,7 @@ function printServerService {
 # printClientService - print docker yaml for ca client
 function printClientService {
   CLIENT_NAME="caclient.${FABRIC_ORG}"
-  ${sumd} -p "${ORG_DIR}/ca-client"
+  ${sumd} -p "${DATA_ROOT}/canet/ca-client"
 
   echo "
   ${CLIENT_NAME}:
@@ -54,10 +54,11 @@ function printClientService {
     container_name: ${CLIENT_NAME}
     environment:
     - SVC_DOMAIN=${SVC_DOMAIN}
-    - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-client
-    - FABRIC_CA_CLIENT_TLS_CERTFILES=/etc/hyperledger/fabric-ca-client/tls-cert.pem
+    - FABRIC_CA_HOME=/etc/hyperledger/data/canet/ca-client
+    - DATA_ROOT=/etc/hyperledger/data
     volumes:
-    - ${ORG_DIR}/ca-client:/etc/hyperledger/fabric-ca-client
+    - ${DATA_ROOT}:/etc/hyperledger/data
+    working_dir: /etc/hyperledger/data/canet/ca-client
     command: bash -c 'while true; do sleep 30; done'
     networks:
     - ${ORG}"
@@ -116,15 +117,20 @@ function printK8sStorageYaml {
 
 # printK8sHostPV ca-server|tlsca-server|ca-client
 function printK8sPV {
-  PV_NAME=${1}
+  local _name=${1}
+  local _folder="/canet/${_name}"
+  if [ "${_name}" == "ca-client" ]; then
+    _folder=""
+  fi
+
   echo "---
 kind: PersistentVolume
 apiVersion: v1
-# create PV for ${PV_NAME}
+# create PV for ${_name}
 metadata:
-  name: ${PV_NAME}-pv
+  name: ${_name}-pv
   labels:
-    node: ${PV_NAME}
+    node: ${_name}
     org: ${ORG}
 spec:
   capacity:
@@ -140,11 +146,11 @@ spec:
     driver: efs.csi.aws.com
     volumeHandle: ${AWS_FSID}
     volumeAttributes:
-      path: /${FABRIC_ORG}/canet/${PV_NAME}"
+      path: /${FABRIC_ORG}${_folder}"
   elif [ "${K8S_PERSISTENCE}" == "azf" ]; then
     echo "  azureFile:
     secretName: azure-secret
-    shareName: ${AZ_STORAGE_SHARE}/${FABRIC_ORG}/canet/${PV_NAME}
+    shareName: ${AZ_STORAGE_SHARE}/${FABRIC_ORG}${_folder}
     readOnly: false
   mountOptions:
   - dir_mode=0777
@@ -156,10 +162,10 @@ spec:
   elif [ "${K8S_PERSISTENCE}" == "gfs" ]; then
     echo "  nfs:
     server: ${GKE_STORE_IP}
-    path: /vol1/${FABRIC_ORG}/canet/${PV_NAME}"
+    path: /vol1/${FABRIC_ORG}${_folder}"
   else
     echo "  hostPath:
-    path: ${ORG_DIR}/${PV_NAME}
+    path: ${DATA_ROOT}${_folder}
     type: Directory"
   fi
 
@@ -167,7 +173,7 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: ${PV_NAME}-pvc
+  name: ${_name}-pvc
   namespace: ${ORG}
 spec:
   storageClassName: ca-data-class
@@ -178,12 +184,12 @@ spec:
       storage: 100Mi
   selector:
     matchLabels:
-      node: ${PV_NAME}
+      node: ${_name}
       org: ${ORG}"
 }
 
 function printK8sClient {
-  ${sumd} -p "${ORG_DIR}/ca-client"
+  ${sumd} -p "${DATA_ROOT}/canet/ca-client"
 
   echo "---
 apiVersion: apps/v1
@@ -210,18 +216,18 @@ spec:
         image: hyperledger/fabric-ca
         env:
         - name: FABRIC_CA_HOME
-          value: /etc/hyperledger/fabric-ca-client
-        - name: FABRIC_CA_CLIENT_TLS_CERTFILES
-          value: /etc/hyperledger/fabric-ca-client/tls-cert.pem
+          value: /etc/hyperledger/data/canet/ca-client
         - name: SVC_DOMAIN
           value: ${SVC_DOMAIN}
+        - name: DATA_ROOT
+          value: /etc/hyperledger/data
         args:
         - bash
         - -c
         - \"while true; do sleep 30; done\"
-        workingDir: /etc/hyperledger/fabric-ca-client
+        workingDir: /etc/hyperledger/data/canet/ca-client
         volumeMounts:
-        - mountPath: /etc/hyperledger/fabric-ca-client
+        - mountPath: /etc/hyperledger/data
           name: data
       restartPolicy: Always
       volumes:
@@ -323,7 +329,7 @@ function printK8sCAPods {
 # setServerConfig ca|tlsca
 function setServerConfig {
   CA_NAME=${1}
-  SERVER_DIR="${ORG_DIR}/${CA_NAME}-server"
+  SERVER_DIR="${DATA_ROOT}/canet/${CA_NAME}-server"
   ${sumd} -p ${SERVER_DIR}
   cp ${SCRIPT_DIR}/fabric-ca-server-config.yaml ${SCRIPT_DIR}/fabric-ca-server-config.tmp
   sed -i -e "s/%%admin%%/${ADMIN}/" ${SCRIPT_DIR}/fabric-ca-server-config.tmp
@@ -336,43 +342,43 @@ function setServerConfig {
   rm ${SCRIPT_DIR}/fabric-ca-server-config.tmp*
 }
 
-function startDocker {
-  # create docker yaml for CA server and client
-  mkdir -p "${ORG_DIR}/docker"
-  printCADockerYaml > ${ORG_DIR}/docker/docker-compose.yaml
+function startServer {
+  if [ "${ENV_TYPE}" == "docker" ]; then
+    # create docker yaml for CA server and client
+    mkdir -p "${DATA_ROOT}/canet/docker"
+    printCADockerYaml > ${DATA_ROOT}/canet/docker/docker-compose.yaml
 
-  # start CA server and client
-  docker-compose -f ${ORG_DIR}/docker/docker-compose.yaml up -d
-}
+    # start CA server and client
+    docker-compose -f ${DATA_ROOT}/canet/docker/docker-compose.yaml up -d
+  else
+    # create k8s yaml for CA server and client
+    ${sumd} -p "${DATA_ROOT}/canet/k8s"
+    printK8sStorageYaml | ${stee} ${DATA_ROOT}/canet/k8s/ca-pv.yaml > /dev/null
+    printK8sCAPods | ${stee} ${DATA_ROOT}/canet/k8s/ca.yaml > /dev/null
 
-function startK8s {
-  # create k8s yaml for CA server and client
-  ${sumd} -p "${ORG_DIR}/k8s"
-  printK8sStorageYaml | ${stee} ${ORG_DIR}/k8s/ca-pv.yaml > /dev/null
-  printK8sCAPods | ${stee} ${ORG_DIR}/k8s/ca.yaml > /dev/null
-
-  # start CA server and client
-  kubectl create -f ${ORG_DIR}/k8s/ca-pv.yaml
-  kubectl create -f ${ORG_DIR}/k8s/ca.yaml
+    # start CA server and client
+    kubectl create -f ${DATA_ROOT}/canet/k8s/ca-pv.yaml
+    kubectl create -f ${DATA_ROOT}/canet/k8s/ca.yaml
+  fi
 }
 
 function stopServer {
   if [ "${ENV_TYPE}" == "docker" ]; then
     echo "stop docker containers"
-    docker-compose -f ${ORG_DIR}/docker/docker-compose.yaml down --volumes --remove-orphans
+    docker-compose -f ${DATA_ROOT}/canet/docker/docker-compose.yaml down --volumes --remove-orphans
   else
     echo "stop k8s CA PODs"
-    kubectl delete -f ${ORG_DIR}/k8s/ca.yaml
-    kubectl delete -f ${ORG_DIR}/k8s/ca-pv.yaml
-  fi
+    kubectl delete -f ${DATA_ROOT}/canet/k8s/ca.yaml
+    kubectl delete -f ${DATA_ROOT}/canet/k8s/ca-pv.yaml
 
-  if [ ! -z "${CLEANUP}" ]; then
-    echo "cleanup ca/tlsca server data"
-    ${surm} -R ${ORG_DIR}/ca-server
-    ${surm} -R ${ORG_DIR}/tlsca-server
+    if [ ! -z "${CLEANUP}" ]; then
+      echo "cleanup ca/tlsca server data"
+      ${surm} -R ${DATA_ROOT}/canet/ca-server
+      ${surm} -R ${DATA_ROOT}/canet/tlsca-server
+    fi
+    echo "cleanup ca-client data"
+    ${surm} -R ${DATA_ROOT}/canet/ca-client/*
   fi
-  echo "cleanup ca-client data"
-  ${surm} -R ${ORG_DIR}/ca-client/*
 }
 
 # Print the usage message
@@ -412,18 +418,13 @@ while getopts "h?p:t:d" opt; do
 done
 
 source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${ORG_ENV} ${ENV_TYPE}
-ORG_DIR=${DATA_ROOT}/canet
 CA_PORT=${CA_PORT:-"7054"}
 TLS_PORT=${TLS_PORT:-"7055"}
 
 case "${CMD}" in
 start)
   echo "start ca server: ${ORG_ENV} ${ENV_TYPE}"
-  if [ "${ENV_TYPE}" == "docker" ]; then
-    startDocker
-  else
-    startK8s
-  fi
+  startServer
   ;;
 shutdown)
   echo "shutdown ca server: ${ORG_ENV} ${ENV_TYPE}"

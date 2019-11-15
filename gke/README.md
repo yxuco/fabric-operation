@@ -28,14 +28,14 @@ would create an GKE cluster with name prefix of `fab`, at the GCP zone of `us-we
 
 Wait 7-8 minutes for the cluster nodes to startup.  When the cluster is up, it will print a line, such as:
 ```
-gcloud compute ssh --ssh-key-file ./config/config-fab fab@fab-bastion
+gcloud compute ssh --ssh-key-file ./config/fab-key fab@fab-bastion
 ```
 You can use this command to login to the `bastion` host and create a Hyperledger Fabric network using the GKE cluster. Note that the `ssh` keypair for accessing the `bastion` host is in the [config](./config) folder.
 
 ## Setup Google login from `bastion` host
 Log on to the `bastion` host, and login to Google Cloud, e.g.,
 ```
-gcloud compute ssh --ssh-key-file ./config/config-fab fab@fab-bastion
+gcloud compute ssh --ssh-key-file ./config/fab-key fab@fab-bastion
 gcloud auth login
 ```
 It will display a authentication url on the bastion window. Cut and paste the url from bastion to a browser to login, then cut and paste the verification code from browser to bastion window.
@@ -60,7 +60,6 @@ cd ./fabric-operation/namespace
 ```
 This command creates a namespace for the default Fabric operator company, `netop1`, and sets it as the default namespace.  It also creates Kubernetes secret for accessing Azure Files storage for persistence.  You can verify this step using the following commands:
 * `kubectl get namespaces` should show a list of namespaces, including the new namespace `netop1`;
-* `kubectl get secret` should show that a secret named `azure-secret` is created;
 * `kubectl config current-context` should show that the default namespace is set to `netop1`.
 
 ### Start CA server and create crypto data for the Fabric network
@@ -88,7 +87,7 @@ This command starts a Kubernetes POD to generate the genesis block and transacti
 ### Start Fabric network
 ```
 cd ../network
-./network.sh start -t az
+./network.sh start -t gke
 ```
 This command starts the orderers and peers using the crypto and genesis block created in the previous steps.  You can verify the network status using the following commands:
 * `kubectl get pods` should list 3 running orderers and 2 running peers;

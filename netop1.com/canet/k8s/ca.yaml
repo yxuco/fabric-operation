@@ -147,18 +147,18 @@ spec:
         image: hyperledger/fabric-ca
         env:
         - name: FABRIC_CA_HOME
-          value: /etc/hyperledger/fabric-ca-client
-        - name: FABRIC_CA_CLIENT_TLS_CERTFILES
-          value: /etc/hyperledger/fabric-ca-client/tls-cert.pem
+          value: /etc/hyperledger/data/canet/ca-client
         - name: SVC_DOMAIN
           value: netop1.svc.cluster.local
+        - name: DATA_ROOT
+          value: /etc/hyperledger/data
         args:
         - bash
         - -c
         - "while true; do sleep 30; done"
-        workingDir: /etc/hyperledger/fabric-ca-client
+        workingDir: /etc/hyperledger/data/canet/ca-client
         volumeMounts:
-        - mountPath: /etc/hyperledger/fabric-ca-client
+        - mountPath: /etc/hyperledger/data
           name: data
       restartPolicy: Always
       volumes:

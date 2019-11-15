@@ -98,7 +98,7 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: ca-data-class
   hostPath:
-    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/canet/ca-client
+    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com
     type: Directory
 ---
 kind: PersistentVolumeClaim

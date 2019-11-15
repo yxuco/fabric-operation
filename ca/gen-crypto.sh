@@ -54,6 +54,10 @@ function adminCrypto {
     if [ "${_cmd}" == "enroll" ]; then
       echo "enroll ${_admin}@${FABRIC_ORG}"
       fabric-ca-client enroll --tls.certfiles tls-cert.pem ${PROFILE} --csr.names "${CSR_NAMES}" --csr.hosts "${_csrhosts}" -u https://${_admin}@${FABRIC_ORG}:${_pass}@${CA_HOST_PORT} -M ${FABRIC_CA_HOME}/${_admin}\@${FABRIC_ORG}/${CRYPTO_DIR}
+      if [ "${CRYPTO_DIR}" == "tls" ]; then
+        # assuming "tlsca" is called after "ca"
+        copyNodeCrypto ${_admin} users server
+      fi
     else
       echo "register ${_admin}@${FABRIC_ORG}"
       fabric-ca-client register --id.name ''"${_admin}@${FABRIC_ORG}"'' --id.secret ${_pass} --id.type admin --tls.certfiles tls-cert.pem -u ${CA_ADMIN_URL}
@@ -63,6 +67,10 @@ function adminCrypto {
       for u in "$@"; do
         echo "enroll ${u}@${FABRIC_ORG}"
         fabric-ca-client enroll --tls.certfiles tls-cert.pem ${PROFILE} --csr.names "${CSR_NAMES}" --csr.hosts "${_csrhosts}" -u https://${u}@${FABRIC_ORG}:${u}pw@${CA_HOST_PORT} -M ${FABRIC_CA_HOME}/${u}\@${FABRIC_ORG}/${CRYPTO_DIR}
+        if [ "${CRYPTO_DIR}" == "tls" ]; then
+          # assuming "tlsca" is called after "ca"
+          copyNodeCrypto ${u} users server
+        fi
       done
     else
       for u in "$@"; do
@@ -90,6 +98,10 @@ function userCrypto {
       for u in ${_users}; do
         echo "enroll ${u}@${FABRIC_ORG}"
         fabric-ca-client enroll --tls.certfiles tls-cert.pem ${PROFILE} --csr.names "${CSR_NAMES}" --csr.hosts "${_csrhosts}" --enrollment.attrs "alias,email,hf.Type,hf.EnrollmentID" -u https://${u}@${FABRIC_ORG}:${u}pw@${CA_HOST_PORT} -M ${FABRIC_CA_HOME}/${u}\@${FABRIC_ORG}/${CRYPTO_DIR}
+        if [ "${CRYPTO_DIR}" == "tls" ]; then
+          # assuming "tlsca" is called after "ca"
+          copyNodeCrypto ${u} users client
+        fi
       done
     else
       for u in ${_users}; do
@@ -127,6 +139,10 @@ function ordererCrypto {
         o_hosts="${_orderer}.orderer.${SVC_DOMAIN},${o_hosts}"
       fi
       fabric-ca-client enroll --tls.certfiles tls-cert.pem ${PROFILE} --csr.names "${CSR_NAMES}" --csr.hosts "${o_hosts}" -u https://${_orderer}.${FABRIC_ORG}:${_orderer}pw@${CA_HOST_PORT} -M ${FABRIC_CA_HOME}/${_orderer}/${CRYPTO_DIR}
+      if [ "${CRYPTO_DIR}" == "tls" ]; then
+        # assuming "tlsca" is called after "ca"
+        copyNodeCrypto ${_orderer} orderers server
+      fi
     else
       echo "register ${_orderer}"
       fabric-ca-client register --id.name ${_orderer}.${FABRIC_ORG} --id.secret ${_orderer}pw --id.type orderer --tls.certfiles tls-cert.pem -u ${CA_ADMIN_URL}
@@ -161,6 +177,10 @@ function peerCrypto {
         p_hosts="${_peer}.peer.${SVC_DOMAIN},${p_hosts}"
       fi
       fabric-ca-client enroll --tls.certfiles tls-cert.pem ${PROFILE} --csr.names "${CSR_NAMES}" --csr.hosts "${p_hosts}" -u https://${_peer}.${FABRIC_ORG}:${_peer}pw@${CA_HOST_PORT} -M ${FABRIC_CA_HOME}/${_peer}/${CRYPTO_DIR}
+      if [ "${CRYPTO_DIR}" == "tls" ]; then
+        # assuming "tlsca" is called after "ca"
+        copyNodeCrypto ${_peer} peers server
+      fi
     else
       echo "register ${_peer}"
       fabric-ca-client register --id.name ${_peer}.${FABRIC_ORG} --id.secret ${_peer}pw --id.type peer --tls.certfiles tls-cert.pem -u ${CA_ADMIN_URL}
@@ -232,6 +252,175 @@ function genCrypto {
   fi
 }
 
+###############################################################################
+# copy crypto to sharable directory structure
+###############################################################################
+
+# cleanup crypto of msp, users and bootstrap orderers and peers
+function cleanupCrypto {
+  # cleanup target MSP folder
+  for f in ca tlsca msp users; do
+    echo "cleanup ${f}"
+    rm -R ${DATA_ROOT}/crypto/${f}
+  done
+
+  # cleanup tool and cli crypto folders
+  for f in tool cli; do
+    echo "cleanup ${f} crypto"
+    rm -R ${DATA_ROOT}/${f}/crypto
+  done
+
+  # cleanup crypto of orderers
+  local _seq=${ORDERER_MIN:-"0"}
+  local _max=${ORDERER_MAX:-"0"}
+  until [ "${_seq}" -ge "${_max}" ]; do
+    local _orderer="orderer-${_seq}"
+    _seq=$((${_seq}+1))
+    echo "cleanup crypto of ${_orderer}"
+    rm -R ${DATA_ROOT}/orderers/${_orderer}/crypto
+  done
+
+  # cleanup crypto of peers
+  _seq=${PEER_MIN:-"0"}
+  _max=${PEER_MAX:-"0"}
+  until [ "${_seq}" -ge "${_max}" ]; do
+    local _peer="peer-${_seq}"
+    _seq=$((${_seq}+1))
+    echo "cleanup crypto of ${_peer}"
+    rm -R ${DATA_ROOT}/peers/${_peer}/crypto
+  done
+}
+
+# create msp and ca crypto if they do not already exist
+function initCrypto {
+  if [ ! -f "${DATA_ROOT}/crypto/msp/config.yaml" ]; then
+    echo "copy ca and msp crypto"
+    copyCACrypto ca
+    copyCACrypto tlsca
+    printConfigYaml > ${DATA_ROOT}/crypto/msp/config.yaml
+
+    # initialize tool crypto
+    mkdir -p ${DATA_ROOT}/tool/crypto
+    cp -R ${DATA_ROOT}/crypto/msp ${DATA_ROOT}/tool/crypto
+
+    # initialize cli crypto
+    mkdir -p ${DATA_ROOT}/cli/crypto/orderer-0/msp
+    cp -R ${DATA_ROOT}/crypto/msp/tlscacerts ${DATA_ROOT}/cli/crypto/orderer-0/msp
+  else
+    echo "${DATA_ROOT}/crypto/msp/config.yaml already exists"
+  fi
+}
+
+# copyCACrypto ca|tlsca
+function copyCACrypto {
+  echo "copy crypto for ${1}"
+  local _ca=${1}
+  local _target=${DATA_ROOT}/crypto/${_ca}
+  mkdir -p ${_target}/tls
+
+  local _src=${DATA_ROOT}/canet/${_ca}-server
+  cp ${_src}/ca-cert.pem ${_target}/${_ca}.${FABRIC_ORG}-cert.pem
+  cp ${_src}/tls-cert.pem ${_target}/tls/server.crt
+  mkdir -p ${DATA_ROOT}/crypto/msp/${_ca}certs
+  cp ${_src}/ca-cert.pem ${DATA_ROOT}/crypto/msp/${_ca}certs/${_ca}.${FABRIC_ORG}-cert.pem
+
+  # checksum command for Linux
+  CHECKSUM=sha256sum
+  hash ${CHECKSUM}
+  if [ "$?" -ne 0 ]; then
+    # set command for Mac
+    CHECKSUM="shasum -a 256"
+  fi
+  echo "checksum command: $CHECKSUM"
+
+  # calculate public key checksum from CA certificate
+  pubsum=$(openssl x509 -in ${_src}/ca-cert.pem -pubkey -noout -outform pem | ${CHECKSUM})
+  echo "public key checksum: ${pubsum}"
+  tlssum=$(openssl x509 -in ${_src}/tls-cert.pem -pubkey -noout -outform pem | ${CHECKSUM})
+  echo "public tls key checksum: ${tlssum}"
+
+  # find CA private key with the same public key checksum as the CA certificate
+  for f in ${_src}/msp/keystore/*_sk; do
+    echo ${f}
+    sum=$(openssl pkey -in ${f} -pubout -outform pem | ${CHECKSUM})
+    echo "checksum from private key: ${sum}"
+    if [ "${sum}" == "${pubsum}" ]; then
+      cp ${f} ${_target}/${_ca}.${FABRIC_ORG}-key.pem
+      echo "Got CA private key: ${f}"
+    elif [ "${sum}" == "${tlssum}" ]; then
+      cp ${f} ${_target}/tls/server.key
+      echo "Got CA TLS private key: ${f}"
+    fi
+  done
+}
+
+function printConfigYaml {
+  echo "NodeOUs:
+  Enable: true
+  ClientOUIdentifier:
+    Certificate: cacerts/ca.${FABRIC_ORG}-cert.pem
+    OrganizationalUnitIdentifier: client
+  PeerOUIdentifier:
+    Certificate: cacerts/ca.${FABRIC_ORG}-cert.pem
+    OrganizationalUnitIdentifier: peer
+  AdminOUIdentifier:
+    Certificate: cacerts/ca.${FABRIC_ORG}-cert.pem
+    OrganizationalUnitIdentifier: admin
+  OrdererOUIdentifier:
+    Certificate: cacerts/ca.${FABRIC_ORG}-cert.pem
+    OrganizationalUnitIdentifier: orderer"
+}
+
+# copyNodeCrypto <node-namme> peers|orderers|users client|server
+# e.g., copyNodeCrypto peer-1 peers server
+function copyNodeCrypto {
+  echo "copy crypto for ${1}"
+  local _name=${1}.${FABRIC_ORG}
+  local _src=${DATA_ROOT}/canet/ca-client/${1}
+  local _target=${DATA_ROOT}/${2}/${1}/crypto
+  if [ "${2}" == "users" ]; then
+    _name=${1}\@${FABRIC_ORG}
+    _src=${DATA_ROOT}/canet/ca-client/${_name}
+    _target=${DATA_ROOT}/crypto/${2}/${_name}
+  fi
+
+  # copy msp data
+  mkdir -p ${_target}/msp
+  cp -R ${DATA_ROOT}/crypto/msp/cacerts ${_target}/msp
+  cp -R ${DATA_ROOT}/crypto/msp/tlscacerts ${_target}/msp
+  cp -R ${_src}/msp/signcerts ${_target}/msp
+  cp -R ${_src}/msp/keystore ${_target}/msp
+  cp ${DATA_ROOT}/crypto/msp/config.yaml ${_target}/msp
+  mv ${_target}/msp/signcerts/cert.pem ${_target}/msp/signcerts/${_name}-cert.pem
+
+  # copy tls data
+  mkdir -p ${_target}/tls
+  cp ${DATA_ROOT}/crypto/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem ${_target}/tls/ca.crt
+  cp ${_src}/tls/signcerts/cert.pem ${_target}/tls/${3}.crt
+  # there should be only one file, otherwise, take the last file
+  for f in ${_src}/tls/keystore/*_sk; do
+    cp ${f} ${_target}/tls/${3}.key
+  done
+
+  # copy orderer tls cert to tool crypto
+  if [ "${2}" == "orderers" ]; then
+    mkdir -p ${DATA_ROOT}/tool/crypto/orderers/${1}/tls
+    cp ${_src}/tls/signcerts/cert.pem ${DATA_ROOT}/tool/crypto/orderers/${1}/tls/server.crt
+  fi
+
+  # copy peer tls key and cert to cli crypto
+  if [ "${2}" == "peers" ]; then
+    mkdir -p ${DATA_ROOT}/cli/crypto/${1}
+    cp -R ${_target}/tls ${DATA_ROOT}/cli/crypto/${1}
+  fi
+
+  # copy admin user msp to cli crypto
+  if [ "${2}" == "users" ] && [ "${3}" == "server" ]; then
+    mkdir -p ${DATA_ROOT}/cli/crypto/${_name}
+    cp -R ${_target}/msp ${DATA_ROOT}/cli/crypto/${_name}
+  fi
+}
+
 # Print the usage message
 function printUsage {
   echo "Usage: "
@@ -297,5 +486,9 @@ if [ ! -z "${CMD}" ]; then
   ARGS="$@"
   verifyRequest
 fi
+if [ "${CMD}" == "bootstrap" ]; then
+  cleanupCrypto
+fi
+initCrypto
 genCrypto ca
 genCrypto tlsca

@@ -44,10 +44,11 @@ services:
     container_name: caclient.netop1.com
     environment:
     - SVC_DOMAIN=
-    - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-client
-    - FABRIC_CA_CLIENT_TLS_CERTFILES=/etc/hyperledger/fabric-ca-client/tls-cert.pem
+    - FABRIC_CA_HOME=/etc/hyperledger/data/canet/ca-client
+    - DATA_ROOT=/etc/hyperledger/data
     volumes:
-    - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/canet/ca-client:/etc/hyperledger/fabric-ca-client
+    - /Users/yxu/work/hyperledger/fabric-operation/netop1.com:/etc/hyperledger/data
+    working_dir: /etc/hyperledger/data/canet/ca-client
     command: bash -c 'while true; do sleep 30; done'
     networks:
     - netop1
