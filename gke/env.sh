@@ -4,7 +4,7 @@
 # e.g.: ENV_NAME="fab", GCP_ZONE="us-west1-c"
 
 # GCP project name
-export GCP_PROJECT=fab-project-001
+export GCP_PROJECT=fab-project-002
 # number of instances to create for the cluster
 export GKE_NODE_COUNT=3
 

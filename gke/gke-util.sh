@@ -54,7 +54,7 @@ cleanup)
   source env.sh ${ENV_NAME} ${GCP_ZONE}
 
   starttime=$(date +%s)
-  echo "cleanup may take 10-11 mminutes ..."
+  echo "cleanup may take 5 mminutes ..."
 
   echo "delete bastion host ${BASTION_HOST}"
   gcloud compute instances delete ${BASTION_HOST} --quiet
