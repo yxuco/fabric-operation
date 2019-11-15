@@ -1,6 +1,6 @@
 #!/bin/bash
 # create MSP configuration, channel profile, and orderer genesis block
-#   for target environment, i.e., docker, k8s, aws, az, etc
+#   for target environment, i.e., docker, k8s, aws, az, gke, etc
 # usage: msp-util.sh -h
 # to display usage info
 
@@ -297,6 +297,9 @@ function printK8sStorageClass {
     PROVISIONER="efs.csi.aws.com"
   elif [ "${K8S_PERSISTENCE}" == "azf" ]; then
     PROVISIONER="kubernetes.io/azure-file"
+  elif [ "${K8S_PERSISTENCE}" == "gfs" ]; then
+    # no need to define storage class for Google Filestore
+    return 0
   else
     # default to local host
     PROVISIONER="kubernetes.io/no-provisioner"
@@ -361,6 +364,10 @@ spec:
   - gid=10000
   - mfsymlinks
   - nobrl"
+  elif [ "${K8S_PERSISTENCE}" == "gfs" ]; then
+    echo "  nfs:
+    server: ${GKE_STORE_IP}
+    path: /vol1/${FABRIC_ORG}/tool"
   else
     echo "  hostPath:
     path: ${DATA_ROOT}/tool
@@ -493,7 +500,7 @@ function printHelp() {
   echo "      - 'genesis' - generate genesis block of specified consensus type"
   echo "      - 'channel' - generate channel creation tx for specified channel name"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
-  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', or 'az'"
+  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', 'az', or 'gke'"
   echo "    -o <consensus type> - 'solo' or 'etcdraft' used with the 'genesis' command"
   echo "    -c <channel name> - name of a channel, used with the 'channel' command"
   echo "  msp-util.sh -h (print this message)"

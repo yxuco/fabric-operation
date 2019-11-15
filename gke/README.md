@@ -26,7 +26,7 @@ This script accepts 2 parameters for you to specify a different Google cloud env
 ```
 would create an GKE cluster with name prefix of `fab`, at the GCP zone of `us-west1-c`.
 
-Wait 5 minutes for the cluster nodes to startup.  When the cluster is up, it will print a line, such as:
+Wait 7-8 minutes for the cluster nodes to startup.  When the cluster is up, it will print a line, such as:
 ```
 gcloud compute ssh --ssh-key-file ./config/config-fab fab@fab-bastion
 ```
@@ -43,7 +43,7 @@ It will display a authentication url on the bastion window. Cut and paste the ur
 In the bastion window, use the following command to download GKE cluster config:
 ```
 source ./env.sh
-gcloud container clusters get-credentials ${GKE_CLUSTER}
+gcloud container clusters get-credentials ${GKE_CLUSTER} --zone ${GCP_ZONE}
 ```
 You can then verify the following configurations.
 * `df` command should show that a Google Cloud `Filestore` is already mounted at `/mnt/share`;

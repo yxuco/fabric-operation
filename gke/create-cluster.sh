@@ -7,7 +7,6 @@ cd "$( dirname "${BASH_SOURCE[0]}" )"
 source env.sh "$@"
 
 echo "create GKE cluster ${GKE_CLUSTER} at zone ${GCP_ZONE}"
-echo "it may take 4 minutes ..."
 starttime=$(date +%s)
 
 # setup GCP account and services

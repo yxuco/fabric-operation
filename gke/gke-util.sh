@@ -45,6 +45,7 @@ fi
 case "${CMD}" in
 create)
   echo "create GKE cluster - ENV_NAME: ${ENV_NAME}, GCP_ZONE: ${GCP_ZONE}"
+  echo "it may take 7-8 minutes ..."
   ./create-cluster.sh ${ENV_NAME} ${GCP_ZONE}
   ./create-storage.sh ${ENV_NAME} ${GCP_ZONE}
   ./create-bastion.sh ${ENV_NAME} ${GCP_ZONE}

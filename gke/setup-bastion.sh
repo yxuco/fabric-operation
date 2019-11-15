@@ -4,8 +4,8 @@ source ./env.sh
 
 echo "update os packages"
 sudo apt update
-sudo apt install kubectl
-sudo apt install git
+sudo apt-get -y install kubectl
+sudo apt-get -y install git
 sudo apt-get -y install nfs-common
 
 mnt_point=mnt/share

@@ -1,5 +1,5 @@
 #!/bin/bash
-# setup variables for target environment, i.e., docker, k8s, aws, az, etc
+# setup variables for target environment, i.e., docker, k8s, aws, az, gke, etc
 # usage: setup.sh <org_name> <env>
 # it uses config parameters of the specified org as defined in org_name.env, e.g.
 #   setup.sh netop1 docker
@@ -45,6 +45,9 @@ if [ "${target}" == "aws" ]; then
 elif [ "${target}" == "az" ]; then
   DATA_ROOT="/${AZ_MOUNT_POINT}/${FABRIC_ORG}"
   K8S_PERSISTENCE="azf"
+elif [ "${target}" == "gke" ]; then
+  DATA_ROOT="/${GKE_MOUNT_POINT}/${FABRIC_ORG}"
+  K8S_PERSISTENCE="gfs"
 else
   DATA_ROOT=$(dirname "${curr_dir}")/${FABRIC_ORG}
   K8S_PERSISTENCE="local"

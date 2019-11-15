@@ -1,6 +1,6 @@
 #!/bin/bash
 # start fabric-ca server and client for a specified org,
-#   with optional target env, i.e., docker, k8s, aws, az, etc, to provide extra SVC_DOMAIN config
+#   with optional target env, i.e., docker, k8s, aws, az, gke, etc, to provide extra SVC_DOMAIN config
 # usage: start-ca.sh <org_name> <env>
 # where config parameters for the org are specified in ../config/org_name.env, e.g.
 #   start-ca.sh netop1
@@ -82,6 +82,9 @@ function printK8sStorageClass {
     PROVISIONER="efs.csi.aws.com"
   elif [ "${K8S_PERSISTENCE}" == "azf" ]; then
     PROVISIONER="kubernetes.io/azure-file"
+  elif [ "${K8S_PERSISTENCE}" == "gfs" ]; then
+    # no need to define storage class for Google Filestore
+    return 0
   else
     # default to local host
     PROVISIONER="kubernetes.io/no-provisioner"
@@ -150,6 +153,10 @@ spec:
   - gid=10000
   - mfsymlinks
   - nobrl"
+  elif [ "${K8S_PERSISTENCE}" == "gfs" ]; then
+    echo "  nfs:
+    server: ${GKE_STORE_IP}
+    path: /vol1/${FABRIC_ORG}/canet/${PV_NAME}"
   else
     echo "  hostPath:
     path: ${ORG_DIR}/${PV_NAME}
@@ -376,7 +383,7 @@ function printHelp() {
   echo "      - 'start' - start ca and tlsca servers and ca client"
   echo "      - 'shutdown' - shutdown ca and tlsca servers and ca client, and cleanup ca-client data"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
-  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', or 'az'"
+  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', 'az', or 'gke'"
   echo "    -d - delete all ca/tlsca server data for fresh start next time"
   echo "  ca-server.sh -h (print this message)"
 }

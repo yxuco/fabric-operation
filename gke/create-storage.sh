@@ -22,5 +22,7 @@ fi
 storeip=$(gcloud filestore instances describe ${FILESTORE} --format="csv[no-heading](networks.ipAddresses[0])")
 echo "export STORE_IP=${storeip}" > ./config/env.sh
 echo "export GKE_CLUSTER=${GKE_CLUSTER}" >> ./config/env.sh
+echo "export GCP_ZONE=${GCP_ZONE}" >> ./config/env.sh
+echo "export GCP_PROJECT=${GCP__PROJECT}" >> ./config/env.sh
 
 echo "Filestore ${FILESTORE} created in $(($(date +%s)-starttime)) seconds."

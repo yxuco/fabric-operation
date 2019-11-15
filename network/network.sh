@@ -4,7 +4,7 @@
 # it uses a property file of the specified org as defined in ../config/org.env, e.g.
 #   network.sh start -p netop1
 # using config parameters specified in ../config/netop1.env
-# the env_type can be k8s or aws/az to use local host or a cloud file system, i.e. efs/azf, default k8s for local persistence
+# the env_type can be k8s or aws/az/gke to use local host or a cloud file system, i.e. efs/azf/gfs, default k8s for local persistence
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
 
@@ -328,6 +328,10 @@ spec:
   - gid=10000
   - mfsymlinks
   - nobrl"
+  elif [ "${K8S_PERSISTENCE}" == "gfs" ]; then
+    echo "  nfs:
+    server: ${GKE_STORE_IP}
+    path: /vol1/${FABRIC_ORG}/${_folder}"
   else
     echo "  hostPath:
     path: ${DATA_ROOT}/${_folder}
@@ -354,13 +358,16 @@ spec:
 }
 
 # printStorageClass <name>
-# storage class for local host, or AWS EFS
+# storage class for local host, or AWS EFS, or Azure Files
 function printStorageClass {
   local _provision="kubernetes.io/no-provisioner"
   if [ "${K8S_PERSISTENCE}" == "efs" ]; then
     _provision="efs.csi.aws.com"
   elif [ "${K8S_PERSISTENCE}" == "azf" ]; then
     _provision="kubernetes.io/azure-file"
+  elif [ "${K8S_PERSISTENCE}" == "gfs" ]; then
+    # no need to define storage class for Google Filestore
+    return 0
   fi
 
   echo "
