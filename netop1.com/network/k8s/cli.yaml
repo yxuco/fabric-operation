@@ -9,6 +9,10 @@ spec:
   - name: cli
     image: hyperledger/fabric-tools
     imagePullPolicy: Always
+    resources:
+      requests:
+        memory: 500Mi
+        cpu: 100m
     command:
     - /bin/bash
     - -c

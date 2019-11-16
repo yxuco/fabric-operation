@@ -1,8 +1,10 @@
 # fabric-operation
 
-This project contains scripts that let you define, create, and test a Hyperledger Fabric network based on a set of parameters as specified in a sample network, [netop1.env](./config/netop1.env).
+This project contains scripts that let you define, create, and test a Hyperledger Fabric network in Kubernetes locally or in a cloud.  Supported cloud services include AWS, Azure, and Google Cloud.  The fabric network parameters can be specified by a property file, such as the sample network, [netop1.env](./config/netop1.env).
 
-The scripts support both `docker-compose` and `kubernetes`.  All steps are done in docker containers, and thus you can get a Fabric network running without pre-downloading anything.
+The scripts support both `docker-compose` and `kubernetes`.  All steps are done in docker containers, and thus you can get a Fabric network running without pre-downloading any artifact of Hyperledger Fabric.
+
+This utility is implemented using bash scripts, and thus it does not depend on any other scripting tool or framework, either.
 
 ## Prerequisites
 * Your workstation must support `bash` shell scripts.

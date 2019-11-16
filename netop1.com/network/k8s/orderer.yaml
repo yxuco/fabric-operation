@@ -38,8 +38,8 @@ spec:
         image: hyperledger/fabric-orderer:1.4.3
         resources:
           requests:
-            memory: "1Gi"
-            cpu: 500m
+            memory: 500Mi
+            cpu: 100m
         ports:
         - containerPort: 7050
           name: server

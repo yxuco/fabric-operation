@@ -47,8 +47,8 @@ spec:
         image: hyperledger/fabric-peer
         resources:
           requests:
-            memory: "1Gi"
-            cpu: 500m
+            memory: 500Mi
+            cpu: 100m
         env:
         - name: CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME
           value: 
