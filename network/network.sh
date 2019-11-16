@@ -474,8 +474,8 @@ spec:
         image: hyperledger/fabric-orderer:1.4.3
         resources:
           requests:
-            memory: \"1Gi\"
-            cpu: 500m
+            memory: ${POD_MEM}
+            cpu: ${POD_CPU}
         ports:
         - containerPort: 7050
           name: server
@@ -588,8 +588,8 @@ spec:
         image: hyperledger/fabric-peer
         resources:
           requests:
-            memory: \"1Gi\"
-            cpu: 500m
+            memory: ${POD_MEM}
+            cpu: ${POD_CPU}
         env:
         - name: CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME
           value: "${COUCHDB_USER}"
@@ -694,6 +694,10 @@ spec:
   - name: cli
     image: hyperledger/fabric-tools
     imagePullPolicy: Always
+    resources:
+      requests:
+        memory: ${POD_MEM}
+        cpu: ${POD_CPU}
     command:
     - /bin/bash
     - -c
@@ -903,6 +907,8 @@ TEST_CHANNEL=${TEST_CHANNEL:-"mychannel"}
 ORDERER_TYPE=${ORDERER_TYPE:-"solo"}
 COUCHDB_USER=${COUCHDB_USER:-""}
 COUCHDB_PASSWD=${COUCHDB_PASSWD:-""}
+POD_CPU=${POD_CPU:-"500m"}
+POD_MEM=${POD_MEM:-"1Gi"}
 
 case "${CMD}" in
 start)

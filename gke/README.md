@@ -15,7 +15,7 @@ gcloud projects list
 Select your Google account in a pop-up browser window to login to Google Cloud.  The second command should list the project that we created on using the GCP Console.
 
 ## Start GKE cluster
-Edit [env.sh](./env.sh) to upldate `GCP_PROJECT`, and then create and start the GKE cluster with all defaults:
+Edit [env.sh](./env.sh) to upldate `GCP_PROJECT` to the name of the project created above or any existing project, and then create and start the GKE cluster with all defaults:
 ```
 cd ./gke
 ./gke-util.sh create
@@ -24,7 +24,7 @@ This script accepts 2 parameters for you to specify a different Google cloud env
 ```
 ./gke-util.sh create -n fab -r us-west1-c
 ```
-would create an GKE cluster with name prefix of `fab`, at the GCP zone of `us-west1-c`.
+would create an GKE cluster with name prefix of `fab`, in the GCP zone of `us-west1-c`.
 
 Wait 7-8 minutes for the cluster nodes to startup.  When the cluster is up, it will print a line, such as:
 ```
