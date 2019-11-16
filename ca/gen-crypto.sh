@@ -52,20 +52,20 @@ function adminCrypto {
     local _admin=${ADMIN_USER:-"Admin"}
     local _pass=${ADMIN_PASSWD:-"adminpw"}
     if [ "${_cmd}" == "enroll" ]; then
-      echo "enroll ${_admin}@${FABRIC_ORG}"
+      echo "enroll ${_admin}@${FABRIC_ORG} - ${CRYPTO_DIR}"
       fabric-ca-client enroll --tls.certfiles tls-cert.pem ${PROFILE} --csr.names "${CSR_NAMES}" --csr.hosts "${_csrhosts}" -u https://${_admin}@${FABRIC_ORG}:${_pass}@${CA_HOST_PORT} -M ${FABRIC_CA_HOME}/${_admin}\@${FABRIC_ORG}/${CRYPTO_DIR}
       if [ "${CRYPTO_DIR}" == "tls" ]; then
         # assuming "tlsca" is called after "ca"
         copyNodeCrypto ${_admin} users server
       fi
     else
-      echo "register ${_admin}@${FABRIC_ORG}"
+      echo "register ${_admin}@${FABRIC_ORG} - ${CRYPTO_DIR}"
       fabric-ca-client register --id.name ''"${_admin}@${FABRIC_ORG}"'' --id.secret ${_pass} --id.type admin --tls.certfiles tls-cert.pem -u ${CA_ADMIN_URL}
     fi
   else
     if [ "${_cmd}" == "enroll" ]; then
       for u in "$@"; do
-        echo "enroll ${u}@${FABRIC_ORG}"
+        echo "enroll ${u}@${FABRIC_ORG} - ${CRYPTO_DIR}"
         fabric-ca-client enroll --tls.certfiles tls-cert.pem ${PROFILE} --csr.names "${CSR_NAMES}" --csr.hosts "${_csrhosts}" -u https://${u}@${FABRIC_ORG}:${u}pw@${CA_HOST_PORT} -M ${FABRIC_CA_HOME}/${u}\@${FABRIC_ORG}/${CRYPTO_DIR}
         if [ "${CRYPTO_DIR}" == "tls" ]; then
           # assuming "tlsca" is called after "ca"
@@ -74,7 +74,7 @@ function adminCrypto {
       done
     else
       for u in "$@"; do
-        echo "register ${u}@${FABRIC_ORG}"
+        echo "register ${u}@${FABRIC_ORG} - ${CRYPTO_DIR}"
         fabric-ca-client register --id.name ''"${u}@${FABRIC_ORG}"'' --id.secret ${u}pw --id.type admin --tls.certfiles tls-cert.pem -u ${CA_ADMIN_URL}
       done
     fi
@@ -96,7 +96,7 @@ function userCrypto {
     if [ "${_cmd}" == "enroll" ]; then
       local _csrhosts=${CLIENT_HOSTS:-"localhost,cli.${FABRIC_ORG}"}
       for u in ${_users}; do
-        echo "enroll ${u}@${FABRIC_ORG}"
+        echo "enroll ${u}@${FABRIC_ORG} - ${CRYPTO_DIR}"
         fabric-ca-client enroll --tls.certfiles tls-cert.pem ${PROFILE} --csr.names "${CSR_NAMES}" --csr.hosts "${_csrhosts}" --enrollment.attrs "alias,email,hf.Type,hf.EnrollmentID" -u https://${u}@${FABRIC_ORG}:${u}pw@${CA_HOST_PORT} -M ${FABRIC_CA_HOME}/${u}\@${FABRIC_ORG}/${CRYPTO_DIR}
         if [ "${CRYPTO_DIR}" == "tls" ]; then
           # assuming "tlsca" is called after "ca"
@@ -105,7 +105,7 @@ function userCrypto {
       done
     else
       for u in ${_users}; do
-        echo "register ${u}@${FABRIC_ORG}"
+        echo "register ${u}@${FABRIC_ORG} - ${CRYPTO_DIR}"
         fabric-ca-client register --id.name ''"${u}@${FABRIC_ORG}"'' --id.secret ${u}pw --id.type client --id.attrs 'alias='"${u}"',email='"${u}@${FABRIC_ORG}"'' --tls.certfiles tls-cert.pem -u ${CA_ADMIN_URL}
       done
     fi
@@ -133,7 +133,7 @@ function ordererCrypto {
     _seq=$((${_seq}+1))
 
     if [ "${_cmd}" == "enroll" ]; then
-      echo "enroll ${_orderer}"
+      echo "enroll ${_orderer} - ${CRYPTO_DIR}"
       local o_hosts="${_orderer}.${FABRIC_ORG},${_orderer},localhost"
       if [ ! -z "${SVC_DOMAIN}" ]; then
         o_hosts="${_orderer}.orderer.${SVC_DOMAIN},${o_hosts}"
@@ -144,7 +144,7 @@ function ordererCrypto {
         copyNodeCrypto ${_orderer} orderers server
       fi
     else
-      echo "register ${_orderer}"
+      echo "register ${_orderer} - ${CRYPTO_DIR}"
       fabric-ca-client register --id.name ${_orderer}.${FABRIC_ORG} --id.secret ${_orderer}pw --id.type orderer --tls.certfiles tls-cert.pem -u ${CA_ADMIN_URL}
     fi
   done
@@ -171,7 +171,7 @@ function peerCrypto {
     _seq=$((${_seq}+1))
 
     if [ "${_cmd}" == "enroll" ]; then
-      echo "enroll ${p}"
+      echo "enroll ${_peer} - ${CRYPTO_DIR}"
       local p_hosts="${_peer}.${FABRIC_ORG},${_peer},localhost"
       if [ ! -z "${SVC_DOMAIN}" ]; then
         p_hosts="${_peer}.peer.${SVC_DOMAIN},${p_hosts}"
@@ -182,7 +182,7 @@ function peerCrypto {
         copyNodeCrypto ${_peer} peers server
       fi
     else
-      echo "register ${_peer}"
+      echo "register ${_peer} - ${CRYPTO_DIR}"
       fabric-ca-client register --id.name ${_peer}.${FABRIC_ORG} --id.secret ${_peer}pw --id.type peer --tls.certfiles tls-cert.pem -u ${CA_ADMIN_URL}
     fi
   done
