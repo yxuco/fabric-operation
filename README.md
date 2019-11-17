@@ -107,6 +107,12 @@ cd ./network
 ```
 ## TODO
 Stay tuned for more updates on the following items:
-* Add new orderer org and orderer nodes;
-* Add new peer org and peer nodes;
-* Deploy new chaincode
+* Add new peer nodes of the same org (done);
+* Create new channel;
+* Install and instantiate new chaincode;
+* Add new orderer nodes of the same org;
+* Add new peer org to the same Kubernetes cluster;
+* Add new orderer org to the same Kubernetes cluster for etcd raft consensus;
+* Add new orderer org to a new Kubernetes cluster;
+* Add new peer org to a new Kubernetes cluster;
+* Test multiple org multiple Kubernetes clusters across multiple cloud providers.
