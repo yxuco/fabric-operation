@@ -10,5 +10,6 @@ gke/config/
 **/canet/ca-client/
 **/canet/ca-server/
 **/canet/tlsca-server/
-**/genesis.block
+**/*genesis.block
 **/*.tx
+**/peer-pv-*.yaml

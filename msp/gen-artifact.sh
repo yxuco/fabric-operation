@@ -5,9 +5,8 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
 
 function bootstrap {
-  configtxgen -profile ${ORDERER_TYPE}OrdererGenesis -channelID ${SYS_CHANNEL} -outputBlock ./genesis.block
-  configtxgen -profile ${ORG}Channel -outputCreateChannelTx ./channel.tx -channelID ${TEST_CHANNEL}
-  configtxgen -profile ${ORG}Channel -outputAnchorPeersUpdate ./anchors.tx -channelID ${TEST_CHANNEL} -asOrg ${ORG_MSP}
+  createGenesisBlock ${ORDERER_TYPE}
+  createChannelTx ${TEST_CHANNEL}
 }
 
 function createGenesisBlock {
@@ -19,8 +18,8 @@ function createGenesisBlock {
 }
 
 function createChannelTx {
-  configtxgen -profile ${ORG}Channel -outputCreateChannelTx ./${1}.tx -channelID ${TEST_CHANNEL}
-  configtxgen -profile ${ORG}Channel -outputAnchorPeersUpdate ./${1}-anchors.tx -channelID ${TEST_CHANNEL} -asOrg ${ORG_MSP}
+  configtxgen -profile ${ORG}Channel -outputCreateChannelTx ./${1}.tx -channelID ${1}
+  configtxgen -profile ${ORG}Channel -outputAnchorPeersUpdate ./${1}-anchors.tx -channelID ${1} -asOrg ${ORG_MSP}
 }
 
 # Print the usage message

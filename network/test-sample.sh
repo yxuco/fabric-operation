@@ -3,11 +3,11 @@
 # usage: test-sample.sh
 
 echo "create channel ${TEST_CHANNEL} ..."
-peer channel create -o ${ORDERER_URL} -c ${TEST_CHANNEL} -f channel.tx --tls --cafile $ORDERER_CA
+peer channel create -c ${TEST_CHANNEL} -f ${TEST_CHANNEL}.tx --outputBlock ${TEST_CHANNEL}.pb -o ${ORDERER_URL} --tls --cafile $ORDERER_CA
 
 echo "Join channel ${TEST_CHANNEL} ..."
-peer channel join -b mychannel.block
-peer channel update -o ${ORDERER_URL} -c ${TEST_CHANNEL} -f anchors.tx --tls --cafile $ORDERER_CA
+peer channel join -b ${TEST_CHANNEL}.pb
+peer channel update -o ${ORDERER_URL} -c ${TEST_CHANNEL} -f ${TEST_CHANNEL}-anchors.tx --tls --cafile $ORDERER_CA
 
 CC_SRC_PATH="github.com/chaincode/chaincode_example02/go/"
 echo "Install chaincode from ${CC_SRC_PATH} ..."

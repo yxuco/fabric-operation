@@ -430,17 +430,6 @@ function printCliStorageYaml {
   printDataPV "cli" "cli-data-class"
 }
 
-function configPersistentData {
-  for ord in "${ORDERERS[@]}"; do
-    ${sumd} -p ${DATA_ROOT}/orderers/${ord}/data
-    ${sucp} ${DATA_ROOT}/tool/genesis.block ${DATA_ROOT}/orderers/${ord}
-  done
-
-  for p in "${PEERS[@]}"; do
-    ${sumd} -p ${DATA_ROOT}/peers/${p}/data
-  done
-}
-
 function printOrdererYaml {
   local ord_cnt=${#ORDERERS[@]}
   if [ "${ORDERER_TYPE}" == "solo" ]; then
@@ -824,6 +813,17 @@ function scalePeer {
   kubectl scale statefulsets peer -n ${ORG} --replicas=${1}
 }
 
+function configPersistentData {
+  for ord in "${ORDERERS[@]}"; do
+    ${sumd} -p ${DATA_ROOT}/orderers/${ord}/data
+    ${sucp} ${DATA_ROOT}/tool/${ORDERER_TYPE}-genesis.block ${DATA_ROOT}/orderers/${ord}/genesis.block
+  done
+
+  for p in "${PEERS[@]}"; do
+    ${sumd} -p ${DATA_ROOT}/peers/${p}/data
+  done
+}
+
 function startNetwork {
   # prepare folder for chaincode testing
   ${sumd} -p ${DATA_ROOT}/cli/chaincode
@@ -878,7 +878,9 @@ function shutdownNetwork {
 
     echo "stop fabric network ..."
     kubectl delete -f ${DATA_ROOT}/network/k8s/peer.yaml
-    kubectl delete -f ${DATA_ROOT}/network/k8s/peer-pv.yaml
+    for f in ${DATA_ROOT}/network/k8s/peer-pv*.yaml; do
+      kubectl delete -f ${f}
+    done
     kubectl delete -f ${DATA_ROOT}/network/k8s/orderer.yaml
     kubectl delete -f ${DATA_ROOT}/network/k8s/orderer-pv.yaml
 
@@ -913,10 +915,10 @@ function smokeTest {
   fi
 
   # copy channel tx
-  if [ -f "${DATA_ROOT}/tool/channel.tx" ]; then
-    echo "copy channel tx from ${DATA_ROOT}/tool/channel.tx"
-    ${sucp} ${DATA_ROOT}/tool/channel.tx ${DATA_ROOT}/cli
-    ${sucp} ${DATA_ROOT}/tool/anchors.tx ${DATA_ROOT}/cli
+  if [ -f "${DATA_ROOT}/tool/${TEST_CHANNEL}.tx" ]; then
+    echo "copy channel tx from ${DATA_ROOT}/tool/${TEST_CHANNEL}.tx"
+    ${sucp} ${DATA_ROOT}/tool/${TEST_CHANNEL}.tx ${DATA_ROOT}/cli
+    ${sucp} ${DATA_ROOT}/tool/${TEST_CHANNEL}-anchors.tx ${DATA_ROOT}/cli
   fi
 
   # run smoke test
