@@ -398,12 +398,26 @@ function printOrdererStorageYaml {
   done
 }
 
+# print PV and PVC for peer config and data
+# printPeerStorageYaml [start-seq end-seq]
 function printPeerStorageYaml {
-  # storage class for orderer config and data folders
-  printStorageClass "peer-data-class"
-
-  # PV and PVC for peer config and data
-  for p in "${PEERS[@]}"; do
+  # default for all bootstrap peers
+  local seq=${PEER_MIN:-"0"}
+  local max=${PEER_MAX:-"0"}
+  if [ -z "${1}" ]; then
+    # storage class for orderer config and data folders
+    printStorageClass "peer-data-class"
+  else
+    seq=${1}
+    if [ -z "${2}" ]; then
+      max=$((${seq}+1))
+    else
+      max=${2}
+    fi
+  fi
+  until [ "${seq}" -ge "${max}" ]; do
+    local p=("peer-${seq}")
+    seq=$((${seq}+1))
     printDataPV ${p} "peer-data-class"
   done
 }
@@ -759,6 +773,57 @@ spec:
 # Network operations
 ##############################################################################
 
+# scalePeer <replicas>
+function scalePeer {
+  if [ "${ENV_TYPE}" == "docker" ]; then
+    echo "operation 'scale-peer' is not supported for docker-compose"
+    return 0
+  fi
+  if [ -z "${1}" ]; then
+    echo "replica count is not specified for scale-peer"
+    printHelp
+    return 1
+  fi
+  local rep=$(kubectl get statefulsets peer -n ${ORG} -o jsonpath='{.status.replicas}')
+  if [ -z "${rep}" ]; then
+    echo "Error: peer statefulset is not running"
+    return 2
+  fi
+  echo "scale peer statefulset from ${rep} to ${1}"
+  if [ "${rep}" -ge "${1}" ]; then
+    echo "current replicas ${rep} is already greater than ${1}"
+    return 0
+  fi
+
+  # check crypto data
+  local seq=${rep}
+  local max=${1}
+  until [ ${seq} -ge ${max} ]; do
+    local p=("peer-${seq}")
+    seq=$((${seq}+1))
+    if [ ! -d "${DATA_ROOT}/peers/${p}/crypto" ]; then
+      echo "Error: crypto of ${p} does not exist"
+      echo "create crypto using '../ca/ca-crypto.sh peer -s ${rep} -e ${1}'"
+      return 2
+    fi
+    ${sumd} -p ${DATA_ROOT}/peers/${p}/data
+  done
+
+  max=$((${1}-1))
+  echo "create persistent volume for peer-${rep} to peer-${max}"
+  printPeerStorageYaml ${rep} ${1} | ${stee} ${DATA_ROOT}/network/k8s/peer-pv-${rep}.yaml > /dev/null
+  kubectl create -f ${DATA_ROOT}/network/k8s/peer-pv-${rep}.yaml
+
+  echo "scale peer statefulset to ${1}"
+  local pvstat=$(kubectl get pv data-peer-${max} -o jsonpath='{.status.phase}')
+  until [ "${pvstat}" == "Available" ]; do
+    echo "wait 5s for persistent volume data-peer-${max} ..."
+    sleep 5
+    pvstat=$(kubectl get pv data-peer-${max} -o jsonpath='{.status.phase}')
+  done
+  kubectl scale statefulsets peer -n ${ORG} --replicas=${1}
+}
+
 function startNetwork {
   # prepare folder for chaincode testing
   ${sumd} -p ${DATA_ROOT}/cli/chaincode
@@ -870,9 +935,11 @@ function printHelp() {
   echo "      - 'start' - start orderers and peers of the fabric network"
   echo "      - 'shutdown' - shutdown orderers and peers of the fabric network"
   echo "      - 'test' - run smoke test"
+  echo "      - 'scale-peer' - scale up peer nodes with argument '-r <replicas>'"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
   echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', or 'az'"
   echo "    -d - delete ledger data when shutdown network"
+  echo "    -r <replicas> - new replica count for peers"
   echo "  network.sh -h (print this message)"
 }
 
@@ -881,7 +948,7 @@ ENV_TYPE="k8s"
 
 CMD=${1}
 shift
-while getopts "h?p:t:d" opt; do
+while getopts "h?p:t:r:d" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -895,6 +962,9 @@ while getopts "h?p:t:d" opt; do
     ;;
   d)
     CLEANUP="true"
+    ;;
+  r)
+    REPLICA=$OPTARG
     ;;
   esac
 done
@@ -922,6 +992,10 @@ shutdown)
 test)
   echo "smoke test fabric network: ${ORG_ENV} ${ENV_TYPE}"
   smokeTest
+  ;;
+scale-peer)
+  echo "scale up peer nodes: ${REPLICA}"
+  scalePeer ${REPLICA}
   ;;
 *)
   printHelp
