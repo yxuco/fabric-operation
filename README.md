@@ -108,8 +108,8 @@ cd ./network
 ## TODO
 Stay tuned for more updates on the following items:
 * Add new peer nodes of the same org (done);
-* Create new channel;
-* Install and instantiate new chaincode;
+* Create new channel (done);
+* Install and instantiate new chaincode (done);
 * Add new orderer nodes of the same org;
 * Add new peer org to the same Kubernetes cluster;
 * Add new orderer org to the same Kubernetes cluster for etcd raft consensus;

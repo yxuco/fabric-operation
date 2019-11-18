@@ -69,7 +69,7 @@ function joinChannel {
   fi
 }
 
-# installChaincode <peer> <src> <name> [<version>] [new]
+# installChaincode <peer> <src> <name> [<version>] [new] [<lang>]
 function installChaincode {
   local _ccpath=${GOPATH}/src/github.com/chaincode/${2}
   local _env="CORE_PEER_ADDRESS=${1}.${FABRIC_ORG}:7051 CORE_PEER_TLS_ROOTCERT_FILE=${PWD}/crypto/${1}/tls/ca.crt"
@@ -90,8 +90,15 @@ function installChaincode {
   fi
 
   local _version=${4:-"1.0"}
-  echo "Install chaincode ${3}:${_version} from github.com/chaincode/${2} ..."
-  eval "${_env} peer chaincode install -n ${3} -v ${_version} -l golang -p \"github.com/chaincode/${2}\""
+  local _lang=${6:-"golang"}
+  echo "check if chaincode ${3}:${_version} has been installed"
+  eval "${_env} peer chaincode list --installed" | grep "Name: ${3}, Version: ${_version}"
+  if [ "$?" -ne 0 ]; then
+    echo "Install chaincode ${3}:${_version} from github.com/chaincode/${2} ..."
+    eval "${_env} peer chaincode install -n ${3} -v ${_version} -l ${_lang} -p \"github.com/chaincode/${2}\""
+  else
+    echo "chaincode ${3}:${_version} already installed"
+  fi
 }
 
 # instantiateChaincode <peer> <channel> <name> [<version>] [args] [policy] [lang]
@@ -107,8 +114,15 @@ function instantiateChaincode {
   if [ ! -z "${5}" ]; then
     _args=''${5}''
   fi
-  echo "instantiate chaincode ${3}:${_version} (${_lang}) on peer ${1}, channel ${2}, args ${_args} ..."
-  eval "${_env} peer chaincode instantiate -C ${2} -n ${3} -v ${_version} -l ${_lang} -c '${_args}' -P \"${_policy}\" -o ${ORDERER_URL} --tls --cafile ${ORDERER_CA}"
+
+  echo "check if chaincode ${3}:${_version} has been instantiated"
+  eval "${_env} peer chaincode list -C ${2} --instantiated" | grep "Name: ${3}, Version: ${_version}"
+  if [ "$?" -ne 0 ]; then
+    echo "instantiate chaincode ${3}:${_version} (${_lang}) on peer ${1}, channel ${2}, args ${_args} ..."
+    eval "${_env} peer chaincode instantiate -C ${2} -n ${3} -v ${_version} -l ${_lang} -c '${_args}' -P \"${_policy}\" -o ${ORDERER_URL} --tls --cafile ${ORDERER_CA}"
+  else
+    echo "chaincode ${3}:${_version} already instantiated"
+  fi
 }
 
 # upgrade Chaincode <peer> <channel> <name> <version> [args] [policy] [lang]
@@ -151,7 +165,7 @@ function invokeChaincode {
 function printUsage {
   echo "Usage: "
   echo "  network-util.sh <cmd> <args>"
-  echo "    <cmd> - one of 'test', 'create-channel', 'join-channel', 'install-chaincode', 'instantiate-chaincode', 'upgrade-chaincode', 'query-chaincode', or 'invoke-chaincode'"
+  echo "    <cmd> - one of the following commands:"
   echo "      - 'test' (default) - smoke test using a test channel and chaincode"
   echo "      - 'create-channel' - create a channel using peer-0, <args> = <channel>"
   echo "      - 'join-channel' - join a peer to a channel, <args> = <peer> <channel> [anchor]"

@@ -859,6 +859,12 @@ function startNetwork {
     kubectl create -f ${DATA_ROOT}/network/k8s/peer.yaml
     kubectl create -f ${DATA_ROOT}/network/k8s/cli.yaml
   fi
+
+  # copy network-util script to artifacts
+  if [ -f "${SCRIPT_DIR}/network-util.sh" ]; then
+    echo "copy network-util script ${SCRIPT_DIR}/network-util.sh"
+    ${sucp} ${SCRIPT_DIR}/network-util.sh ${DATA_ROOT}/cli
+  fi
 }
 
 function shutdownNetwork {
@@ -903,18 +909,26 @@ function shutdownNetwork {
   fi
 }
 
+function execUtil {
+  local _cmd="network-util.sh $@"
+  if [ "${ENV_TYPE}" == "docker" ]; then  
+    echo "use docker-compose - ${_cmd}"
+    docker exec -it cli bash -c "./${_cmd}"
+  else
+    echo "use k8s - ${_cmd}"
+    kubectl exec -it cli -- bash -c "./${_cmd}"
+  fi
+}
+
 function smokeTest {
   # copy test chaincode
   local chaincode=$(dirname "${SCRIPT_DIR}")/chaincode
-  if [ -d "${chaincode}" ]; then
-    echo "copy chaincode from ${chaincode}"
-    ${sucp} -R ${chaincode}/* ${DATA_ROOT}/cli/chaincode
-  fi
-
-  # copy network-util script to artifacts
-  if [ -f "${SCRIPT_DIR}/network-util.sh" ]; then
-    echo "copy network util script ${SCRIPT_DIR}/network-util.sh"
-    ${sucp} ${SCRIPT_DIR}/network-util.sh ${DATA_ROOT}/cli
+  if [ -d "${chaincode}/chaincode_example02" ]; then
+    echo "copy chaincode from ${chaincode}/chaincode_example02"
+    ${sucp} -R ${chaincode}/chaincode_example02 ${DATA_ROOT}/cli/chaincode
+  else
+    echo "cannot find test chaincode ${chaincode}/chaincode_example02"
+    return 1
   fi
 
   # copy channel tx
@@ -922,29 +936,50 @@ function smokeTest {
     echo "copy channel tx from ${DATA_ROOT}/tool/${TEST_CHANNEL}.tx"
     ${sucp} ${DATA_ROOT}/tool/${TEST_CHANNEL}.tx ${DATA_ROOT}/cli
     ${sucp} ${DATA_ROOT}/tool/${TEST_CHANNEL}-anchors.tx ${DATA_ROOT}/cli
+  else
+    echo "cannot find channel tx file: tool/${TEST_CHANNEL}.tx. It must be created first by using msp-util.sh."
+    return 2
   fi
 
   # run smoke test
-  if [ "${ENV_TYPE}" == "docker" ]; then
-    docker exec -it cli bash -c './network-util.sh'
-  else
-    kubectl exec -it cli -- bash -c './network-util.sh'
-  fi
+  execUtil "test"
 }
 
 # Print the usage message
 function printHelp() {
   echo "Usage: "
   echo "  network.sh <cmd> [-p <property file>] [-t <env type>] [-d]"
-  echo "    <cmd> - one of 'start', 'shutdown', or 'test'"
+  echo "    <cmd> - one of the following commands:"
   echo "      - 'start' - start orderers and peers of the fabric network"
   echo "      - 'shutdown' - shutdown orderers and peers of the fabric network"
   echo "      - 'test' - run smoke test"
   echo "      - 'scale-peer' - scale up peer nodes with argument '-r <replicas>'"
+  echo "      - 'create-channel' - create a channel using peer-0, with argument '-c <channel>'"
+  echo "      - 'join-channel' - join a peer to a channel with arguments: -n <peer> -c <channel> [-a]"
+  echo "        e.g., network.sh join-channel -n peer-0 -c mychannel -a"
+  echo "      - 'install-chaincode' - install chaincode on a peer with arguments: -n <peer> -f <folder> -s <name> [-v <version>] [-a]"
+  echo "        e.g., network.sh install-chaincode -n peer-0 -f chaincode_example02/go -s mycc -v 1.0 -a"
+  echo "      - 'instantiate-chaincode' - instantiate chaincode on a peer, with arguments: -n <peer> -c <channel> -s <name> [-v <version>] [-m <args>] [-e <policy>] [-g <lang>]"
+  echo "        e.g., network.sh instantiate-chaincode -n peer-0 -c mychannel -s mycc -v 1.0 -m '{\"Args\":[\"init\",\"a\",\"100\",\"b\",\"200\"]}'"
+  echo "      - 'upgrade-chaincode' - upgrade chaincode on a peer, with arguments: -n <peer> -c <channel> -s <name> -v <version> [-m <args>] [-e <policy>] [-g <lang>]"
+  echo "        e.g., network.sh upgrade-chaincode -n peer-0 -c mychannel -s mycc -v 2.0 -m '{\"Args\":[\"init\",\"a\",\"100\",\"b\",\"200\"]}'"
+  echo "      - 'query-chaincode' - query chaincode from a peer, with arguments: -n <peer> -c <channel> -s <name> -m <args>"
+  echo "        e.g., network.sh query-chaincode -n peer-0 -c mychannel -s mycc -m '{\"Args\":[\"query\",\"a\"]}'"
+  echo "      - 'invoke-chaincode' - invoke chaincode from a peer, with arguments: -n <peer> -c <channel> -s <name> -m <args>"
+  echo "        e.g., network.sh invoke-chaincode -n peer-0 -c mychannel -s mycc -m '{\"Args\":[\"invoke\",\"a\",\"b\",\"10\"]}'"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
   echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', or 'az'"
   echo "    -d - delete ledger data when shutdown network"
-  echo "    -r <replicas> - new replica count for peers"
+  echo "    -r <replicas> - new peer node replica count for scale-peer"
+  echo "    -n <peer> - peer ID for channel/chaincode commands"
+  echo "    -c <channel> - channel ID for channel/chaincode commands"
+  echo "    -a - update anchor for join-channel, or copy new chaincode for install-chaincode"
+  echo "    -f <cc folder> - chaincode folder name"
+  echo "    -s <cc name> - chaincode name"
+  echo "    -v <cc version> - chaincode version"
+  echo "    -g <cc language> - chaincode language, default 'golang'"
+  echo "    -m <args> - args for chaincode commands"
+  echo "    -e <policy> - endorsement policy for instantiate/upgrade chaincode, e.g., \"OR ('Org1MSP.peer')\""
   echo "  network.sh -h (print this message)"
 }
 
@@ -953,7 +988,7 @@ ENV_TYPE="k8s"
 
 CMD=${1}
 shift
-while getopts "h?p:t:r:d" opt; do
+while getopts "h?p:t:r:n:c:f:s:v:g:m:e:ad" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -970,6 +1005,33 @@ while getopts "h?p:t:r:d" opt; do
     ;;
   r)
     REPLICA=$OPTARG
+    ;;
+  n)
+    PEER_ID=$OPTARG
+    ;;
+  c)
+    CHANNEL_ID=$OPTARG
+    ;;
+  f)
+    CC_SRC=$OPTARG
+    ;;
+  s)
+    CC_NAME=$OPTARG
+    ;;
+  v)
+    CC_VERSION=$OPTARG
+    ;;
+  g)
+    CC_LANG=$OPTARG
+    ;;
+  m)
+    PARAM=$OPTARG
+    ;;
+  e)
+    POLICY=$OPTARG
+    ;;
+  a)
+    NEW="true"
     ;;
   esac
 done
@@ -1001,6 +1063,79 @@ test)
 scale-peer)
   echo "scale up peer nodes: ${REPLICA}"
   scalePeer ${REPLICA}
+  ;;
+create-channel)
+  echo "create channel: ${CHANNEL_ID}"
+  if [ -z "${CHANNEL_ID}" ]; then
+    echo "Invalid request: channel ID is not specified"
+    printHelp
+    exit 1
+  fi
+  execUtil ${CMD} ${CHANNEL_ID}
+  ;;
+join-channel)
+  echo "join channel: ${PEER_ID} ${CHANNEL_ID} ${NEW}"
+  if [ -z "${PEER_ID}" ] || [ -z "${CHANNEL_ID}" ]; then
+    echo "Invalid request: peer and channel must be specified"
+    printHelp
+    exit 1
+  fi
+  if [ -z "${NEW}" ]; then
+    execUtil ${CMD} ${PEER_ID} ${CHANNEL_ID}
+  else
+    execUtil ${CMD} ${PEER_ID} ${CHANNEL_ID} "anchor"
+  fi
+  ;;
+install-chaincode)
+  echo "install chaincode: ${PEER_ID} ${CC_SRC} ${CC_NAME} ${CC_VERSION} ${NEW}"
+  if [ -z "${PEER_ID}" ] || [ -z "${CC_SRC}" ] || [ -z "${CC_NAME}" ]; then
+    echo "Invalid request: peer, chaincode folder and chaincode name must be specified"
+    printHelp
+    exit 1
+  fi
+  if [ -z "${CC_VERSION}" ]; then
+    execUtil ${CMD} ${PEER_ID} ${CC_SRC} ${CC_NAME}
+  elif [ -z "${NEW}" ]; then
+    execUtil ${CMD} ${PEER_ID} ${CC_SRC} ${CC_NAME} ${CC_VERSION}
+  else
+    execUtil ${CMD} ${PEER_ID} ${CC_SRC} ${CC_NAME} ${CC_VERSION} "new"
+  fi
+  ;;
+instantiate-chaincode)
+  echo "instantiate chaincode: ${PEER_ID} ${CHANNEL_ID} ${CC_NAME} ${CC_VERSION} ${PARAM} ${POLICY} ${CC_LANG}"
+  if [ -z "${PEER_ID}" ] || [ -z "${CHANNEL_ID}" ] || [ -z "${CC_NAME}" ]; then
+    echo "Invalid request: peer, channel and chaincode name must be specified"
+    printHelp
+    exit 1
+  fi
+  execUtil "${CMD} ${PEER_ID} ${CHANNEL_ID} ${CC_NAME} \"${CC_VERSION}\" '${PARAM}' \"${POLICY}\" \"${CC_LANG}\""
+  ;;
+upgrade-chaincode)
+  echo "upgrade chaincode: ${PEER_ID} ${CHANNEL_ID} ${CC_NAME} ${CC_VERSION} ${PARAM} ${POLICY} ${CC_LANG}"
+  if [ -z "${PEER_ID}" ] || [ -z "${CHANNEL_ID}" ] || [ -z "${CC_NAME}" ] || [ -z "${CC_VERSION}" ]; then
+    echo "Invalid request: peer, channel, chaincode name and version must be specified"
+    printHelp
+    exit 1
+  fi
+  execUtil "${CMD} ${PEER_ID} ${CHANNEL_ID} ${CC_NAME} \"${CC_VERSION}\" '${PARAM}' \"${POLICY}\" \"${CC_LANG}\""
+  ;;
+query-chaincode)
+  echo "query chaincode: ${PEER_ID} ${CHANNEL_ID} ${CC_NAME} ${PARAM}"
+  if [ -z "${PEER_ID}" ] || [ -z "${CHANNEL_ID}" ] || [ -z "${CC_NAME}" ] || [ -z "${PARAM}" ]; then
+    echo "Invalid request: peer, channel, chaincode name and query params must be specified"
+    printHelp
+    exit 1
+  fi
+  execUtil "${CMD} ${PEER_ID} ${CHANNEL_ID} ${CC_NAME} '${PARAM}'"
+  ;;
+invoke-chaincode)
+  echo "invoke chaincode: ${PEER_ID} ${CHANNEL_ID} ${CC_NAME} ${PARAM}"
+  if [ -z "${PEER_ID}" ] || [ -z "${CHANNEL_ID}" ] || [ -z "${CC_NAME}" ] || [ -z "${PARAM}" ]; then
+    echo "Invalid request: peer, channel, chaincode name and invoke params must be specified"
+    printHelp
+    exit 1
+  fi
+  execUtil "${CMD} ${PEER_ID} ${CHANNEL_ID} ${CC_NAME} '${PARAM}'"
   ;;
 *)
   printHelp
