@@ -32,43 +32,36 @@ function printUsage {
   echo "      - 'channel' - generate tx for create and anchor of a channel, <args> = <channel name>"
 }
 
-function handleRequest {
-  case "${CMD}" in
-  bootstrap)
-    echo "bootstrap ${ORDERER_TYPE} genesis block and tx for test channel ${TEST_CHANNEL}"
-    bootstrap
-    ;;
-  genesis)
-    if [ -z "${ARGS}" ]; then
-      echo "orderer type not specified for genesis block"
-      printUsage
-      exit 1
-    else
-      echo "create genesis block for orderer type [ ${ARGS} ]"
-      createGenesisBlock ${ARGS}
-    fi
-    ;;
-  channel)
-    if [ -z "${ARGS}" ]; then
-      echo "channel name not specified for tx"
-      printUsage
-      exit 1
-    else
-      echo "create tx for test channel [ ${ARGS} ]"
-      createChannelTx ${ARGS}
-    fi
-    ;;
-  *)
+CMD=${1:-"bootstrap"}
+shift
+ARGS="$@"
+
+case "${CMD}" in
+bootstrap)
+  echo "bootstrap ${ORDERER_TYPE} genesis block and tx for test channel ${TEST_CHANNEL}"
+  bootstrap
+  ;;
+genesis)
+  if [ -z "${ARGS}" ]; then
+    echo "orderer type not specified for genesis block"
     printUsage
     exit 1
-  esac
-}
-
-CMD=$1
-if [ ! -z "${CMD}" ]; then
-  shift
-  ARGS="$@"
-  handleRequest
-else
+  else
+    echo "create genesis block for orderer type [ ${ARGS} ]"
+    createGenesisBlock ${ARGS}
+  fi
+  ;;
+channel)
+  if [ -z "${ARGS}" ]; then
+    echo "channel name not specified for tx"
+    printUsage
+    exit 1
+  else
+    echo "create tx for test channel [ ${ARGS} ]"
+    createChannelTx ${ARGS}
+  fi
+  ;;
+*)
   printUsage
-fi
+  exit 1
+esac

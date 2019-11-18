@@ -54,6 +54,8 @@ spec:
       value: netop1-channel
     - name: TEST_CHANNEL
       value: mychannel
+    - name: SVC_DOMAIN
+      value: netop1.svc.cluster.local
     workingDir: /etc/hyperledger/cli/store
     volumeMounts:
     - mountPath: /host/var/run

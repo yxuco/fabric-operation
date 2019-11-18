@@ -26,7 +26,7 @@ services:
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: orderer
     volumes:
-        - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/tool/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
+        - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/tool/etcdraft-genesis.block:/var/hyperledger/orderer/orderer.genesis.block
         - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/orderers/orderer-0/crypto/msp/:/var/hyperledger/orderer/msp
         - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/orderers/orderer-0/crypto/tls/:/var/hyperledger/orderer/tls
         - orderer-0.netop1.com:/var/hyperledger/production/orderer
@@ -56,7 +56,7 @@ services:
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: orderer
     volumes:
-        - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/tool/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
+        - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/tool/etcdraft-genesis.block:/var/hyperledger/orderer/orderer.genesis.block
         - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/orderers/orderer-1/crypto/msp/:/var/hyperledger/orderer/msp
         - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/orderers/orderer-1/crypto/tls/:/var/hyperledger/orderer/tls
         - orderer-1.netop1.com:/var/hyperledger/production/orderer
@@ -86,7 +86,7 @@ services:
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: orderer
     volumes:
-        - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/tool/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
+        - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/tool/etcdraft-genesis.block:/var/hyperledger/orderer/orderer.genesis.block
         - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/orderers/orderer-2/crypto/msp/:/var/hyperledger/orderer/msp
         - /Users/yxu/work/hyperledger/fabric-operation/netop1.com/orderers/orderer-2/crypto/tls/:/var/hyperledger/orderer/tls
         - orderer-2.netop1.com:/var/hyperledger/production/orderer
@@ -233,6 +233,7 @@ services:
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/cli/crypto/Admin@netop1.com/msp
       - ORDERER_CA=/etc/hyperledger/cli/crypto/orderer-0/msp/tlscacerts/tlsca.netop1.com-cert.pem
       - ORDERER_URL=orderer-0.netop1.com:7050
+      - FABRIC_ORG=netop1.com
     working_dir: /etc/hyperledger/cli
     command: /bin/bash
     volumes:

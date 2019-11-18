@@ -480,12 +480,11 @@ function verifyRequest {
   esac
 }
 
-CMD=$1
-if [ ! -z "${CMD}" ]; then
-  shift
-  ARGS="$@"
-  verifyRequest
-fi
+CMD=${1:-"bootstrap"}
+shift
+ARGS="$@"
+verifyRequest
+
 if [ "${CMD}" == "bootstrap" ]; then
   cleanupCrypto
 fi

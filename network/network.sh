@@ -75,7 +75,7 @@ function printOrdererService {
     working_dir: /opt/gopath/src/github.com/hyperledger/fabric
     command: orderer
     volumes:
-        - ${DATA_ROOT}/tool/genesis.block:/var/hyperledger/orderer/orderer.genesis.block
+        - ${DATA_ROOT}/tool/${ORDERER_TYPE}-genesis.block:/var/hyperledger/orderer/orderer.genesis.block
         - ${DATA_ROOT}/orderers/${ord}/crypto/msp/:/var/hyperledger/orderer/msp
         - ${DATA_ROOT}/orderers/${ord}/crypto/tls/:/var/hyperledger/orderer/tls
         - ${ord}.${FABRIC_ORG}:/var/hyperledger/production/orderer
@@ -205,6 +205,7 @@ function printCliService {
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/cli/crypto/${admin}@${FABRIC_ORG}/msp
       - ORDERER_CA=/etc/hyperledger/cli/crypto/${ORDERERS[0]}/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem
       - ORDERER_URL=${ORDERERS[0]}.${FABRIC_ORG}:7050
+      - FABRIC_ORG=${FABRIC_ORG}
     working_dir: /etc/hyperledger/cli
     command: /bin/bash
     volumes:
@@ -742,6 +743,8 @@ spec:
       value: ${SYS_CHANNEL}
     - name: TEST_CHANNEL
       value: ${TEST_CHANNEL}
+    - name: SVC_DOMAIN
+      value: ${SVC_DOMAIN}
     workingDir: /etc/hyperledger/cli/store
     volumeMounts:
     - mountPath: /host/var/run
@@ -908,10 +911,10 @@ function smokeTest {
     ${sucp} -R ${chaincode}/* ${DATA_ROOT}/cli/chaincode
   fi
 
-  # copy test-sample script to artifacts
-  if [ -f "${SCRIPT_DIR}/test-sample.sh" ]; then
-    echo "copy smoke test script ${SCRIPT_DIR}/test-sample.sh"
-    ${sucp} ${SCRIPT_DIR}/test-sample.sh ${DATA_ROOT}/cli
+  # copy network-util script to artifacts
+  if [ -f "${SCRIPT_DIR}/network-util.sh" ]; then
+    echo "copy network util script ${SCRIPT_DIR}/network-util.sh"
+    ${sucp} ${SCRIPT_DIR}/network-util.sh ${DATA_ROOT}/cli
   fi
 
   # copy channel tx
@@ -923,9 +926,9 @@ function smokeTest {
 
   # run smoke test
   if [ "${ENV_TYPE}" == "docker" ]; then
-    docker exec -it cli bash -c './test-sample.sh'
+    docker exec -it cli bash -c './network-util.sh'
   else
-    kubectl exec -it cli -- bash -c 'cp -R ./chaincode /opt/gopath/src/github.com && ./test-sample.sh'
+    kubectl exec -it cli -- bash -c './network-util.sh'
   fi
 }
 
