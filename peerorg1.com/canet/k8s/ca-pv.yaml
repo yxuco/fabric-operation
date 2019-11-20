@@ -2,114 +2,118 @@
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: orderer-data-class
+  name: ca-data-class
 provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer
 ---
 kind: PersistentVolume
 apiVersion: v1
+# create PV for ca-server
 metadata:
-  name: data-netop1-orderer-0
+  name: ca-server-peerorg1-pv
   labels:
-    app: data-orderer-0
-    org: netop1
+    node: ca-server
+    org: peerorg1
 spec:
   capacity:
-    storage: 500Mi
+    storage: 100Mi
   volumeMode: Filesystem
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: orderer-data-class
+  storageClassName: ca-data-class
   hostPath:
-    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/orderers/orderer-0
+    path: /Users/yxu/work/hyperledger/fabric-operation/peerorg1.com/canet/ca-server
     type: Directory
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: data-orderer-0
-  namespace: netop1
+  name: ca-server-pvc
+  namespace: peerorg1
 spec:
-  storageClassName: orderer-data-class
+  storageClassName: ca-data-class
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 500Mi
+      storage: 100Mi
   selector:
     matchLabels:
-      app: data-orderer-0
-      org: netop1
+      node: ca-server
+      org: peerorg1
 ---
 kind: PersistentVolume
 apiVersion: v1
+# create PV for tlsca-server
 metadata:
-  name: data-netop1-orderer-1
+  name: tlsca-server-peerorg1-pv
   labels:
-    app: data-orderer-1
-    org: netop1
+    node: tlsca-server
+    org: peerorg1
 spec:
   capacity:
-    storage: 500Mi
+    storage: 100Mi
   volumeMode: Filesystem
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: orderer-data-class
+  storageClassName: ca-data-class
   hostPath:
-    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/orderers/orderer-1
+    path: /Users/yxu/work/hyperledger/fabric-operation/peerorg1.com/canet/tlsca-server
     type: Directory
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: data-orderer-1
-  namespace: netop1
+  name: tlsca-server-pvc
+  namespace: peerorg1
 spec:
-  storageClassName: orderer-data-class
+  storageClassName: ca-data-class
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 500Mi
+      storage: 100Mi
   selector:
     matchLabels:
-      app: data-orderer-1
-      org: netop1
+      node: tlsca-server
+      org: peerorg1
 ---
 kind: PersistentVolume
 apiVersion: v1
+# create PV for ca-client
 metadata:
-  name: data-netop1-orderer-2
+  name: ca-client-peerorg1-pv
   labels:
-    app: data-orderer-2
-    org: netop1
+    node: ca-client
+    org: peerorg1
 spec:
   capacity:
-    storage: 500Mi
+    storage: 100Mi
   volumeMode: Filesystem
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: orderer-data-class
+  storageClassName: ca-data-class
   hostPath:
-    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/orderers/orderer-2
+    path: /Users/yxu/work/hyperledger/fabric-operation/peerorg1.com
     type: Directory
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: data-orderer-2
-  namespace: netop1
+  name: ca-client-pvc
+  namespace: peerorg1
 spec:
-  storageClassName: orderer-data-class
+  storageClassName: ca-data-class
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 500Mi
+      storage: 100Mi
   selector:
     matchLabels:
-      app: data-orderer-2
-      org: netop1
+      node: ca-client
+      org: peerorg1

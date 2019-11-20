@@ -11,7 +11,7 @@ kind: PersistentVolume
 apiVersion: v1
 # create PV for data-tool
 metadata:
-  name: data-tool-pv
+  name: data-tool-netop1-pv
   labels:
     app: data-tool
     org: netop1

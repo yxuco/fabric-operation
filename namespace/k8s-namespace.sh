@@ -56,9 +56,13 @@ function setDefaultNamespace {
 function createNamespace {
   ${sumd} -p ${DATA_ROOT}/namespace/k8s
 
-  echo "create k8s namespace ${ORG}"
-  printK8sNamespace | ${stee} ${DATA_ROOT}/namespace/k8s/namespace.yaml > /dev/null
-  kubectl create -f ${DATA_ROOT}/namespace/k8s/namespace.yaml
+  echo "check if namespace ${ORG} exists"
+  kubectl get namespace ${ORG}
+  if [ "$?" -ne 0 ]; then
+    echo "create k8s namespace ${ORG}"
+    printK8sNamespace | ${stee} ${DATA_ROOT}/namespace/k8s/namespace.yaml > /dev/null
+    kubectl create -f ${DATA_ROOT}/namespace/k8s/namespace.yaml
+  fi
 
   if [ "${ENV_TYPE}" == "az" ]; then
     # create secret for Azure File storage

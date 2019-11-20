@@ -45,7 +45,7 @@ function createChannel {
 
 # joinChannel <peer> <channel> [anchor]
 function joinChannel {
-  echo "check if channel ${2} exists"
+  echo "check if channel ${2} exists - must get the genesis block for joining channel"
   peer channel fetch oldest ${2}.pb -c ${2} -o ${ORDERER_URL} --tls --cafile $ORDERER_CA
   if [ "$?" -ne 0 ]; then
     echo "Error: channel ${2} does not exist, must create it first"
@@ -161,6 +161,39 @@ function invokeChaincode {
   eval "${_env} peer chaincode invoke -C ${2} -n ${3} -c '${_args}' -o ${ORDERER_URL} --tls --cafile $ORDERER_CA"
 }
 
+# create channel update tx for adding a new org to a channel
+# assuming config file <msp>.json is already in the CLI working directory
+# output transaction file is written in working drectory as <channel>-<msp>.pb
+# addOrg <msp>, <channel>
+function addOrg {
+  # fetch channel config
+  peer channel fetch config ${2}-config.pb -c ${2} -o ${ORDERER_URL} --tls --cafile ${ORDERER_CA}
+  configtxlator proto_decode --input ${2}-config.pb --type common.Block | jq .data.data[0].payload.data.config > ${2}-config.json
+  # insert new msp into application.groups
+  if [ -f "${1}.json" ]; then
+    jq -s '.[0] * {"channel_group":{"groups":{"Application":{"groups": {"'${1}'":.[1]}}}}}' ${2}-config.json ${1}.json > ${2}-modified.json
+  else
+    echo "cannot find MSP config - ${1}.json. create it using msp-util.sh before continue"
+    return 1
+  fi
+
+  # calculate pb diff
+  configtxlator proto_encode --input ${2}-config.json --type common.Config --output ${2}-config.pb
+  configtxlator proto_encode --input ${2}-modified.json --type common.Config --output ${2}-modified.pb
+  configtxlator compute_update --channel_id ${2} --original ${2}-config.pb --updated ${2}-modified.pb --output ${2}-update.pb
+  local dif=$(wc -c "${2}-update.pb" | awk '{print $1}')
+  if [ "${dif}" -eq 0 ]; then
+    echo "${1} had already been added to ${2}. no update is required"
+    return 1
+  fi
+
+  # construct update with re-attached envelope
+  configtxlator proto_decode --input ${2}-update.pb --type common.ConfigUpdate | jq . > ${2}-update.json
+  echo '{"payload":{"header":{"channel_header":{"channel_id":"'${2}'", "type":2}},"data":{"config_update":'$(cat ${2}-update.json)'}}}' | jq . > ${2}-${1}.json
+  configtxlator proto_encode --input ${2}-${1}.json --type common.Envelope --output ${2}-${1}.pb
+  echo "created channel update file ${2}-${1}.pb"
+}
+
 # Print the usage message
 function printUsage {
   echo "Usage: "
@@ -180,6 +213,11 @@ function printUsage {
   echo "        e.g., network-util.sh query-chaincode \"peer-0\" \"mychannel\" \"mycc\" '{\"Args\":[\"query\",\"a\"]}'"
   echo "      - 'invoke-chaincode' - invoke chaincode from a peer, <args> = <peer> <channel> <name> <args>"
   echo "        e.g., network-util.sh invoke-chaincode \"peer-0\" \"mychannel\" \"mycc\" '{\"Args\":[\"invoke\",\"a\",\"b\",\"10\"]}'"
+  echo "      - 'add-org-tx' - generate update tx for add new msp to a channel, <args> = <msp> <channel>"
+  echo "      - 'sign-transaction' - sign a config update transaction file in the CLI working directory, <args> = <tx-file>"
+  echo "        e.g., network-util.sh sign-transaction \"mychannel-peerorg1MSP.pb\""
+  echo "      - 'update-channel' - send transaction to update a channel, <args> = <tx-file> <channel>"
+  echo "        e.g., network-util.sh update-channel \"mychannel-peerorg1MSP.pb\" mychannel"
 }
 
 CMD=${1:-"test"}
@@ -192,74 +230,52 @@ test)
   test
   ;;
 create-channel)
-  if [ -z "${ARGS}" ]; then
-    echo "channel ID not specified"
-    printUsage
-    exit 1
-  else
-    echo "create channel [ ${ARGS} ]"
-    createChannel ${ARGS}
-  fi
+  echo "create channel [ ${ARGS} ]"
+  createChannel ${ARGS}
   ;;
 join-channel)
-  if [ "$#" -lt 2 ]; then
-    echo "at least 2 arguments must be specified for join-channel"
-    printUsage
-    exit 1
-  else
-    echo "join channel [ ${ARGS} ]"
-    joinChannel ${ARGS}
-  fi
+  echo "join channel [ ${ARGS} ]"
+  joinChannel ${ARGS}
   ;;
 install-chaincode)
-  if [ "$#" -lt 3 ]; then
-    echo "at least 3 arguments must be specified for install-chaincode"
-    printUsage
-    exit 1
-  else
-    echo "install chaincode [ ${ARGS} ]"
-    installChaincode ${ARGS}
-  fi
+  echo "install chaincode [ ${ARGS} ]"
+  installChaincode ${ARGS}
   ;;
 instantiate-chaincode)
-  if [ "$#" -lt 3 ]; then
-    echo "at least 3 arguments must be specified for instantiate-chaincode"
-    printUsage
-    exit 1
-  else
-    echo "instantiate chaincode [ ${ARGS} ]"
-    instantiateChaincode ${ARGS}
-  fi
+  echo "instantiate chaincode [ ${ARGS} ]"
+  instantiateChaincode ${ARGS}
   ;;
 upgrade-chaincode)
-  if [ "$#" -lt 4 ]; then
-    echo "at least 4 arguments must be specified for upgrade-chaincode"
-    printUsage
-    exit 1
-  else
-    echo "upgrade chaincode [ ${ARGS} ]"
-    upgradeChaincode ${ARGS}
-  fi
+  echo "upgrade chaincode [ ${ARGS} ]"
+  upgradeChaincode ${ARGS}
   ;;
 query-chaincode)
-  if [ "$#" -lt 4 ]; then
-    echo "at least 4 arguments must be specified for query-chaincode"
-    printUsage
-    exit 1
-  else
-    echo "query chaincode [ ${ARGS} ]"
-    queryChaincode ${ARGS}
-  fi
+  echo "query chaincode [ ${ARGS} ]"
+  queryChaincode ${ARGS}
   ;;
 invoke-chaincode)
-  if [ "$#" -lt 4 ]; then
-    echo "at least 4 arguments must be specified for invoke-chaincode"
-    printUsage
+  echo "invoke chaincode [ ${ARGS} ]"
+  invokeChaincode ${ARGS}
+  ;;
+add-org-tx)
+  echo "generate update tx for add new msp to a channel [ ${ARGS} ]"
+  addOrg ${ARGS}
+  ;;
+update-channel)
+  if [ ! -f "${1}" ]; then
+    echo "cannot find the transaction file ${1}"
     exit 1
-  else
-    echo "invoke chaincode [ ${ARGS} ]"
-    invokeChaincode ${ARGS}
   fi
+  echo "send transaction ${1} to update channel ${2}"
+  peer channel update -f ${1} -c ${2} -o ${ORDERER_URL} --tls --cafile ${ORDERER_CA}
+  ;;
+sign-transaction)
+  if [ ! -f "${1}" ]; then
+    echo "cannot find the transaction file ${1}"
+    exit 1
+  fi
+  echo "sign transaction ${1}"
+  peer channel signconfigtx -f ${1}
   ;;
 *)
   printUsage

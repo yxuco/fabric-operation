@@ -87,6 +87,7 @@ cd ../network
 ```
 This command starts the orderers and peers using the crypto and genesis block created in the previous steps.  You can verify the network status using the following commands:
 * `kubectl get pods` should list 3 running orderers and 2 running peers;
+* `kubectl logs orderer-2` should show that a raft leader is elected by all 3 orderer nodes;
 * `kubectl logs peer-1 -c peer` should show the logs of `peer-1`, that shows its successfully completed gossip communications with `peer-0`.
 * `ls /mnt/share/netop1.com/orderers/orderer-0/data` shows persistent storage of the `orderer-0`, similar to other orderer nodes;
 * `ls /mnt/share/netop1.com/peers/peer-0/data` shows persistent storage of the `peer-0`, similar to other peer nodes.

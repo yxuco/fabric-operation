@@ -1,0 +1,7 @@
+
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: peerorg1
+  labels:
+    use: hyperledger

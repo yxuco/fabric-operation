@@ -243,19 +243,28 @@ function printConfigTx {
 
   echo "---
 Organizations:"
-  printOrdererMSP
-  printPeerMSP
-
+  if [ ${#ORDERERS[@]} -ne 0 ]; then
+    printOrdererMSP
+  fi
+  if [ ${#PEERS[@]} -ne 0 ]; then
+    printPeerMSP
+  fi
   printCapabilities
   printApplicationDefaults
-  printOrdererDefaults
+  if [ ${#ORDERERS[@]} -ne 0 ]; then
+    printOrdererDefaults
+  fi
   printChannelDefaults
 
   echo "
 Profiles:"
-  printSoloOrdererProfile
-  printEtcdraftOrdererProfile
-  printOrgChannelProfile
+  if [ ${#ORDERERS[@]} -ne 0 ]; then
+    printSoloOrdererProfile
+    printEtcdraftOrdererProfile
+  fi
+  if [ ${#PEERS[@]} -ne 0 ]; then
+    printOrgChannelProfile
+  fi
 }
 
 function printDockerYaml {
@@ -277,6 +286,7 @@ services:
       - ORG_MSP=${ORG_MSP}
       - ORDERER_TYPE=${ORDERER_TYPE}
       - TEST_CHANNEL=${TEST_CHANNEL}
+      - FABRIC_ORG=${FABRIC_ORG}
     working_dir: /etc/hyperledger/tool
     command: /bin/bash -c 'while true; do sleep 30; done'
     volumes:
@@ -333,7 +343,7 @@ kind: PersistentVolume
 apiVersion: v1
 # create PV for ${1}
 metadata:
-  name: ${1}-pv
+  name: ${1}-${ORG}-pv
   labels:
     app: ${1}
     org: ${ORG}
@@ -424,6 +434,8 @@ spec:
       value: ${ORG_MSP}
     - name: TEST_CHANNEL
       value: ${TEST_CHANNEL}
+    - name: SVC_DOMAIN
+      value: ${SVC_DOMAIN}
     command:
     - /bin/bash
     - -c
@@ -485,7 +497,7 @@ function execCommand {
   if [ "${ENV_TYPE}" == "docker" ]; then
     docker exec -it tool bash -c "./${_cmd}"
   else
-    kubectl exec -it tool -- bash -c "./${_cmd}"
+    kubectl exec -it tool -n ${ORG} -- bash -c "./${_cmd}"
   fi
 }
 
@@ -497,8 +509,9 @@ function printHelp() {
   echo "      - 'start' - start tools container to run msp-util"
   echo "      - 'shutdown' - shutdown tools container for the msp-util"
   echo "      - 'bootstrap' - generate bootstrap genesis block and test channel tx defined in network spec"
-  echo "      - 'genesis' - generate genesis block of specified consensus type"
-  echo "      - 'channel' - generate channel creation tx for specified channel name"
+  echo "      - 'genesis' - generate genesis block of specified consensus type, with argument '-o <consensus type>'"
+  echo "      - 'channel' - generate channel creation tx for specified channel name, with argument '-c <channel name>'"
+  echo "      - 'mspconfig' - print MSP config json for adding to a network, output in '${DATA_ROOT}/tool'"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
   echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', 'az', or 'gke'"
   echo "    -o <consensus type> - 'solo' or 'etcdraft' used with the 'genesis' command"
@@ -551,6 +564,10 @@ shutdown)
 bootstrap)
   echo "bootstrap msp artifacts: ${ORG_ENV} ${ENV_TYPE}"
   execCommand "bootstrap"
+  ;;
+mspconfig)
+  echo "print msp config json file: ${ORG_ENV} ${ENV_TYPE}"
+  execCommand "mspconfig"
   ;;
 genesis)
   echo "create genesis block for consensus type: [ ${CONS_TYPE} ]"

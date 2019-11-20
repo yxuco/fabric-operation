@@ -1,0 +1,72 @@
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cli
+  namespace: peerorg1
+spec:
+  containers:
+  - name: cli
+    image: hyperledger/fabric-tools
+    imagePullPolicy: Always
+    resources:
+      requests:
+        memory: 500Mi
+        cpu: 100m
+    command:
+    - /bin/bash
+    - -c
+    - |
+      mkdir -p /opt/gopath/src/github.com
+      while true; do sleep 30; done
+    env:
+    - name: CORE_PEER_ADDRESS
+      value: peer-0.peer.peerorg1.svc.cluster.local:7051
+    - name: CORE_PEER_ID
+      value: cli
+    - name: CORE_PEER_LOCALMSPID
+      value: peerorg1MSP
+    - name: CORE_PEER_MSPCONFIGPATH
+      value: /etc/hyperledger/cli/store/crypto/Admin@peerorg1.com/msp
+    - name: CORE_PEER_TLS_CERT_FILE
+      value: /etc/hyperledger/cli/store/crypto/peer-0/tls/server.crt
+    - name: CORE_PEER_TLS_ENABLED
+      value: "true"
+    - name: CORE_PEER_TLS_KEY_FILE
+      value: /etc/hyperledger/cli/store/crypto/peer-0/tls/server.key
+    - name: CORE_PEER_TLS_ROOTCERT_FILE
+      value: /etc/hyperledger/cli/store/crypto/peer-0/tls/ca.crt
+    - name: CORE_VM_ENDPOINT
+      value: unix:///host/var/run/docker.sock
+    - name: FABRIC_LOGGING_SPEC
+      value: INFO
+    - name: GOPATH
+      value: /opt/gopath
+    - name: ORDERER_CA
+      value: /etc/hyperledger/cli/store/crypto/orderer-0/msp/tlscacerts/tlsca.netop1.com-cert.pem
+    - name: ORDERER_TYPE
+      value: etcdraft
+    - name: ORDERER_URL
+      value: orderer-0.orderer.netop1.svc.cluster.local:7050
+    - name: ORG
+      value: peerorg1
+    - name: SYS_CHANNEL
+      value: netop1-channel
+    - name: TEST_CHANNEL
+      value: org1channel
+    - name: SVC_DOMAIN
+      value: peerorg1.svc.cluster.local
+    workingDir: /etc/hyperledger/cli/store
+    volumeMounts:
+    - mountPath: /host/var/run
+      name: docker-sock
+    - mountPath: /etc/hyperledger/cli/store
+      name: data
+  volumes:
+  - name: docker-sock
+    hostPath:
+      path: /var/run
+      type: Directory
+  - name: data
+    persistentVolumeClaim:
+      claimName: data-cli

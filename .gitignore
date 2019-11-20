@@ -7,6 +7,7 @@ gke/config/
 **/peer*/data/
 **/crypto/**
 **/cli/
+**/tool/*.json
 **/canet/ca-client/
 **/canet/ca-server/
 **/canet/tlsca-server/

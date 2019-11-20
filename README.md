@@ -90,6 +90,16 @@ Note that the scripts use the operating company name `netop1`, as a Kubernetes n
 
 After the smoke test succeeds, you should see a test result of `90` printed on the screen. If you used `docker-compose` for this excersize (as described below), you can look at the blockchain state via the `CouchDB` futon UI at `http://localhost:7056/_utils`, which is exposed for `docker-compose` only because it is not recommended to expose `CouchDB` in production configuration using Kubernetes.
 
+## Operations for managing the Fabric network
+The above bootstrap network is for a single operating company to start a Fabric network with its own orderer and peer nodes of pre-configured size.  A network in production will need to scale up and let more organizations to join and co-operate.  Organizations may create their own Kubernetes networks using the same or different cloud service providers. We provide scripts to support such network activities.
+
+The currently supported operations include
+* Create new channel;
+* Install and instantiate new chaincode;
+* Add new peer nodes of the same bootstrap org;
+* Add new peer org to the same Kubernetes cluster;
+Refer [operations](./operations.md) for description of these activities. More operations (as described in `TODO` bellow) will be supported in the future.
+
 ## Non-Mac users
 If you are not using a Mac, you can run these scripts using `docker-compose`, `Amazon EKS`, or `Azure AKS`. Simply add a corresponding `env_type` in all the commands, e.g.,
 * `./ca-server.sh start -t docker` to use `docker-composer`, or
@@ -107,12 +117,8 @@ cd ./network
 ```
 ## TODO
 Stay tuned for more updates on the following items:
-* Add new peer nodes of the same org (done);
-* Create new channel (done);
-* Install and instantiate new chaincode (done);
-* Add new orderer nodes of the same org;
-* Add new peer org to the same Kubernetes cluster;
-* Add new orderer org to the same Kubernetes cluster for etcd raft consensus;
+* Add new orderer nodes of the same bootstrap org;
+* Add new orderer org to the same bootstrap Kubernetes cluster for etcd raft consensus;
 * Add new orderer org to a new Kubernetes cluster;
 * Add new peer org to a new Kubernetes cluster;
 * Test multiple org multiple Kubernetes clusters across multiple cloud providers.

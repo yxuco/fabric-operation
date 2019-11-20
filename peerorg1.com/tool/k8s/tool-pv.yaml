@@ -2,17 +2,19 @@
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: cli-data-class
+  name: tool-data-class
 provisioner: kubernetes.io/no-provisioner
+reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer
 ---
 kind: PersistentVolume
 apiVersion: v1
+# create PV for data-tool
 metadata:
-  name: data-netop1-cli
+  name: data-tool-peerorg1-pv
   labels:
-    app: data-cli
-    org: netop1
+    app: data-tool
+    org: peerorg1
 spec:
   capacity:
     storage: 100Mi
@@ -20,18 +22,18 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: cli-data-class
+  storageClassName: tool-data-class
   hostPath:
-    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/cli
+    path: /Users/yxu/work/hyperledger/fabric-operation/peerorg1.com/tool
     type: Directory
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: data-cli
-  namespace: netop1
+  name: data-tool-pvc
+  namespace: peerorg1
 spec:
-  storageClassName: cli-data-class
+  storageClassName: tool-data-class
   accessModes:
     - ReadWriteOnce
   resources:
@@ -39,5 +41,5 @@ spec:
       storage: 100Mi
   selector:
     matchLabels:
-      app: data-cli
-      org: netop1
+      app: data-tool
+      org: peerorg1

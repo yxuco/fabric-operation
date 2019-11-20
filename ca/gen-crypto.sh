@@ -303,9 +303,11 @@ function initCrypto {
     mkdir -p ${DATA_ROOT}/tool/crypto
     cp -R ${DATA_ROOT}/crypto/msp ${DATA_ROOT}/tool/crypto
 
-    # initialize cli crypto
-    mkdir -p ${DATA_ROOT}/cli/crypto/orderer-0/msp
-    cp -R ${DATA_ROOT}/crypto/msp/tlscacerts ${DATA_ROOT}/cli/crypto/orderer-0/msp
+    # initialize cli crypto if the org provides orderers
+    if [ "${ORDERER_MAX:-"0"}" -gt 0 ]; then
+      mkdir -p ${DATA_ROOT}/cli/crypto/orderer-0/msp
+      cp -R ${DATA_ROOT}/crypto/msp/tlscacerts ${DATA_ROOT}/cli/crypto/orderer-0/msp
+    fi
   else
     echo "${DATA_ROOT}/crypto/msp/config.yaml already exists"
   fi

@@ -180,6 +180,11 @@ function printCouchdbService {
 # peer chaincode list -C mychannel --instantiated
 function printCliService {
   local admin=${ADMIN_USER:-"Admin"}
+  local ordorg="${FABRIC_ORG}"
+  if [ "${ORDERER_MAX:-0}" -eq 0 ] && [ ! -z "${ORDERER_ORG}" ]; then
+    ordorg="${ORDERER_ORG}"
+  fi
+
   echo "
   cli:
     container_name: cli
@@ -196,15 +201,15 @@ function printCliService {
       - TEST_CHANNEL=${TEST_CHANNEL}
       - ORDERER_TYPE=${ORDERER_TYPE}
       - CORE_PEER_ID=cli
-      - CORE_PEER_ADDRESS=${PEERS[0]}.${FABRIC_ORG}:7051
+      - CORE_PEER_ADDRESS=peer-0.${FABRIC_ORG}:7051
       - CORE_PEER_LOCALMSPID=${ORG_MSP}
       - CORE_PEER_TLS_ENABLED=true
-      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/cli/crypto/${PEERS[0]}/tls/server.crt
-      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/cli/crypto/${PEERS[0]}/tls/server.key
-      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/cli/crypto/${PEERS[0]}/tls/ca.crt
+      - CORE_PEER_TLS_CERT_FILE=/etc/hyperledger/cli/crypto/peer-0/tls/server.crt
+      - CORE_PEER_TLS_KEY_FILE=/etc/hyperledger/cli/crypto/peer-0/tls/server.key
+      - CORE_PEER_TLS_ROOTCERT_FILE=/etc/hyperledger/cli/crypto/peer-0/tls/ca.crt
       - CORE_PEER_MSPCONFIGPATH=/etc/hyperledger/cli/crypto/${admin}@${FABRIC_ORG}/msp
-      - ORDERER_CA=/etc/hyperledger/cli/crypto/${ORDERERS[0]}/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem
-      - ORDERER_URL=${ORDERERS[0]}.${FABRIC_ORG}:7050
+      - ORDERER_CA=/etc/hyperledger/cli/crypto/orderer-0/msp/tlscacerts/tlsca.${ordorg}-cert.pem
+      - ORDERER_URL=orderer-0.${ordorg}:7050
       - FABRIC_ORG=${FABRIC_ORG}
     working_dir: /etc/hyperledger/cli
     command: /bin/bash
@@ -261,7 +266,9 @@ services:"
   done
 
   # print cli service for executing admin commands
-  printCliService
+  if [ "${PEER_MAX:-0}" -gt 0 ]; then
+    printCliService
+  fi
 
   # print named volumes
   if [ "${#VOLUMES[@]}" -gt "0" ]; then
@@ -298,7 +305,7 @@ function printDataPV {
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: data-${1}
+  name: data-${ORG}-${1}
   labels:
     app: data-${1}
     org: ${ORG}
@@ -686,7 +693,13 @@ spec:
 # e.g., printCliYaml peer-0
 function printCliYaml {
   local admin=${ADMIN_USER:-"Admin"}
-  local test_ord=${ORDERERS[0]}
+  local ord_ca="/etc/hyperledger/cli/store/crypto/orderer-0/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem"
+  local ord_url="orderer-0.orderer.${SVC_DOMAIN}:7050"
+  if [ "${ORDERER_MAX:-0}" -eq 0 ] && [ ! -z "${ORDERER_ORG}" ]; then
+    local o_org=${ORDERER_ORG%%.*}
+    ord_ca="/etc/hyperledger/cli/store/crypto/orderer-0/msp/tlscacerts/tlsca.${ORDERER_ORG}-cert.pem"
+    ord_url="orderer-0.orderer.${SVC_DOMAIN/${ORG}./${o_org}.}:7050"
+  fi
   echo "
 apiVersion: v1
 kind: Pod
@@ -732,11 +745,11 @@ spec:
     - name: GOPATH
       value: /opt/gopath
     - name: ORDERER_CA
-      value: /etc/hyperledger/cli/store/crypto/${test_ord}/msp/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem
+      value: ${ord_ca}
     - name: ORDERER_TYPE
       value: ${ORDERER_TYPE}
     - name: ORDERER_URL
-      value: ${test_ord}.orderer.${SVC_DOMAIN}:7050
+      value: ${ord_url}
     - name: ORG
       value: ${ORG}
     - name: SYS_CHANNEL
@@ -807,11 +820,11 @@ function scalePeer {
   kubectl create -f ${DATA_ROOT}/network/k8s/peer-pv-${rep}.yaml
 
   echo "scale peer statefulset to ${1}"
-  local pvstat=$(kubectl get pv data-peer-${max} -o jsonpath='{.status.phase}')
+  local pvstat=$(kubectl get pv data-${ORG}-peer-${max} -o jsonpath='{.status.phase}')
   until [ "${pvstat}" == "Available" ]; do
-    echo "wait 5s for persistent volume data-peer-${max} ..."
+    echo "wait 5s for persistent volume data-${ORG}-peer-${max} ..."
     sleep 5
-    pvstat=$(kubectl get pv data-peer-${max} -o jsonpath='{.status.phase}')
+    pvstat=$(kubectl get pv data-${ORG}-peer-${max} -o jsonpath='{.status.phase}')
   done
   kubectl scale statefulsets peer -n ${ORG} --replicas=${1}
 }
@@ -844,20 +857,37 @@ function startNetwork {
     getOrderers
     getPeers
     configPersistentData
-    printOrdererStorageYaml | ${stee} ${DATA_ROOT}/network/k8s/orderer-pv.yaml > /dev/null
-    printOrdererYaml | ${stee} ${DATA_ROOT}/network/k8s/orderer.yaml > /dev/null
-    printPeerStorageYaml | ${stee} ${DATA_ROOT}/network/k8s/peer-pv.yaml > /dev/null
-    printPeerYaml | ${stee} ${DATA_ROOT}/network/k8s/peer.yaml > /dev/null
-    printCliStorageYaml | ${stee} ${DATA_ROOT}/network/k8s/cli-pv.yaml > /dev/null
-    printCliYaml peer-0 | ${stee} ${DATA_ROOT}/network/k8s/cli.yaml > /dev/null
+    if [ "${ORDERER_MAX:-0}" -gt 0 ]; then
+      printOrdererStorageYaml | ${stee} ${DATA_ROOT}/network/k8s/orderer-pv.yaml > /dev/null
+      printOrdererYaml | ${stee} ${DATA_ROOT}/network/k8s/orderer.yaml > /dev/null
+    fi
+    if [ "${PEER_MAX:-0}" -gt 0 ]; then
+      printPeerStorageYaml | ${stee} ${DATA_ROOT}/network/k8s/peer-pv.yaml > /dev/null
+      printPeerYaml | ${stee} ${DATA_ROOT}/network/k8s/peer.yaml > /dev/null
+      printCliStorageYaml | ${stee} ${DATA_ROOT}/network/k8s/cli-pv.yaml > /dev/null
+      printCliYaml peer-0 | ${stee} ${DATA_ROOT}/network/k8s/cli.yaml > /dev/null
+    fi
+
+    # copy orderer cert for CLI if available
+    if [ "${ORDERER_MAX:-0}" -eq 0 ] && [ ! -z "${ORDERER_ORG}" ]; then
+      local ordcert=${DATA_ROOT}/../${ORDERER_ORG}/cli/crypto/orderer-0
+      if [ -d "${ordcert}" ]; then
+        echo "copy orderer TLS cert from ${ordcert}"
+        ${sucp} -R ${ordcert} ${DATA_ROOT}/cli/crypto
+      fi
+    fi
 
     # start network
-    kubectl create -f ${DATA_ROOT}/network/k8s/orderer-pv.yaml
-    kubectl create -f ${DATA_ROOT}/network/k8s/peer-pv.yaml
-    kubectl create -f ${DATA_ROOT}/network/k8s/cli-pv.yaml
-    kubectl create -f ${DATA_ROOT}/network/k8s/orderer.yaml
-    kubectl create -f ${DATA_ROOT}/network/k8s/peer.yaml
-    kubectl create -f ${DATA_ROOT}/network/k8s/cli.yaml
+    if [ "${ORDERER_MAX:-0}" -gt 0 ]; then
+      kubectl create -f ${DATA_ROOT}/network/k8s/orderer-pv.yaml
+      kubectl create -f ${DATA_ROOT}/network/k8s/orderer.yaml
+    fi
+    if [ "${PEER_MAX:-0}" -gt 0 ]; then
+      kubectl create -f ${DATA_ROOT}/network/k8s/peer-pv.yaml
+      kubectl create -f ${DATA_ROOT}/network/k8s/cli-pv.yaml
+      kubectl create -f ${DATA_ROOT}/network/k8s/peer.yaml
+      kubectl create -f ${DATA_ROOT}/network/k8s/cli.yaml
+    fi
   fi
 
   # copy network-util script to artifacts
@@ -895,15 +925,13 @@ function shutdownNetwork {
 
     if [ "${CLEANUP}" == "true" ]; then
       echo "clean up orderer ledger files ..."
-      getOrderers
-      for ord in "${ORDERERS[@]}"; do
-        ${surm} -R ${DATA_ROOT}/orderers/${ord}/data/*
+      for d in "${DATA_ROOT}/orderers/*/data"; do
+        ${surm} -R ${d}/*
       done
 
       echo "clean up peer ledger files ..."
-      getPeers
-      for p in "${PEERS[@]}"; do
-        ${surm} -R ${DATA_ROOT}/peers/${p}/data/*
+      for d in "${DATA_ROOT}/peers/*/data"; do
+        ${surm} -R ${d}/*
       done
     fi
   fi
@@ -916,30 +944,55 @@ function execUtil {
     docker exec -it cli bash -c "./${_cmd}"
   else
     echo "use k8s - ${_cmd}"
-    kubectl exec -it cli -- bash -c "./${_cmd}"
+    kubectl exec -it cli -n ${ORG} -- bash -c "./${_cmd}"
+  fi
+}
+
+# copy chaincode from scripts folder to $DATA_ROOT
+# copyChaincode <cc_src> <refresh>
+function copyChaincode {
+  local target=${DATA_ROOT}/cli/chaincode/${1}
+  if [ -d "${target}" ]; then
+    echo "chaincode exists: ${target}"
+    if [ -z "${2}" ]; then
+      return 0
+    else
+      echo "refresh chaincode in ${target}"
+      ${surm} -R ${target}/*
+    fi
+  else
+    ${sumd} -p ${target}
+  fi
+
+  # copy test chaincode
+  local chaincode=$(dirname "${SCRIPT_DIR}")/chaincode/${1}
+  if [ -d "${chaincode}" ]; then
+    echo "copy chaincode from ${chaincode}"
+    ${sucp} -R ${chaincode}/* ${target}
+  else
+    echo "cannot find test chaincode ${chaincode}"
+    return 1
+  fi
+}
+
+# copyChannelTx <channel>
+function copyChannelTx {
+  if [ -f "${DATA_ROOT}/tool/${1}.tx" ]; then
+    echo "copy channel tx from ${DATA_ROOT}/tool/${1}.tx"
+    ${sucp} ${DATA_ROOT}/tool/${1}.tx ${DATA_ROOT}/cli
+    ${sucp} ${DATA_ROOT}/tool/${1}-anchors.tx ${DATA_ROOT}/cli
+  else
+    echo "cannot find channel tx file: tool/${1}.tx. It must be created first by using msp-util.sh."
+    return 1
   fi
 }
 
 function smokeTest {
   # copy test chaincode
-  local chaincode=$(dirname "${SCRIPT_DIR}")/chaincode
-  if [ -d "${chaincode}/chaincode_example02" ]; then
-    echo "copy chaincode from ${chaincode}/chaincode_example02"
-    ${sucp} -R ${chaincode}/chaincode_example02 ${DATA_ROOT}/cli/chaincode
-  else
-    echo "cannot find test chaincode ${chaincode}/chaincode_example02"
-    return 1
-  fi
+  copyChaincode "chaincode_example02"
 
   # copy channel tx
-  if [ -f "${DATA_ROOT}/tool/${TEST_CHANNEL}.tx" ]; then
-    echo "copy channel tx from ${DATA_ROOT}/tool/${TEST_CHANNEL}.tx"
-    ${sucp} ${DATA_ROOT}/tool/${TEST_CHANNEL}.tx ${DATA_ROOT}/cli
-    ${sucp} ${DATA_ROOT}/tool/${TEST_CHANNEL}-anchors.tx ${DATA_ROOT}/cli
-  else
-    echo "cannot find channel tx file: tool/${TEST_CHANNEL}.tx. It must be created first by using msp-util.sh."
-    return 2
-  fi
+  copyChannelTx ${TEST_CHANNEL}
 
   # run smoke test
   execUtil "test"
@@ -967,6 +1020,12 @@ function printHelp() {
   echo "        e.g., network.sh query-chaincode -n peer-0 -c mychannel -s mycc -m '{\"Args\":[\"query\",\"a\"]}'"
   echo "      - 'invoke-chaincode' - invoke chaincode from a peer, with arguments: -n <peer> -c <channel> -s <name> -m <args>"
   echo "        e.g., network.sh invoke-chaincode -n peer-0 -c mychannel -s mycc -m '{\"Args\":[\"invoke\",\"a\",\"b\",\"10\"]}'"
+  echo "      - 'add-org-tx' - generate update tx for add new msp to a channel, with arguments: -o <msp> -c <channel>"
+  echo "        e.g., network.sh add-org-tx -o peerorg1MSP -c mychannel"
+  echo "      - 'sign-transaction' - sign a config update transaction file in the CLI working directory, with argument = -f <tx-file>"
+  echo "        e.g., network.sh sign-transaction -f \"mychannel-peerorg1MSP.pb\""
+  echo "      - 'update-channel' - send transaction to update a channel, with arguments: -f <tx-file> -c <channel>"
+  echo "        e.g., network.sh update-channel -f \"mychannel-peerorg1MSP.pb\" -c mychannel"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
   echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', or 'az'"
   echo "    -d - delete ledger data when shutdown network"
@@ -974,12 +1033,13 @@ function printHelp() {
   echo "    -n <peer> - peer ID for channel/chaincode commands"
   echo "    -c <channel> - channel ID for channel/chaincode commands"
   echo "    -a - update anchor for join-channel, or copy new chaincode for install-chaincode"
-  echo "    -f <cc folder> - chaincode folder name"
+  echo "    -f <cc folder> - chaincode folder name, or config transaction file"
   echo "    -s <cc name> - chaincode name"
   echo "    -v <cc version> - chaincode version"
   echo "    -g <cc language> - chaincode language, default 'golang'"
   echo "    -m <args> - args for chaincode commands"
   echo "    -e <policy> - endorsement policy for instantiate/upgrade chaincode, e.g., \"OR ('Org1MSP.peer')\""
+  echo "    -o <org msp> - org msp to be added to a channel"
   echo "  network.sh -h (print this message)"
 }
 
@@ -988,7 +1048,7 @@ ENV_TYPE="k8s"
 
 CMD=${1}
 shift
-while getopts "h?p:t:r:n:c:f:s:v:g:m:e:ad" opt; do
+while getopts "h?p:t:r:n:c:f:s:v:g:m:e:o:ad" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -1029,6 +1089,9 @@ while getopts "h?p:t:r:n:c:f:s:v:g:m:e:ad" opt; do
     ;;
   e)
     POLICY=$OPTARG
+    ;;
+  o)
+    MSP=$OPTARG
     ;;
   a)
     NEW="true"
@@ -1071,6 +1134,9 @@ create-channel)
     printHelp
     exit 1
   fi
+  if [ -f "${DATA_ROOT}/tool/${CHANNEL_ID}.tx" ]; then
+    ${sucp} ${DATA_ROOT}/tool/${CHANNEL_ID}.tx ${DATA_ROOT}/cli
+  fi
   execUtil ${CMD} ${CHANNEL_ID}
   ;;
 join-channel)
@@ -1080,6 +1146,7 @@ join-channel)
     printHelp
     exit 1
   fi
+  copyChannelTx ${CHANNEL_ID}
   if [ -z "${NEW}" ]; then
     execUtil ${CMD} ${PEER_ID} ${CHANNEL_ID}
   else
@@ -1093,6 +1160,7 @@ install-chaincode)
     printHelp
     exit 1
   fi
+  copyChaincode ${CC_SRC} ${NEW}
   if [ -z "${CC_VERSION}" ]; then
     execUtil ${CMD} ${PEER_ID} ${CC_SRC} ${CC_NAME}
   elif [ -z "${NEW}" ]; then
@@ -1136,6 +1204,38 @@ invoke-chaincode)
     exit 1
   fi
   execUtil "${CMD} ${PEER_ID} ${CHANNEL_ID} ${CC_NAME} '${PARAM}'"
+  ;;
+add-org-tx)
+  echo "create channel update to add org: ${MSP} ${CHANNEL_ID}"
+  if [ -z "${MSP}" ] || [ -z "${CHANNEL_ID}" ]; then
+    echo "Invalid request: org MSP and channel must be specified"
+    printHelp
+    exit 1
+  fi
+  execUtil "${CMD} ${MSP} ${CHANNEL_ID}"
+  ;;
+sign-transaction)
+  if [ -z "${CC_SRC}" ]; then
+    echo "Invalid request: transaction file ${CC_SRC} not specified"
+    printUsage
+    exit 1
+  fi
+  echo "sign transaction ${CC_SRC}"
+  execUtil "${CMD} ${CC_SRC}"
+  ;;
+update-channel)
+  if [ -z "${CC_SRC}" ]; then
+    echo "Invalid request: transaction file ${CC_SRC} not specified"
+    printUsage
+    exit 1
+  fi
+  if [ -z "${CHANNEL_ID}" ]; then
+    echo "Invalid request: channel is not specified"
+    printUsage
+    exit 2
+  fi
+  echo "send transaction ${CC_SRC} to update channel ${CHANNEL_ID}"
+  execUtil "${CMD} ${CC_SRC} ${CHANNEL_ID}"
   ;;
 *)
   printHelp

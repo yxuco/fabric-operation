@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: tool
-  namespace: netop1
+  namespace: peerorg1
 spec:
   containers:
   - name: tool
@@ -20,18 +20,16 @@ spec:
       value: unix:///host/var/run/docker.sock
     - name: ORDERER_TYPE
       value: etcdraft
-    - name: ORDERER_CA
-      value: /etc/hyperledger/tool/crypto/orderers/orderer-0/msp/tlscacerts/tlsca.netop1.com-cert.pem
-    - name: ORDERER_URL
-      value: orderer-0.orderer.netop1.svc.cluster.local:7050
     - name: SYS_CHANNEL
       value: netop1-channel
     - name: ORG
-      value: netop1
+      value: peerorg1
     - name: ORG_MSP
-      value: netop1MSP
+      value: peerorg1MSP
     - name: TEST_CHANNEL
-      value: mychannel
+      value: org1channel
+    - name: SVC_DOMAIN
+      value: peerorg1.svc.cluster.local
     command:
     - /bin/bash
     - -c

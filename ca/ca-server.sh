@@ -128,7 +128,7 @@ kind: PersistentVolume
 apiVersion: v1
 # create PV for ${_name}
 metadata:
-  name: ${_name}-pv
+  name: ${_name}-${ORG}-pv
   labels:
     node: ${_name}
     org: ${ORG}

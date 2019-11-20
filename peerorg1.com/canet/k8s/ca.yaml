@@ -1,0 +1,167 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ca-server
+  namespace: peerorg1
+  labels:
+    app: ca
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ca
+  template:
+    metadata:
+      labels:
+        app: ca
+    spec:
+      containers:
+      - name: ca-server
+        image: hyperledger/fabric-ca
+        env:
+        - name: FABRIC_CA_HOME
+          value: /etc/hyperledger/fabric-ca-server
+        - name: FABRIC_CA_SERVER_CSR_CN
+          value: ca.peerorg1.com
+        - name: FABRIC_CA_SERVER_CSR_HOSTS
+          value: ca-server.peerorg1.svc.cluster.local,ca.peerorg1.com,localhost
+        - name: FABRIC_CA_SERVER_PORT
+          value: "7054"
+        - name: FABRIC_CA_SERVER_TLS_ENABLED
+          value: "true"
+        args:
+        - sh
+        - -c
+        - fabric-ca-server start -b caadmin:caadminpw
+        ports:
+        - containerPort: 7054
+          name: server
+        volumeMounts:
+        - mountPath: /etc/hyperledger/fabric-ca-server
+          name: data
+      restartPolicy: Always
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: ca-server-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ca-server
+  namespace: peerorg1
+spec:
+  selector:
+    app: ca
+  ports:
+  - protocol: TCP
+    port: 7154
+    targetPort: server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tlsca-server
+  namespace: peerorg1
+  labels:
+    app: tlsca
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: tlsca
+  template:
+    metadata:
+      labels:
+        app: tlsca
+    spec:
+      containers:
+      - name: tlsca-server
+        image: hyperledger/fabric-ca
+        env:
+        - name: FABRIC_CA_HOME
+          value: /etc/hyperledger/fabric-ca-server
+        - name: FABRIC_CA_SERVER_CSR_CN
+          value: tlsca.peerorg1.com
+        - name: FABRIC_CA_SERVER_CSR_HOSTS
+          value: tlsca-server.peerorg1.svc.cluster.local,tlsca.peerorg1.com,localhost
+        - name: FABRIC_CA_SERVER_PORT
+          value: "7054"
+        - name: FABRIC_CA_SERVER_TLS_ENABLED
+          value: "true"
+        args:
+        - sh
+        - -c
+        - fabric-ca-server start -b tlsadmin:tlsadminpw
+        ports:
+        - containerPort: 7054
+          name: server
+        volumeMounts:
+        - mountPath: /etc/hyperledger/fabric-ca-server
+          name: data
+      restartPolicy: Always
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: tlsca-server-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tlsca-server
+  namespace: peerorg1
+spec:
+  selector:
+    app: tlsca
+  ports:
+  - protocol: TCP
+    port: 7155
+    targetPort: server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ca-client
+  namespace: peerorg1
+  labels:
+    app: ca-client
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: ca-client
+  template:
+    metadata:
+      labels:
+        app: ca-client
+    spec:
+      containers:
+      - name: ca-client
+        image: hyperledger/fabric-ca
+        env:
+        - name: FABRIC_CA_HOME
+          value: /etc/hyperledger/data/canet/ca-client
+        - name: SVC_DOMAIN
+          value: peerorg1.svc.cluster.local
+        - name: DATA_ROOT
+          value: /etc/hyperledger/data
+        args:
+        - bash
+        - -c
+        - "while true; do sleep 30; done"
+        workingDir: /etc/hyperledger/data/canet/ca-client
+        volumeMounts:
+        - mountPath: /etc/hyperledger/data
+          name: data
+      restartPolicy: Always
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: ca-client-pvc

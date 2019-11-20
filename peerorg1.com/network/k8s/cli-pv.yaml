@@ -9,10 +9,10 @@ volumeBindingMode: WaitForFirstConsumer
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: data-netop1-cli
+  name: data-peerorg1-cli
   labels:
     app: data-cli
-    org: netop1
+    org: peerorg1
 spec:
   capacity:
     storage: 100Mi
@@ -22,14 +22,14 @@ spec:
   persistentVolumeReclaimPolicy: Retain
   storageClassName: cli-data-class
   hostPath:
-    path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/cli
+    path: /Users/yxu/work/hyperledger/fabric-operation/peerorg1.com/cli
     type: Directory
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
   name: data-cli
-  namespace: netop1
+  namespace: peerorg1
 spec:
   storageClassName: cli-data-class
   accessModes:
@@ -40,4 +40,4 @@ spec:
   selector:
     matchLabels:
       app: data-cli
-      org: netop1
+      org: peerorg1

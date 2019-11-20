@@ -11,15 +11,25 @@ function bootstrap {
 
 function createGenesisBlock {
   if [ "$1" == "solo" ] || [ "$1" == "etcdraft" ]; then
-    configtxgen -profile ${1}OrdererGenesis -channelID ${SYS_CHANNEL} -outputBlock ./${1}-genesis.block
+    check=$(grep "${1}OrdererGenesis:" configtx.yaml)
+    if [ -z "${check}" ]; then
+      echo "profile ${1}OrdererGenesis is not defiled"
+    else
+      configtxgen -profile ${1}OrdererGenesis -channelID ${SYS_CHANNEL} -outputBlock ./${1}-genesis.block
+    fi
   else
     echo "'$1' is not a supported orderer type. choose 'solo' or 'etcdraft'"
   fi
 }
 
 function createChannelTx {
-  configtxgen -profile ${ORG}Channel -outputCreateChannelTx ./${1}.tx -channelID ${1}
-  configtxgen -profile ${ORG}Channel -outputAnchorPeersUpdate ./${1}-anchors.tx -channelID ${1} -asOrg ${ORG_MSP}
+  check=$(grep "${ORG}Channel:" configtx.yaml)
+  if [ -z "${check}" ]; then
+    echo "profile ${ORG}Channel is not defined"
+  else
+    configtxgen -profile ${ORG}Channel -outputCreateChannelTx ./${1}.tx -channelID ${1}
+    configtxgen -profile ${ORG}Channel -outputAnchorPeersUpdate ./${1}-anchors.tx -channelID ${1} -asOrg ${ORG_MSP}
+  fi
 }
 
 # Print the usage message
@@ -28,6 +38,7 @@ function printUsage {
   echo "  gen-artifact.sh <cmd> <args>"
   echo "    <cmd> - one of 'bootstrap', 'genesis', or 'channel'"
   echo "      - 'bootstrap' (default) - generate genesis block and test-channel tx as specified by container env"
+  echo "      - 'mspconfig' - print MSP config json for adding to a network"
   echo "      - 'genesis' - generate genesis block for specified orderer type, <args> = <orderer type>"
   echo "      - 'channel' - generate tx for create and anchor of a channel, <args> = <channel name>"
 }
@@ -40,6 +51,10 @@ case "${CMD}" in
 bootstrap)
   echo "bootstrap ${ORDERER_TYPE} genesis block and tx for test channel ${TEST_CHANNEL}"
   bootstrap
+  ;;
+mspconfig)
+  echo "print config '${ORG_MSP}.json' used to add it to a network"
+  configtxgen -printOrg ${ORG_MSP} > ${ORG_MSP}.json
   ;;
 genesis)
   if [ -z "${ARGS}" ]; then
