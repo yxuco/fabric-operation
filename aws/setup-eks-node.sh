@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # configure bastion host, and
 # install amazon-efs-utils on a specified EKS nodes, or all EKS nodes if no node is specified
 # usage: ./setup-eks-node.sh [ host [ host ] ]

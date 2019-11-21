@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # set GCP environment for a specified $ENV_NAME and $GCP_ZONE
 # usage: source env.sh env zone
 # e.g.: ENV_NAME="fab", GCP_ZONE="us-west1-c"

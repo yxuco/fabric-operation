@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # Run this sript in ca-client container to generate crypto cert and keys for orderers and peers of an org
 # usage: gen-crypto.sh
 # it reads config parameters for the org from file ./org.env in the same same script folder.

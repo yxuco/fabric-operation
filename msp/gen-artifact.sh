@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # Run this sript in tool container to generate network artifacts
 # usage: gen-artifact.sh <cmd> <args>
 

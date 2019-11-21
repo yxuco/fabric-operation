@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # setup variables for target environment, i.e., docker, k8s, aws, az, gke, etc
 # usage: setup.sh <org_name> <env>
 # it uses config parameters of the specified org as defined in org_name.env, e.g.

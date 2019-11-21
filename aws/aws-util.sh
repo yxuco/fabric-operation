@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # create EKS cluster and setup EFS
 # usage: aws-util.sh <cmd> [-n <name>] [-r <region>] [-p <profile>]"
 # e.g., aws-util.sh create -n fab -r us-west-2 -p prod

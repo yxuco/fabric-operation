@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # create AKS cluster and Azure File storage
 # usage: az-util.sh <cmd> [-n <name>] [-r <region>]
 # e.g., az-util.sh create -n fab -r westus2

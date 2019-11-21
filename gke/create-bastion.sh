@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # create compute engine instance as a bastion host for a specified $ENV_NAME and $GCP_ZONE
 # usage: create-bastion.sh env zone
 # example value: ENV_NAME="fab", GCP_ZONE="us-west1-c"

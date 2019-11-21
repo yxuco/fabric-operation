@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # set AWS environment for a specified $ENV_NAME and $AWS_REGION
 # usage: source env.sh env region profile
 # specify profile if aws user assume a role of a different account, the assumed role should be defined in ~/.aws/config

@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # create k8s namespace for a specified org,
 #   if the optional target env is az, create the storage account secret based on config file in $HOME/.azure/store-secret
 # usage: k8s-namespace.sh <cmd> [-p <property file>] [-t <env type>]

@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # set Azure environment for a specified $ENV_NAME and $AZ_REGION
 # usage: source env.sh env region
 # default value: ENV_NAME="fab", AZ_REGION="westus2"

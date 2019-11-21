@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # start fabric-ca server and client for a specified org,
 #   with optional target env, i.e., docker, k8s, aws, az, gke, etc, to provide extra SVC_DOMAIN config
 # usage: start-ca.sh <org_name> <env>

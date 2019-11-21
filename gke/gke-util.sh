@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # create GKE cluster and Cloud Filestore
 # usage: gke-util.sh <cmd> [-n <name>] [-r <zone>]
 # e.g., gke-util.sh create -n fab -r us-west1-c

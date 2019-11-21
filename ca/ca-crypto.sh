@@ -1,4 +1,9 @@
 #!/bin/bash
+# Copyright © 2018. TIBCO Software Inc.
+#
+# This file is subject to the license terms contained
+# in the license file that is distributed with this file.
+
 # generate crypto keys using CA server of a specified org, and ca server env, i.e., docker or k8s
 # ca-crypto.sh <cmd> [-p <property file>] [-t <env type>] [-s <start seq>] [-e <end seq>] [-u <user name>]
 # where property file for the org are specified in ../config/org_name.env, e.g.
