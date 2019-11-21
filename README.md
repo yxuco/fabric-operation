@@ -103,6 +103,7 @@ The currently supported operations include
 * Install and instantiate new chaincode;
 * Add new peer nodes of the same bootstrap org;
 * Add new peer org to the same Kubernetes cluster;
+
 Refer [operations](./operations.md) for description of these activities. More operations (as described in `TODO` bellow) will be supported in the future.
 
 ## Non-Mac users
