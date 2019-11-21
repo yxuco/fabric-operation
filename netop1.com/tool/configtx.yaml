@@ -32,7 +32,7 @@ Organizations:
                 Rule: "OR('netop1MSP.admin')"
 
         AnchorPeers:
-            - Host: peer-0.peer.netop1.svc.cluster.local
+            - Host: peer-0.netop1.com
               Port: 7051
 
 Capabilities:
@@ -68,7 +68,7 @@ Application: &ApplicationDefaults
 Orderer: &OrdererDefaults
     OrdererType: solo
     Addresses:
-        - orderer-0.orderer.netop1.svc.cluster.local:7050
+        - orderer-0.netop1.com:7050
     BatchTimeout: 2s
     BatchSize:
         MaxMessageCount: 10
@@ -129,22 +129,22 @@ Profiles:
             OrdererType: etcdraft
             EtcdRaft:
                 Consenters:
-                - Host: orderer-0.orderer.netop1.svc.cluster.local
+                - Host: orderer-0.netop1.com
                   Port: 7050
                   ClientTLSCert: /etc/hyperledger/tool/crypto/orderers/orderer-0/tls/server.crt
                   ServerTLSCert: /etc/hyperledger/tool/crypto/orderers/orderer-0/tls/server.crt
-                - Host: orderer-1.orderer.netop1.svc.cluster.local
+                - Host: orderer-1.netop1.com
                   Port: 7050
                   ClientTLSCert: /etc/hyperledger/tool/crypto/orderers/orderer-1/tls/server.crt
                   ServerTLSCert: /etc/hyperledger/tool/crypto/orderers/orderer-1/tls/server.crt
-                - Host: orderer-2.orderer.netop1.svc.cluster.local
+                - Host: orderer-2.netop1.com
                   Port: 7050
                   ClientTLSCert: /etc/hyperledger/tool/crypto/orderers/orderer-2/tls/server.crt
                   ServerTLSCert: /etc/hyperledger/tool/crypto/orderers/orderer-2/tls/server.crt
             Addresses:
-                - orderer-0.orderer.netop1.svc.cluster.local:7050
-                - orderer-1.orderer.netop1.svc.cluster.local:7050
-                - orderer-2.orderer.netop1.svc.cluster.local:7050
+                - orderer-0.netop1.com:7050
+                - orderer-1.netop1.com:7050
+                - orderer-2.netop1.com:7050
             Organizations:
                 - *netop1OrdererMSP
             Capabilities:

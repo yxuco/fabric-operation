@@ -2,7 +2,7 @@
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: cli-data-class
+  name: netop1-cli-data-class
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
 ---
@@ -20,7 +20,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: cli-data-class
+  storageClassName: netop1-cli-data-class
   hostPath:
     path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/cli
     type: Directory
@@ -31,7 +31,7 @@ metadata:
   name: data-cli
   namespace: netop1
 spec:
-  storageClassName: cli-data-class
+  storageClassName: netop1-cli-data-class
   accessModes:
     - ReadWriteOnce
   resources:

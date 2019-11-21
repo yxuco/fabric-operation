@@ -45,7 +45,7 @@ function createChannel {
 
 # joinChannel <peer> <channel> [anchor]
 function joinChannel {
-  echo "check if channel ${2} exists - must get the genesis block for joining channel"
+  echo "check if channel ${2} exists, must get genesis block to join channel"
   peer channel fetch oldest ${2}.pb -c ${2} -o ${ORDERER_URL} --tls --cafile $ORDERER_CA
   if [ "$?" -ne 0 ]; then
     echo "Error: channel ${2} does not exist, must create it first"
@@ -110,10 +110,7 @@ function instantiateChaincode {
   local _version=${4:-"1.0"}
   local _policy=${6:-"OR ('${ORG}MSP.peer')"}
   local _lang=${7:-"golang"}
-  local _args='{"Args":["init"]}'
-  if [ ! -z "${5}" ]; then
-    _args=''${5}''
-  fi
+  local _args=${5:-'{"Args":["init"]}'}
 
   echo "check if chaincode ${3}:${_version} has been instantiated"
   eval "${_env} peer chaincode list -C ${2} --instantiated" | grep "Name: ${3}, Version: ${_version}"
@@ -133,10 +130,8 @@ function upgradeChaincode {
   fi
   local _policy=${6:-"OR ('${ORG}MSP.peer')"}
   local _lang=${7:-"golang"}
-  local _args='{"Args":["init"]}'
-  if [ ! -z "${5}" ]; then
-    _args=''${5}''
-  fi
+  local _args=${5:-'{"Args":["init"]}'}
+
   echo "upgrade chaincode ${3}:${4} (${_lang}) on peer ${1}, channel ${2}, args ${_args} ..."
   eval "${_env} peer chaincode upgrade -C ${2} -n ${3} -v ${4} -l ${_lang} -c '${_args}' -P \"${_policy}\" -o ${ORDERER_URL} --tls --cafile ${ORDERER_CA}"
 }
@@ -243,19 +238,19 @@ install-chaincode)
   ;;
 instantiate-chaincode)
   echo "instantiate chaincode [ ${ARGS} ]"
-  instantiateChaincode ${ARGS}
+  instantiateChaincode ${1} ${2} ${3} "${4}" ''${5}'' "${6}" ${7}
   ;;
 upgrade-chaincode)
   echo "upgrade chaincode [ ${ARGS} ]"
-  upgradeChaincode ${ARGS}
+  upgradeChaincode ${1} ${2} ${3} "${4}" ''${5}'' "${6}" ${7}
   ;;
 query-chaincode)
   echo "query chaincode [ ${ARGS} ]"
-  queryChaincode ${ARGS}
+  queryChaincode ${1} ${2} ${3} ''${4}''
   ;;
 invoke-chaincode)
   echo "invoke chaincode [ ${ARGS} ]"
-  invokeChaincode ${ARGS}
+  invokeChaincode ${1} ${2} ${3} ''${4}''
   ;;
 add-org-tx)
   echo "generate update tx for add new msp to a channel [ ${ARGS} ]"

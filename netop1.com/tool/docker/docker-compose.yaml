@@ -16,6 +16,7 @@ services:
       - ORG_MSP=netop1MSP
       - ORDERER_TYPE=etcdraft
       - TEST_CHANNEL=mychannel
+      - FABRIC_ORG=netop1.com
     working_dir: /etc/hyperledger/tool
     command: /bin/bash -c 'while true; do sleep 30; done'
     volumes:

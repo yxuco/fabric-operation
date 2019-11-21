@@ -108,7 +108,7 @@ volumeBindingMode: WaitForFirstConsumer"
 
 # print local k8s PV and PVC for ca server or client client
 function printK8sStorageYaml {
-  printK8sStorageClass "ca-data-class"
+  printK8sStorageClass "${ORG}-ca-data-class"
 
   printK8sPV "ca-server"
   printK8sPV "tlsca-server"
@@ -139,7 +139,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: ca-data-class"
+  storageClassName: ${ORG}-ca-data-class"
 
   if [ "${K8S_PERSISTENCE}" == "efs" ]; then
     echo "  csi:
@@ -176,7 +176,7 @@ metadata:
   name: ${_name}-pvc
   namespace: ${ORG}
 spec:
-  storageClassName: ca-data-class
+  storageClassName: ${ORG}-ca-data-class
   accessModes:
     - ReadWriteOnce
   resources:

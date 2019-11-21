@@ -332,7 +332,7 @@ volumeBindingMode: WaitForFirstConsumer"
 
 # print k8s PV and PVC for tool Pod
 function printK8sStorageYaml {
-  printK8sStorageClass "tool-data-class"
+  printK8sStorageClass "${ORG}-tool-data-class"
   printK8sPV "data-tool"
 }
 
@@ -354,7 +354,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: tool-data-class"
+  storageClassName: ${ORG}-tool-data-class"
 
   if [ "${K8S_PERSISTENCE}" == "efs" ]; then
     echo "  csi:
@@ -391,7 +391,7 @@ metadata:
   name: ${1}-pvc
   namespace: ${ORG}
 spec:
-  storageClassName: tool-data-class
+  storageClassName: ${ORG}-tool-data-class
   accessModes:
     - ReadWriteOnce
   resources:

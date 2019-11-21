@@ -32,6 +32,37 @@ function createChannelTx {
   fi
 }
 
+function anchorConfig {
+  local anchor="peer-0.${FABRIC_ORG}"
+  if [ ! -z "${SVC_DOMAIN}" ]; then
+    anchor="peer-0.peer.${SVC_DOMAIN}"
+  fi
+
+  echo "{
+	\"values\": {
+    \"AnchorPeers\": {
+      \"mod_policy\": \"Admins\",
+      \"value\": {
+        \"anchor_peers\": [
+          {
+            \"host\": \"${anchor}\",
+            \"port\": 7051
+          }
+        ]
+      },
+      \"version\": \"0\"
+    }
+  }
+}"
+}
+
+function createMspConfig {
+  configtxgen -printOrg ${ORG_MSP} > mspConfig.json
+  anchorConfig > anchorConfig.json
+  jq -s '.[0] * .[1]' mspConfig.json anchorConfig.json > ${ORG_MSP}.json
+  echo "created MSP config file: ${ORG_MSP}.json"
+}
+
 # Print the usage message
 function printUsage {
   echo "Usage: "
@@ -54,7 +85,7 @@ bootstrap)
   ;;
 mspconfig)
   echo "print config '${ORG_MSP}.json' used to add it to a network"
-  configtxgen -printOrg ${ORG_MSP} > ${ORG_MSP}.json
+  createMspConfig
   ;;
 genesis)
   if [ -z "${ARGS}" ]; then

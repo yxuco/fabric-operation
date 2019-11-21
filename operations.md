@@ -18,7 +18,7 @@ cd ../network
 ```
 This sample creates a channel named `newchannel`.
 
-## Joine existing channel
+## Join existing channel
 After a channel is created, a peer node can join the channel using the following command:
 ```
 cd ../network
@@ -101,3 +101,18 @@ cd ../network
 ./network.sh query-chaincode -p peerorg1 -n peer-0 -c mychannel -s mycc -m '{"Args":["query","a"]}'
 ```
 The above sequence of sample commands joined the 4 peer nodes from 2 organizations, `netop1` and `peerorg1` in the same Fabric network, and executed a query on `peer-0` of the new organization `peerorg1`, which should return the same result as queries on peer nodes of the original organization `netop1`.
+
+However, the endorsement policy of the sample chaincode has not changed to enable the new organization `peerorg1` as an endorser, and thus, peers of `peerorg1` cannot invoke transactions to update the blockchain state yet.  To enable `peerorg1` as an endorser for the sample chaincode, we have to install and upgrade the chaincode to a new version `2.0` with a new endorsement policy as follows:
+```
+cd ./network
+./network.sh install-chaincode -p peerorg1 -n peer-0 -f chaincode_example02/go -s mycc -v 2.0
+./network.sh install-chaincode -p netop1 -n peer-0 -f chaincode_example02/go -s mycc -v 2.0
+./network.sh upgrade-chaincode -p netop1 -n peer-0 -c mychannel -s mycc -v 2.0 -m '{"Args":["init","a","80","b","220"]}' -e "OR ('netop1MSP.peer','peerorg1MSP.peer')"
+
+# now, both organization can update the state, e.g., try the following:
+./network.sh query-chaincode -p peerorg1 -n peer-0 -c mychannel -s mycc -m '{"Args":["query","a"]}'
+./network.sh invoke-chaincode -p peerorg1 -n peer-0 -c mychannel -s mycc -m '{"Args":["invoke","a","b","10"]}'
+./network.sh query-chaincode -p netop1 -n peer-0 -c mychannel -s mycc -m '{"Args":["query","a"]}'
+./network.sh invoke-chaincode -p netop1 -n peer-0 -c mychannel -s mycc -m '{"Args":["invoke","a","b","10"]}'
+./network.sh query-chaincode -p peerorg1 -n peer-0 -c mychannel -s mycc -m '{"Args":["query","a"]}'
+```

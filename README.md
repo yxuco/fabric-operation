@@ -79,8 +79,13 @@ The following script will start and test the sample fabric network by using the 
 ```
 cd ./network
 ./network.sh start
+# wait until 3 orderer and 2 peer nodes are running, Raft leader is elected in orderers
 ./network.sh test
 ./network.sh shutdown
+```
+After the network startup, use `kubectl logs orderer-2` to check RAFT leader election result.  When RAFT leader is elected, the log should show
+```
+INFO 101 Raft leader changed: 0 -> 2 channel=netop1-channel node=2
 ```
 Before you shutdown the network, you can verify the running fabric containers by using `kubectl`, e.g.,
 ```

@@ -2,7 +2,7 @@
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: tool-data-class
+  name: peerorg1-tool-data-class
 provisioner: kubernetes.io/no-provisioner
 reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer
@@ -22,7 +22,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: tool-data-class
+  storageClassName: peerorg1-tool-data-class
   hostPath:
     path: /Users/yxu/work/hyperledger/fabric-operation/peerorg1.com/tool
     type: Directory
@@ -33,7 +33,7 @@ metadata:
   name: data-tool-pvc
   namespace: peerorg1
 spec:
-  storageClassName: tool-data-class
+  storageClassName: peerorg1-tool-data-class
   accessModes:
     - ReadWriteOnce
   resources:

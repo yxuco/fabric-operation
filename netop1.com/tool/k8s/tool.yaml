@@ -20,10 +20,6 @@ spec:
       value: unix:///host/var/run/docker.sock
     - name: ORDERER_TYPE
       value: etcdraft
-    - name: ORDERER_CA
-      value: /etc/hyperledger/tool/crypto/orderers/orderer-0/msp/tlscacerts/tlsca.netop1.com-cert.pem
-    - name: ORDERER_URL
-      value: orderer-0.orderer.netop1.svc.cluster.local:7050
     - name: SYS_CHANNEL
       value: netop1-channel
     - name: ORG
@@ -32,6 +28,8 @@ spec:
       value: netop1MSP
     - name: TEST_CHANNEL
       value: mychannel
+    - name: SVC_DOMAIN
+      value: netop1.svc.cluster.local
     command:
     - /bin/bash
     - -c

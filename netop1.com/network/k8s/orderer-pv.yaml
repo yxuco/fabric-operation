@@ -2,7 +2,7 @@
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: orderer-data-class
+  name: netop1-orderer-data-class
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
 ---
@@ -20,7 +20,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: orderer-data-class
+  storageClassName: netop1-orderer-data-class
   hostPath:
     path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/orderers/orderer-0
     type: Directory
@@ -31,7 +31,7 @@ metadata:
   name: data-orderer-0
   namespace: netop1
 spec:
-  storageClassName: orderer-data-class
+  storageClassName: netop1-orderer-data-class
   accessModes:
     - ReadWriteOnce
   resources:
@@ -56,7 +56,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: orderer-data-class
+  storageClassName: netop1-orderer-data-class
   hostPath:
     path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/orderers/orderer-1
     type: Directory
@@ -67,7 +67,7 @@ metadata:
   name: data-orderer-1
   namespace: netop1
 spec:
-  storageClassName: orderer-data-class
+  storageClassName: netop1-orderer-data-class
   accessModes:
     - ReadWriteOnce
   resources:
@@ -92,7 +92,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: orderer-data-class
+  storageClassName: netop1-orderer-data-class
   hostPath:
     path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/orderers/orderer-2
     type: Directory
@@ -103,7 +103,7 @@ metadata:
   name: data-orderer-2
   namespace: netop1
 spec:
-  storageClassName: orderer-data-class
+  storageClassName: netop1-orderer-data-class
   accessModes:
     - ReadWriteOnce
   resources:

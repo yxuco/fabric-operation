@@ -295,9 +295,9 @@ function printDataPV {
   fi
   local _mode="ReadWriteOnce"
   local _folder="cli"
-  if [ "${2}" == "orderer-data-class" ]; then
+  if [ "${2}" == "${ORG}-orderer-data-class" ]; then
     _folder="orderers/${1}"
-  elif [ "${2}" == "peer-data-class" ]; then
+  elif [ "${2}" == "${ORG}-peer-data-class" ]; then
     _folder="peers/${1}"
   fi
 
@@ -394,11 +394,11 @@ volumeBindingMode: WaitForFirstConsumer"
 
 function printOrdererStorageYaml {
   # storage class for orderer config and data folders
-  printStorageClass "orderer-data-class"
+  printStorageClass "${ORG}-orderer-data-class"
 
   # PV and PVC for orderer config and data
   for ord in "${ORDERERS[@]}"; do
-    printDataPV ${ord} "orderer-data-class"
+    printDataPV ${ord} "${ORG}-orderer-data-class"
     if [ "${ORDERER_TYPE}" == "solo" ]; then
       # create only the first orderer for solo consensus
       break
@@ -414,7 +414,7 @@ function printPeerStorageYaml {
   local max=${PEER_MAX:-"0"}
   if [ -z "${1}" ]; then
     # storage class for orderer config and data folders
-    printStorageClass "peer-data-class"
+    printStorageClass "${ORG}-peer-data-class"
   else
     seq=${1}
     if [ -z "${2}" ]; then
@@ -426,16 +426,16 @@ function printPeerStorageYaml {
   until [ "${seq}" -ge "${max}" ]; do
     local p=("peer-${seq}")
     seq=$((${seq}+1))
-    printDataPV ${p} "peer-data-class"
+    printDataPV ${p} "${ORG}-peer-data-class"
   done
 }
 
 function printCliStorageYaml {
   # storage class for cli data folders
-  printStorageClass "cli-data-class"
+  printStorageClass "${ORG}-cli-data-class"
 
   # PV and PVC for cli data
-  printDataPV "cli" "cli-data-class"
+  printDataPV "cli" "${ORG}-cli-data-class"
 }
 
 function printOrdererYaml {
@@ -533,7 +533,7 @@ spec:
     spec:
       accessModes:
       - ReadWriteOnce
-      storageClassName: \"orderer-data-class\"
+      storageClassName: \"${ORG}-orderer-data-class\"
       resources:
         requests:
           storage: 500Mi"
@@ -683,7 +683,7 @@ spec:
     spec:
       accessModes: 
       - ReadWriteOnce
-      storageClassName: \"peer-data-class\"
+      storageClassName: \"${ORG}-peer-data-class\"
       resources:
         requests:
           storage: 500Mi"

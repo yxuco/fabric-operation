@@ -86,7 +86,7 @@ spec:
     spec:
       accessModes:
       - ReadWriteOnce
-      storageClassName: "orderer-data-class"
+      storageClassName: "netop1-orderer-data-class"
       resources:
         requests:
           storage: 500Mi

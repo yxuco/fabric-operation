@@ -2,7 +2,7 @@
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: peer-data-class
+  name: netop1-peer-data-class
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
 ---
@@ -20,7 +20,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: peer-data-class
+  storageClassName: netop1-peer-data-class
   hostPath:
     path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/peers/peer-0
     type: Directory
@@ -31,7 +31,7 @@ metadata:
   name: data-peer-0
   namespace: netop1
 spec:
-  storageClassName: peer-data-class
+  storageClassName: netop1-peer-data-class
   accessModes:
     - ReadWriteOnce
   resources:
@@ -56,7 +56,7 @@ spec:
   accessModes:
   - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: peer-data-class
+  storageClassName: netop1-peer-data-class
   hostPath:
     path: /Users/yxu/work/hyperledger/fabric-operation/netop1.com/peers/peer-1
     type: Directory
@@ -67,7 +67,7 @@ metadata:
   name: data-peer-1
   namespace: netop1
 spec:
-  storageClassName: peer-data-class
+  storageClassName: netop1-peer-data-class
   accessModes:
     - ReadWriteOnce
   resources:

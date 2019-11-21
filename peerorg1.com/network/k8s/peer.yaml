@@ -131,7 +131,7 @@ spec:
     spec:
       accessModes: 
       - ReadWriteOnce
-      storageClassName: "peer-data-class"
+      storageClassName: "peerorg1-peer-data-class"
       resources:
         requests:
           storage: 500Mi
