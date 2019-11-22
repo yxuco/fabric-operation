@@ -61,13 +61,13 @@ This sample assumes that the bootstrap network is already running 2 peer nodes, 
 ## Add new orderer nodes of the same bootstrap org
 When RAFT consensus is used, you can add more orderer nodes to the network. However, as of Fabric release 1.4, it allows you to add only one new consenter at a time. The following script will update the system channel, and add one more orderer node of the same bootstrap org to the network.
 ```
-# generate crypto for new orderer nodes (assuming 2 orderers already running, i.e., orderer-0, 1, and 2)
+# generate crypto for new orderer nodes (assuming 3 orderers already running, i.e., orderer-0, 1, and 2)
 cd ./ca
 ./ca-server.sh start -p netop1
 # create crypto for orderer-3 and orderer-4
 ./ca-crypto.sh orderer -p netop1 -s 3 -e 5
 
-# pack new consenter and URL info for orderer-3 (fabric does not allow adding multiple consenters in the same transaction)
+# pack new consenter and URL info for orderer-3 (fabric does not allow adding multiple consenters in a single transaction)
 cd ../msp
 ./msp-util.sh start -p netop1
 ./msp-util.sh orderer-config -p netop1 -s 3
@@ -84,9 +84,9 @@ cd ../network
 ```
 Note that this 4-step process can be repeated to add more orderer nodes, one at a time. If you need to add more than one orderer, the first step can generate keys for multiple orderers; the second step uses the generated orderer certificate to construct its consenter config, e.g., `ordererConfig-3.json` for `orderer-3`, which contains `base64` encoding of the orderer certificate; the third step fetches the config of the system channel `netop1-channel`, and uses `jq` to add the new consenter, and then update the system channel; the last step will scale the orderer statefulset by adding one more node, and so the new node `orderer-3` will start and join the RAFT cluster.
 
-The last argument `-a` in `update-channel` is necessary to use an orderer admin to submit the config transaction. 
+The last argument `-a` in `update-channel` is necessary to use an orderer admin to submit the channel update transaction. 
 
-We need to update application channels, as well, i.e.,
+We then need to update other application channels, as well, e.g., for `mychannel`,
 ```
 cd ./network
 ./network.sh add-orderer-tx -p netop1 -f ordererConfig-3.json -c mychannel
