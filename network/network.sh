@@ -763,6 +763,8 @@ spec:
       value: ${TEST_CHANNEL}
     - name: SVC_DOMAIN
       value: ${SVC_DOMAIN}
+    - name: ORDERER_MSP
+      value: ${ORDERER_MSP}
     workingDir: /etc/hyperledger/cli/store
     volumeMounts:
     - mountPath: /host/var/run
@@ -832,6 +834,47 @@ function scalePeer {
     pvstat=$(kubectl get pv data-${ORG}-peer-${max} -o jsonpath='{.status.phase}')
   done
   kubectl scale statefulsets peer -n ${ORG} --replicas=${1}
+}
+
+# scaleOrderer <replicas>
+function scaleOrderer {
+  if [ "${ENV_TYPE}" == "docker" ]; then
+    echo "operation 'scale-orderer' is not supported for docker-compose"
+    return 0
+  fi
+  local rep=$(kubectl get statefulsets orderer -n ${ORG} -o jsonpath='{.status.replicas}')
+  if [ -z "${rep}" ]; then
+    echo "Error: orderer statefulset is not running"
+    return 1
+  fi
+
+  if [ ! -z "${1}" ] && [ "${1}" -le "${rep}" ]; then
+    echo "${rep} orderers already running"
+    return 1
+  fi
+  
+  local ord="orderer-${rep}"
+  if [ ! -d "${DATA_ROOT}/orderers/${ord}/crypto" ]; then
+    echo "Error: crypto of ${ord} does not exist"
+    echo "create crypto using '../ca/ca-crypto.sh orderer -s ${rep}'"
+    return 2
+  fi
+  ${sumd} -p ${DATA_ROOT}/orderers/${ord}/data
+  ${sucp} ${DATA_ROOT}/tool/${ORDERER_TYPE}-genesis.block ${DATA_ROOT}/orderers/${ord}/genesis.block
+
+  echo "create persistent volume for ${ord}"
+  printDataPV ${ord} "${ORG}-orderer-data-class" | ${stee} ${DATA_ROOT}/network/k8s/orderer-pv-${rep}.yaml > /dev/null
+  kubectl create -f ${DATA_ROOT}/network/k8s/orderer-pv-${rep}.yaml
+
+  echo "add ${ord} to statefulset"
+  local pvstat=$(kubectl get pv data-${ORG}-${ord} -o jsonpath='{.status.phase}')
+  until [ "${pvstat}" == "Available" ]; do
+    echo "wait 5s for persistent volume data-${ORG}-${ord} ..."
+    sleep 5
+    pvstat=$(kubectl get pv data-${ORG}-${ord} -o jsonpath='{.status.phase}')
+  done
+  rep=$((${rep}+1))
+  kubectl scale statefulsets orderer -n ${ORG} --replicas=${rep}
 }
 
 function configPersistentData {
@@ -926,7 +969,9 @@ function shutdownNetwork {
       kubectl delete -f ${f}
     done
     kubectl delete -f ${DATA_ROOT}/network/k8s/orderer.yaml
-    kubectl delete -f ${DATA_ROOT}/network/k8s/orderer-pv.yaml
+    for f in ${DATA_ROOT}/network/k8s/orderer-pv*.yaml; do
+      kubectl delete -f ${f}
+    done
 
     if [ "${CLEANUP}" == "true" ]; then
       echo "clean up orderer ledger files ..."
@@ -1012,6 +1057,7 @@ function printHelp() {
   echo "      - 'shutdown' - shutdown orderers and peers of the fabric network"
   echo "      - 'test' - run smoke test"
   echo "      - 'scale-peer' - scale up peer nodes with argument '-r <replicas>'"
+  echo "      - 'scale-orderer' - scale up orderer nodes (RAFT consenter only one at a time)"
   echo "      - 'create-channel' - create a channel using peer-0, with argument '-c <channel>'"
   echo "      - 'join-channel' - join a peer to a channel with arguments: -n <peer> -c <channel> [-a]"
   echo "        e.g., network.sh join-channel -n peer-0 -c mychannel -a"
@@ -1027,9 +1073,11 @@ function printHelp() {
   echo "        e.g., network.sh invoke-chaincode -n peer-0 -c mychannel -s mycc -m '{\"Args\":[\"invoke\",\"a\",\"b\",\"10\"]}'"
   echo "      - 'add-org-tx' - generate update tx for add new msp to a channel, with arguments: -o <msp> -c <channel>"
   echo "        e.g., network.sh add-org-tx -o peerorg1MSP -c mychannel"
+  echo "      - 'add-orderer-tx' - generate update tx for add new orderers to a channel (default system-channel) for RAFT consensus, with argument: -f <consenter-file> [-c <channel>]"
+  echo "        e.g., network.sh add-orderer-tx -f ordererConfig-3.json"
   echo "      - 'sign-transaction' - sign a config update transaction file in the CLI working directory, with argument = -f <tx-file>"
   echo "        e.g., network.sh sign-transaction -f \"mychannel-peerorg1MSP.pb\""
-  echo "      - 'update-channel' - send transaction to update a channel, with arguments: -f <tx-file> -c <channel>"
+  echo "      - 'update-channel' - send transaction to update a channel, with arguments ('-a' means orderer user): -f <tx-file> -c <channel> [-a]"
   echo "        e.g., network.sh update-channel -f \"mychannel-peerorg1MSP.pb\" -c mychannel"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
   echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', or 'az'"
@@ -1105,11 +1153,6 @@ while getopts "h?p:t:r:n:c:f:s:v:g:m:e:o:ad" opt; do
 done
 
 source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${ORG_ENV} ${ENV_TYPE}
-ORG_MSP="${ORG}MSP"
-ORDERER_MSP=${ORDERER_MSP:-"${ORG}OrdererMSP"}
-SYS_CHANNEL=${SYS_CHANNEL:-"${ORG}-channel"}
-TEST_CHANNEL=${TEST_CHANNEL:-"mychannel"}
-ORDERER_TYPE=${ORDERER_TYPE:-"solo"}
 COUCHDB_USER=${COUCHDB_USER:-""}
 COUCHDB_PASSWD=${COUCHDB_PASSWD:-""}
 POD_CPU=${POD_CPU:-"500m"}
@@ -1131,6 +1174,10 @@ test)
 scale-peer)
   echo "scale up peer nodes: ${REPLICA}"
   scalePeer ${REPLICA}
+  ;;
+scale-orderer)
+  echo "scale up orderer nodes: ${REPLICA}"
+  scaleOrderer ${REPLICA}
   ;;
 create-channel)
   echo "create channel: ${CHANNEL_ID}"
@@ -1219,6 +1266,18 @@ add-org-tx)
   fi
   execUtil "${CMD} ${MSP} ${CHANNEL_ID}"
   ;;
+add-orderer-tx)
+  echo "create channel update to add orderer: ${CC_SRC} ${CHANNEL_ID}"
+  if [ -z "${CC_SRC}" ]; then
+    echo "Invalid request: new consenter config file must be specified"
+    printHelp
+    exit 1
+  fi
+  if [ -f "${DATA_ROOT}/tool/${CC_SRC}" ]; then
+    ${sucp} ${DATA_ROOT}/tool/${CC_SRC} ${DATA_ROOT}/cli
+  fi
+  execUtil "${CMD} ${CC_SRC} ${CHANNEL_ID}"
+  ;;
 sign-transaction)
   if [ -z "${CC_SRC}" ]; then
     echo "Invalid request: transaction file ${CC_SRC} not specified"
@@ -1239,8 +1298,8 @@ update-channel)
     printUsage
     exit 2
   fi
-  echo "send transaction ${CC_SRC} to update channel ${CHANNEL_ID}"
-  execUtil "${CMD} ${CC_SRC} ${CHANNEL_ID}"
+  echo "send transaction ${CC_SRC} to update channel ${CHANNEL_ID}, is-orderer: ${NEW}"
+  execUtil "${CMD} ${CC_SRC} ${CHANNEL_ID} ${NEW}"
   ;;
 *)
   printHelp

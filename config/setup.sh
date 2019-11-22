@@ -13,6 +13,11 @@
 curr_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
 source ${curr_dir}/${1:-"netop1"}.env
 ORG=${FABRIC_ORG%%.*}
+ORG_MSP="${ORG}MSP"
+ORDERER_MSP=${ORDERER_MSP:-"${ORG}OrdererMSP"}
+SYS_CHANNEL=${SYS_CHANNEL:-"${ORG}-channel"}
+TEST_CHANNEL=${TEST_CHANNEL:-"mychannel"}
+ORDERER_TYPE=${ORDERER_TYPE:-"solo"}
 
 # AWS EFS variables populated by aws startup
 AWS_MOUNT_POINT=mnt/share

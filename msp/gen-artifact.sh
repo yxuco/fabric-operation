@@ -61,11 +61,60 @@ function anchorConfig {
 }"
 }
 
-function createMspConfig {
+function createPeerMspConfig {
   configtxgen -printOrg ${ORG_MSP} > mspConfig.json
   anchorConfig > anchorConfig.json
   jq -s '.[0] * .[1]' mspConfig.json anchorConfig.json > ${ORG_MSP}.json
-  echo "created MSP config file: ${ORG_MSP}.json"
+  echo "created peer MSP config file: ${ORG_MSP}.json"
+}
+
+# printOrdererConfig <start-seq> <end-seq>
+function printOrdererConfig {
+  echo "{
+  \"consenters\": ["
+
+  local seq=${1:-"0"}
+  local max=${2:-"0"}
+  until [ "${seq}" -ge "${max}" ]; do
+    local orderer="orderer-${seq}"
+    seq=$((${seq}+1))
+    echo "    {"
+    printConcenterConfig ${orderer}
+    if [ "${seq}" -eq "${max}" ]; then
+      echo "    }"
+    else
+      echo "    },"
+    fi
+  done
+  echo "  ],
+  \"addresses\": ["
+  local seq=${1:-"0"}
+  local max=${2:-"0"}
+  until [ "${seq}" -ge "${max}" ]; do
+    local orderer="orderer-${seq}"
+    seq=$((${seq}+1))
+    if [ "${seq}" -eq "${max}" ]; then
+      echo "    \"${orderer}.orderer.${SVC_DOMAIN}:7050\""
+    else
+      echo "    \"${orderer}.orderer.${SVC_DOMAIN}:7050\","
+    fi
+  done
+  echo "  ]
+}"
+}
+
+# printConcenterConfig <orderer>
+function printConcenterConfig {
+  local o_cert=./crypto/orderers/${1}/tls/server.crt
+  if [ ! -f "${o_cert}" ]; then
+    return 1
+  else
+    local crt=$(cat ${o_cert} | base64 -w 0)
+    echo "      \"client_tls_cert\": \"${crt}\",
+      \"host\": \"${1}.orderer.${SVC_DOMAIN}\",
+      \"port\": 7050,
+      \"server_tls_cert\": \"${crt}\""
+  fi
 }
 
 # Print the usage message
@@ -74,7 +123,8 @@ function printUsage {
   echo "  gen-artifact.sh <cmd> <args>"
   echo "    <cmd> - one of 'bootstrap', 'genesis', or 'channel'"
   echo "      - 'bootstrap' (default) - generate genesis block and test-channel tx as specified by container env"
-  echo "      - 'mspconfig' - print MSP config json for adding to a network"
+  echo "      - 'mspconfig' - print peer MSP config json for adding to a network"
+  echo "      - 'orderer-config' - print orderer RAFT consenter config, <args> = <start-seq> [<end-seq>]"
   echo "      - 'genesis' - generate genesis block for specified orderer type, <args> = <orderer type>"
   echo "      - 'channel' - generate tx for create and anchor of a channel, <args> = <channel name>"
 }
@@ -89,8 +139,13 @@ bootstrap)
   bootstrap
   ;;
 mspconfig)
-  echo "print config '${ORG_MSP}.json' used to add it to a network"
-  createMspConfig
+  echo "print peer MSP config '${ORG_MSP}.json' used to add it to a network"
+  createPeerMspConfig
+  ;;
+orderer-config)
+  echo "print orderer RAFT consenter config [${1}, ${2}), used to add it to a network"
+  printOrdererConfig ${ARGS} > ordererConfig-${1}.json
+  echo "created RAFT consenter config: ordererConfig-${1}.json"
   ;;
 genesis)
   if [ -z "${ARGS}" ]; then

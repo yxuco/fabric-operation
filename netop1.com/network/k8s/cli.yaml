@@ -56,6 +56,8 @@ spec:
       value: mychannel
     - name: SVC_DOMAIN
       value: netop1.svc.cluster.local
+    - name: ORDERER_MSP
+      value: netop1OrdererMSP
     workingDir: /etc/hyperledger/cli/store
     volumeMounts:
     - mountPath: /host/var/run

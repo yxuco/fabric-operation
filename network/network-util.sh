@@ -194,6 +194,45 @@ function addOrg {
   echo "created channel update file ${2}-${1}.pb"
 }
 
+# addOrderer <consenter-file> <channel>
+function addOrderer {
+  local chan=${2:-"${SYS_CHANNEL}"}
+
+  # fetch sys channel config
+  if [ "${chan}" == "${SYS_CHANNEL}" ]; then
+    local _env="CORE_PEER_LOCALMSPID=${ORDERER_MSP} CORE_PEER_ADDRESS=${ORDERER_URL} CORE_PEER_TLS_ROOTCERT_FILE=${ORDERER_CA}"
+    eval "${_env} peer channel fetch config ${chan}-config.pb -c ${chan} -o ${ORDERER_URL} --tls --cafile ${ORDERER_CA}"
+  else
+    peer channel fetch config ${chan}-config.pb -c ${chan} -o ${ORDERER_URL} --tls --cafile ${ORDERER_CA}
+  fi
+  configtxlator proto_decode --input ${chan}-config.pb --type common.Block | jq .data.data[0].payload.data.config > ${chan}-config.json
+
+  # insert new consensters
+  if [ ! -f "${1}" ]; then
+    echo "consenter config file '${1}' does not exist"
+    return 1
+  fi
+  local addrs=$(cat ${1} | jq .addresses | tr '\n' ' ')
+  local cons=$(cat ${1} | jq .consenters | tr '\n' ' ')
+  cat ${chan}-config.json | jq '.channel_group.values.OrdererAddresses.value.addresses += '"${addrs}"'' | jq '.channel_group.groups.Orderer.values.ConsensusType.value.metadata.consenters += '"${cons}"'' > ${chan}-config-modified.json
+
+  # calculate pb diff
+  configtxlator proto_encode --input ${chan}-config.json --type common.Config --output ${chan}-config.pb
+  configtxlator proto_encode --input ${chan}-config-modified.json --type common.Config --output ${chan}-config-modified.pb
+  configtxlator compute_update --channel_id ${chan} --original ${chan}-config.pb --updated ${chan}-config-modified.pb --output ${chan}-config-update.pb
+  local dif=$(wc -c "${chan}-config-update.pb" | awk '{print $1}')
+  if [ "${dif}" -eq 0 ]; then
+    echo "no more update is required"
+    return 1
+  fi
+
+  # construct update with re-attached envelope
+  configtxlator proto_decode --input ${chan}-config-update.pb --type common.ConfigUpdate | jq . > ${chan}-config-update.json
+  echo '{"payload":{"header":{"channel_header":{"channel_id":"'${chan}'", "type":2}},"data":{"config_update":'$(cat ${chan}-config-update.json)'}}}' | jq . > ${chan}-update.json
+  configtxlator proto_encode --input ${chan}-update.json --type common.Envelope --output ${chan}-update.pb
+  echo "created sys channel update file ${chan}-update.pb"
+}
+
 # Print the usage message
 function printUsage {
   echo "Usage: "
@@ -213,10 +252,11 @@ function printUsage {
   echo "        e.g., network-util.sh query-chaincode \"peer-0\" \"mychannel\" \"mycc\" '{\"Args\":[\"query\",\"a\"]}'"
   echo "      - 'invoke-chaincode' - invoke chaincode from a peer, <args> = <peer> <channel> <name> <args>"
   echo "        e.g., network-util.sh invoke-chaincode \"peer-0\" \"mychannel\" \"mycc\" '{\"Args\":[\"invoke\",\"a\",\"b\",\"10\"]}'"
+  echo "      - 'add-orderer-tx' - generate update tx for add new orderers to sys channel for RAFT consensus, <args> = <consenter-file> [<channel>]"
   echo "      - 'add-org-tx' - generate update tx for add new msp to a channel, <args> = <msp> <channel>"
   echo "      - 'sign-transaction' - sign a config update transaction file in the CLI working directory, <args> = <tx-file>"
   echo "        e.g., network-util.sh sign-transaction \"mychannel-peerorg1MSP.pb\""
-  echo "      - 'update-channel' - send transaction to update a channel, <args> = <tx-file> <channel>"
+  echo "      - 'update-channel' - send transaction to update a channel, <args> = <tx-file> <channel> [<sys-user>]"
   echo "        e.g., network-util.sh update-channel \"mychannel-peerorg1MSP.pb\" mychannel"
 }
 
@@ -261,13 +301,22 @@ add-org-tx)
   echo "generate update tx for add new msp to a channel [ ${ARGS} ]"
   addOrg ${ARGS}
   ;;
+add-orderer-tx)
+  echo "generate update tx for add new orderers to sys channel for RAFT consensus [ ${ARGS} ]"
+  addOrderer ${ARGS}
+  ;;
 update-channel)
   if [ ! -f "${1}" ]; then
     echo "cannot find the transaction file ${1}"
     exit 1
   fi
-  echo "send transaction ${1} to update channel ${2}"
-  peer channel update -f ${1} -c ${2} -o ${ORDERER_URL} --tls --cafile ${ORDERER_CA}
+  echo "send transaction ${1} to update channel ${2}, is-orderer: ${3}"
+  if [ -z "${3}" ]; then
+    peer channel update -f ${1} -c ${2} -o ${ORDERER_URL} --tls --cafile ${ORDERER_CA}
+  else
+    # switch to orderer id to update system channel
+    CORE_PEER_LOCALMSPID=${ORDERER_MSP} CORE_PEER_ADDRESS=${ORDERER_URL} CORE_PEER_TLS_ROOTCERT_FILE=${ORDERER_CA} peer channel update -f ${1} -c ${2} -o ${ORDERER_URL} --tls --cafile ${ORDERER_CA}
+  fi
   ;;
 sign-transaction)
   if [ ! -f "${1}" ]; then

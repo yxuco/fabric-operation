@@ -497,6 +497,33 @@ function shutdownService {
   fi
 }
 
+# checkOrdererCrypto <start-seq> <end-seq>
+function checkOrdererCrypto {
+  if [ "${ENV_TYPE}" == "docker" ]; then
+    echo "Error: not supported for docker"
+    return 1
+  fi
+  if [ "${ORDERER_TYPE}" != "etcdraft" ]; then
+    echo "Error: orderer type ${ORDERER_TYPE} is not supported"
+    return 2
+  fi
+  local seq=${1:-"0"}
+  local max=${2:-"0"}
+  if [ "${max}" -le "${seq}" ]; then
+    echo "Error: invalid orderer seq [${seq}, ${max})"
+    return 3
+  fi
+  until [ "${seq}" -ge "${max}" ]; do
+    local orderer="orderer-${seq}"
+    seq=$((${seq}+1))
+    local o_cert=${DATA_ROOT}/tool/crypto/orderers/${orderer}/tls/server.crt
+    if [ ! -f "${o_cert}" ]; then
+      echo "Error; orderer cert does not exist: ${o_cert}"
+      return 4
+    fi
+  done
+}
+
 function execCommand {
   local _cmd="gen-artifact.sh $@"
   if [ "${ENV_TYPE}" == "docker" ]; then
@@ -510,17 +537,20 @@ function execCommand {
 function printHelp() {
   echo "Usage: "
   echo "  msp-util.sh <cmd> [-p <property file>] [-t <env type>] [-o <consensus type>] [-c <channel name>]"
-  echo "    <cmd> - one of 'start', 'shutdown', 'bootstrap', 'genesis', 'channel'"
+  echo "    <cmd> - one of the following commands"
   echo "      - 'start' - start tools container to run msp-util"
   echo "      - 'shutdown' - shutdown tools container for the msp-util"
   echo "      - 'bootstrap' - generate bootstrap genesis block and test channel tx defined in network spec"
   echo "      - 'genesis' - generate genesis block of specified consensus type, with argument '-o <consensus type>'"
   echo "      - 'channel' - generate channel creation tx for specified channel name, with argument '-c <channel name>'"
   echo "      - 'mspconfig' - print MSP config json for adding to a network, output in '${DATA_ROOT}/tool'"
+  echo "      - 'orderer-config' - print orderer RAFT consenter config for adding to a network, with arguments -s <start-seq> [-e <end-seq>]"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
   echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', 'az', or 'gke'"
   echo "    -o <consensus type> - 'solo' or 'etcdraft' used with the 'genesis' command"
   echo "    -c <channel name> - name of a channel, used with the 'channel' command"
+  echo "    -s <start seq> - start sequence number (inclusive) for orderer config"
+  echo "    -e <end seq> - end sequence number (exclusive) for orderer config"
   echo "  msp-util.sh -h (print this message)"
 }
 
@@ -529,7 +559,7 @@ ENV_TYPE="k8s"
 
 CMD=${1}
 shift
-while getopts "h?p:t:o:c:" opt; do
+while getopts "h?p:t:o:c:s:e:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -547,15 +577,16 @@ while getopts "h?p:t:o:c:" opt; do
   c)
     CHAN_NAME=$OPTARG
     ;;
+  s)
+    START_SEQ=$OPTARG
+    ;;
+  e)
+    END_SEQ=$OPTARG
+    ;;
   esac
 done
 
 source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${ORG_ENV} ${ENV_TYPE}
-ORG_MSP="${ORG}MSP"
-ORDERER_MSP=${ORDERER_MSP:-"${ORG}OrdererMSP"}
-SYS_CHANNEL=${SYS_CHANNEL:-"${ORG}-channel"}
-TEST_CHANNEL=${TEST_CHANNEL:-"mychannel"}
-ORDERER_TYPE=${ORDERER_TYPE:-"solo"}
 
 case "${CMD}" in
 start)
@@ -571,7 +602,7 @@ bootstrap)
   execCommand "bootstrap"
   ;;
 mspconfig)
-  echo "print msp config json file: ${ORG_ENV} ${ENV_TYPE}"
+  echo "print peer MSP config json file: ${ORG_ENV} ${ENV_TYPE}"
   execCommand "mspconfig"
   ;;
 genesis)
@@ -590,6 +621,21 @@ channel)
     printHelp
   else
     execCommand "channel ${CHAN_NAME}"
+  fi
+  ;;
+orderer-config)
+  echo "print orderer RAFT consenter config [ ${START_SEQ} ${END_SEQ}]"
+  if [ -z "${START_SEQ}" ]; then
+    echo "Error: start-seq must be specified"
+    printHelp
+    exit 1
+  fi
+  if [ -z "${END_SEQ}" ]; then
+    END_SEQ=$((${START_SEQ}+1))
+  fi
+  checkOrdererCrypto ${START_SEQ} ${END_SEQ}
+  if [ "$?" -eq 0 ]; then
+    execCommand "orderer-config ${START_SEQ} ${END_SEQ}"
   fi
   ;;
 *)

@@ -14,3 +14,4 @@ gke/config/
 **/*genesis.block
 **/*.tx
 **/peer-pv-*.yaml
+**/orderer-pv-*.yaml

@@ -102,6 +102,7 @@ The currently supported operations include
 * Create new channel;
 * Install and instantiate new chaincode;
 * Add new peer nodes of the same bootstrap org;
+* Add new orderer nodes of the same bootstrap org;
 * Add new peer org to the same Kubernetes cluster;
 
 Refer [operations](./operations.md) for description of these activities. More operations (as described in `TODO` bellow) will be supported in the future.
@@ -123,7 +124,6 @@ cd ./network
 ```
 ## TODO
 Stay tuned for more updates on the following items:
-* Add new orderer nodes of the same bootstrap org;
 * Add new orderer org to the same bootstrap Kubernetes cluster for etcd raft consensus;
 * Add new orderer org to a new Kubernetes cluster;
 * Add new peer org to a new Kubernetes cluster;
