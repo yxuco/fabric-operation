@@ -8,6 +8,7 @@ This utility is a CLI script for Hyperledger Fabric network operations. It curre
 * Scale up orderer nodes while a network is running;
 * Create new channels;
 * Make a peer node join a channel;
+* Package and sign chaincode in cds format;
 * Install new chaincodes on a peer node;
 * Instantiate new chaincode on a specified channel;
 * Upgrade a chaincode on a specified channel;
@@ -35,8 +36,12 @@ Usage:
       - 'create-channel' - create a channel using peer-0, with argument '-c <channel>'
       - 'join-channel' - join a peer to a channel with arguments: -n <peer> -c <channel> [-a]
         e.g., network.sh join-channel -n peer-0 -c mychannel -a
-      - 'install-chaincode' - install chaincode on a peer with arguments: -n <peer> -f <folder> -s <name> [-v <version>] [-a]
-        e.g., network.sh install-chaincode -n peer-0 -f chaincode_example02/go -s mycc -v 1.0 -a
+      - 'package-chaincode' - package chaincode on a peer with arguments: -n <peer> -f <folder> -s <name> [-v <version>] [-g <lang>] [-e <policy>]
+        e.g., network.sh package-chaincode -n peer-0 -f chaincode_example02/go -s mycc -v 1.0 -g golang -e "OR ('netop1MSP.admin')"
+      - 'sign-chaincode' - sign chaincode package on a peer with arguments: -n <peer> -f <cds-file>
+        e.g., network.sh sign-chaincode -n peer-0 -f mycc_1.0.cds
+      - 'install-chaincode' - install chaincode on a peer with arguments: -n <peer> -f <cds-file>
+        e.g., network.sh install-chaincode -n peer-0 -f mycc_1.0.cds
       - 'instantiate-chaincode' - instantiate chaincode on a peer, with arguments: -n <peer> -c <channel> -s <name> [-v <version>] [-m <args>] [-e <policy>] [-g <lang>]
         e.g., network.sh instantiate-chaincode -n peer-0 -c mychannel -s mycc -v 1.0 -m '{"Args":["init","a","100","b","200"]}'
       - 'upgrade-chaincode' - upgrade chaincode on a peer, with arguments: -n <peer> -c <channel> -s <name> -v <version> [-m <args>] [-e <policy>] [-g <lang>]

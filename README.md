@@ -99,7 +99,7 @@ After the smoke test succeeds, you should see a test result of `90` printed on t
 The above bootstrap network is for a single operating company to start a Fabric network with its own orderer and peer nodes of pre-configured size.  A network in production will need to scale up and let more organizations to join and co-operate.  Organizations may create their own Kubernetes networks using the same or different cloud service providers. We provide scripts to support such network activities.
 
 The currently supported operations include
-* Create new channel;
+* Create and join new channel;
 * Install and instantiate new chaincode;
 * Add new peer nodes of the same bootstrap org;
 * Add new orderer nodes of the same bootstrap org;

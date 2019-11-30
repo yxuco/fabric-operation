@@ -999,17 +999,12 @@ function execUtil {
 }
 
 # copy chaincode from scripts folder to $DATA_ROOT
-# copyChaincode <cc_src> <refresh>
+# copyChaincode <cc_src>
 function copyChaincode {
   local target=${DATA_ROOT}/cli/chaincode/${1}
   if [ -d "${target}" ]; then
-    echo "chaincode exists: ${target}"
-    if [ -z "${2}" ]; then
-      return 0
-    else
-      echo "refresh chaincode in ${target}"
-      ${surm} -R ${target}/*
-    fi
+    echo "refresh chaincode in ${target}"
+    ${surm} -R ${target}/*
   else
     ${sumd} -p ${target}
   fi
@@ -1053,16 +1048,20 @@ function printHelp() {
   echo "Usage: "
   echo "  network.sh <cmd> [-p <property file>] [-t <env type>] [-d]"
   echo "    <cmd> - one of the following commands:"
-  echo "      - 'start' - start orderers and peers of the fabric network"
-  echo "      - 'shutdown' - shutdown orderers and peers of the fabric network"
+  echo "      - 'start' - start orderers and peers of the fabric network, arguments: [-p <prop-file>] [-t <env-type>]"
+  echo "      - 'shutdown' - shutdown orderers and peers of the fabric network, arguments: [-p <prop-file>] [-t <env-type>] [-d]"
   echo "      - 'test' - run smoke test"
   echo "      - 'scale-peer' - scale up peer nodes with argument '-r <replicas>'"
   echo "      - 'scale-orderer' - scale up orderer nodes (RAFT consenter only one at a time)"
   echo "      - 'create-channel' - create a channel using peer-0, with argument '-c <channel>'"
   echo "      - 'join-channel' - join a peer to a channel with arguments: -n <peer> -c <channel> [-a]"
   echo "        e.g., network.sh join-channel -n peer-0 -c mychannel -a"
-  echo "      - 'install-chaincode' - install chaincode on a peer with arguments: -n <peer> -f <folder> -s <name> [-v <version>] [-a]"
-  echo "        e.g., network.sh install-chaincode -n peer-0 -f chaincode_example02/go -s mycc -v 1.0 -a"
+  echo "      - 'package-chaincode' - package chaincode on a peer with arguments: -n <peer> -f <folder> -s <name> [-v <version>] [-g <lang>] [-e <policy>]"
+  echo "        e.g., network.sh package-chaincode -n peer-0 -f chaincode_example02/go -s mycc -v 1.0 -g golang -e \"OR ('netop1MSP.admin')\""
+  echo "      - 'sign-chaincode' - sign chaincode package on a peer with arguments: -n <peer> -f <cds-file>"
+  echo "        e.g., network.sh sign-chaincode -n peer-0 -f mycc_1.0.cds"
+  echo "      - 'install-chaincode' - install chaincode on a peer with arguments: -n <peer> -f <cds-file>"
+  echo "        e.g., network.sh install-chaincode -n peer-0 -f mycc_1.0.cds"
   echo "      - 'instantiate-chaincode' - instantiate chaincode on a peer, with arguments: -n <peer> -c <channel> -s <name> [-v <version>] [-m <args>] [-e <policy>] [-g <lang>]"
   echo "        e.g., network.sh instantiate-chaincode -n peer-0 -c mychannel -s mycc -v 1.0 -m '{\"Args\":[\"init\",\"a\",\"100\",\"b\",\"200\"]}'"
   echo "      - 'upgrade-chaincode' - upgrade chaincode on a peer, with arguments: -n <peer> -c <channel> -s <name> -v <version> [-m <args>] [-e <policy>] [-g <lang>]"
@@ -1205,21 +1204,33 @@ join-channel)
     execUtil ${CMD} ${PEER_ID} ${CHANNEL_ID} "anchor"
   fi
   ;;
-install-chaincode)
-  echo "install chaincode: ${PEER_ID} ${CC_SRC} ${CC_NAME} ${CC_VERSION} ${NEW}"
+package-chaincode)
+  echo "package chaincode: ${PEER_ID} ${CC_SRC} ${CC_NAME} ${CC_VERSION} ${CC_LANG} ${POLICY}"
   if [ -z "${PEER_ID}" ] || [ -z "${CC_SRC}" ] || [ -z "${CC_NAME}" ]; then
     echo "Invalid request: peer, chaincode folder and chaincode name must be specified"
     printHelp
     exit 1
   fi
-  copyChaincode ${CC_SRC} ${NEW}
-  if [ -z "${CC_VERSION}" ]; then
-    execUtil ${CMD} ${PEER_ID} ${CC_SRC} ${CC_NAME}
-  elif [ -z "${NEW}" ]; then
-    execUtil ${CMD} ${PEER_ID} ${CC_SRC} ${CC_NAME} ${CC_VERSION}
-  else
-    execUtil ${CMD} ${PEER_ID} ${CC_SRC} ${CC_NAME} ${CC_VERSION} "new"
+  copyChaincode ${CC_SRC}
+  execUtil "${CMD} ${PEER_ID} ${CC_SRC} ${CC_NAME} \"${CC_VERSION}\" \"${CC_LANG}\" \"${POLICY}\""
+  ;;
+sign-chaincode)
+  echo "sign chaincode: ${PEER_ID} ${CC_SRC}"
+  if [ -z "${PEER_ID}" ] || [ -z "${CC_SRC}" ]; then
+    echo "Invalid request: peer, chaincode package file name must be specified"
+    printHelp
+    exit 1
   fi
+  execUtil ${CMD} ${PEER_ID} ${CC_SRC}
+  ;;
+install-chaincode)
+  echo "install chaincode: ${PEER_ID} ${CC_SRC}"
+  if [ -z "${PEER_ID}" ] || [ -z "${CC_SRC}" ]; then
+    echo "Invalid request: peer, chaincode package file name must be specified"
+    printHelp
+    exit 1
+  fi
+  execUtil ${CMD} ${PEER_ID} ${CC_SRC}
   ;;
 instantiate-chaincode)
   echo "instantiate chaincode: ${PEER_ID} ${CHANNEL_ID} ${CC_NAME} ${CC_VERSION} ${PARAM} ${POLICY} ${CC_LANG}"
