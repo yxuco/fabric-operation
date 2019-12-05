@@ -1,0 +1,102 @@
+syntax = "proto3";
+
+// Use grpc-gateway to generate OpenAPI for HTTP(S)
+// Recommended HTTP URL: https://fabric.dovetailapis.com/v1
+// View the generated swagger.json in http://editor.swagger.io/#edit
+
+option go_package = "fabric";
+
+package dovetail.fabric.v1;
+
+import "google/api/annotations.proto";
+
+// Generic Fabric client service for chaincode invocation or query.
+service Gateway {
+  // Connect: create or find a Fabric connection.  
+  // Returns the corresponding connection ID.
+  rpc Connect(ConnectionRequest) returns (ConnectionResponse) {
+    option (google.api.http) = {
+      post: "/v1/connection"
+      body: "data"
+    };
+  };
+
+  // Execute: execute a transaction on a Fabric endpoint.  
+  // Returns the result of the transaction.
+  rpc Execute(TransactionRequest) returns (TransactionResponse) {
+    option (google.api.http) = {
+      post: "/v1/transaction"
+      body: "data"
+    };
+  };
+};
+
+// Fabric transaction request.
+message TransactionRequest {
+  TransactionData data = 1;
+};
+
+// Type of Fabric transaction: INVOKE or QUERY.
+enum TransactionType {
+  INVOKE = 0;
+  QUERY = 1;
+};
+
+// Request data for a Fabric chaincode transaction
+message TransactionData {
+  // Required. ID of a Fabric connection returned by a ConnectRequest
+  uint64 connection_id = 1;
+  // Required. 0=INVOKE or 1=QUERY
+  TransactionType type = 2;
+  // Required. Name of the Fabric chaincode to be called.
+  string chaincode_id = 3;
+  // Request timeout in milliseconds. Default is 0, i.e., no timeout.
+  int64 timeout = 4;
+  // Fabric connnection endpoints to send the request. Default is randomly chosen from all available endpoints.
+  repeated string endpoint = 5;
+  // Required. Name of the Fabric chaincode transaction.
+  string transaction = 6;
+  // parameters for the transaction
+  repeated string parameter = 7;
+  // transient map for the transaction as a JSON string.
+  string transient_map = 8;
+};
+
+// Response from a Fabric transaction
+message TransactionResponse {
+  // Status code. 200=success
+  int32 code = 1;
+  // Error messages if code is not 200
+  string message = 2;
+  // Returned data as JSON string
+  string data = 3;
+};
+
+// Fabric connection request.
+message ConnectionRequest {
+  ConnectionData data = 1;
+};
+
+// Request data for creating a Fabric connection in the gateway service
+message ConnectionData {
+  // Name of the Fabric channel to connect to. Default is pre-configured by gateway service.
+  string channel_id = 1;
+  // Name of Fabric client user for establishing the connection. Default is pre-configured by gateway service.
+  string user_name = 2;
+  // Name of the Fabric org that created the client user. Default is pre-configured by gateway service.
+  string org_name = 3;
+  // File name for Fabric network config. Default is pre-configured by gateway service.
+  string network_config = 4;
+  // File name for endpoint patten matchers. Default is pre-configured by gateway service.
+  string patten_matchers = 5;
+};
+
+// Response from a Fabric connection request
+message ConnectionResponse {
+  // Status code. 200=success
+  int32 code = 1;
+  // Error messages if code is not 200
+  string message = 2;
+  // ID of the resulting Fabric connection
+  uint64 connection_id = 3;
+};

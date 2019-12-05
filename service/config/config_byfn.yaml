@@ -1,0 +1,107 @@
+name: mychannel
+version: 1.0.0
+
+client:
+  organization: org1
+  cryptoconfig:
+    path: ${CRYPTO_PATH}
+
+channels:
+  mychannel:
+    peers:
+      peer0.org1.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+      peer1.org1.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+      peer0.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+      peer1.org2.example.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+organizations:
+  org1:
+    mspid: Org1MSP
+    cryptoPath:  peerOrganizations/org1.example.com/users/{username}@org1.example.com/msp
+    peers:
+      - peer0.org1.example.com
+      - peer1.org1.example.com
+    certificateAuthorities:
+      - ca.org1.example.com
+
+  org2:
+    mspid: Org2MSP
+    cryptoPath:  peerOrganizations/org2.example.com/users/{username}@org2.example.com/msp
+    peers:
+      - peer0.org2.example.com
+      - peer1.org2.example.com
+    certificateAuthorities:
+      - ca.org2.example.com
+
+orderers:
+  orderer.example.com:
+    url: orderer.example.com:7050
+    tlsCACerts:
+      path: ${CRYPTO_PATH}/ordererOrganizations/example.com/tlsca/tlsca.example.com-cert.pem
+
+peers:
+  peer0.org1.example.com:
+    url: peer0.org1.example.com:7051
+    #grpcOptions:
+    #  ssl-target-name-override: peer0.org1.example.com
+    tlsCACerts:
+      path: ${CRYPTO_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+
+  peer1.org1.example.com:
+    url: peer1.org1.example.com:8051
+    #grpcOptions:
+    #  ssl-target-name-override: peer1.org1.example.com
+    tlsCACerts:
+      path: ${CRYPTO_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+
+  peer0.org2.example.com:
+    url: peer0.org2.example.com:9051
+    #grpcOptions:
+    #  ssl-target-name-override: peer0.org2.example.com
+    tlsCACerts:
+      path: ${CRYPTO_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+
+  peer1.org2.example.com:
+    url: peer1.org2.example.com:10051
+    #grpcOptions:
+    #  ssl-target-name-override: peer1.org2.example.com
+    tlsCACerts:
+      path: ${CRYPTO_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+
+certificateAuthorities:
+  ca.org1.example.com:
+    url: https://ca.org1.example.com:7054
+    tlsCACerts:
+      path: ${CRYPTO_PATH}/peerOrganizations/org1.example.com/tlsca/tlsca.org1.example.com-cert.pem
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+    caName: ca.org1.example.com
+
+  ca.org2.example.com:
+    url: https://ca.org2.example.com:8054
+    tlsCACerts:
+      path: ${CRYPTO_PATH}/peerOrganizations/org2.example.com/tlsca/tlsca.org2.example.com-cert.pem
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+    caName: ca.org2.example.com

@@ -1,0 +1,191 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "fabric.proto",
+    "version": "version not set"
+  },
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/connection": {
+      "post": {
+        "summary": "Connect: create or find a Fabric connection.  \nReturns the corresponding connection ID.",
+        "operationId": "Connect",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1ConnectionResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1ConnectionData"
+            }
+          }
+        ],
+        "tags": [
+          "Gateway"
+        ]
+      }
+    },
+    "/v1/transaction": {
+      "post": {
+        "summary": "Execute: execute a transaction on a Fabric endpoint.  \nReturns the result of the transaction.",
+        "operationId": "Execute",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/v1TransactionResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/v1TransactionData"
+            }
+          }
+        ],
+        "tags": [
+          "Gateway"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "v1ConnectionData": {
+      "type": "object",
+      "properties": {
+        "channel_id": {
+          "type": "string",
+          "description": "Name of the Fabric channel to connect to. Default is pre-configured by gateway service."
+        },
+        "user_name": {
+          "type": "string",
+          "description": "Name of Fabric client user for establishing the connection. Default is pre-configured by gateway service."
+        },
+        "org_name": {
+          "type": "string",
+          "description": "Name of the Fabric org that created the client user. Default is pre-configured by gateway service."
+        },
+        "network_config": {
+          "type": "string",
+          "description": "File name for Fabric network config. Default is pre-configured by gateway service."
+        },
+        "patten_matchers": {
+          "type": "string",
+          "description": "File name for endpoint patten matchers. Default is pre-configured by gateway service."
+        }
+      },
+      "title": "Request data for creating a Fabric connection in the gateway service"
+    },
+    "v1ConnectionResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Status code. 200=success"
+        },
+        "message": {
+          "type": "string",
+          "title": "Error messages if code is not 200"
+        },
+        "connection_id": {
+          "type": "string",
+          "format": "uint64",
+          "title": "ID of the resulting Fabric connection"
+        }
+      },
+      "title": "Response from a Fabric connection request"
+    },
+    "v1TransactionData": {
+      "type": "object",
+      "properties": {
+        "connection_id": {
+          "type": "string",
+          "format": "uint64",
+          "title": "Required. ID of a Fabric connection returned by a ConnectRequest"
+        },
+        "type": {
+          "$ref": "#/definitions/v1TransactionType",
+          "title": "Required. 0=INVOKE or 1=QUERY"
+        },
+        "chaincode_id": {
+          "type": "string",
+          "description": "Required. Name of the Fabric chaincode to be called."
+        },
+        "timeout": {
+          "type": "string",
+          "format": "int64",
+          "description": "Request timeout in milliseconds. Default is 0, i.e., no timeout."
+        },
+        "endpoint": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Fabric connnection endpoints to send the request. Default is randomly chosen from all available endpoints."
+        },
+        "transaction": {
+          "type": "string",
+          "description": "Required. Name of the Fabric chaincode transaction."
+        },
+        "parameter": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "parameters for the transaction"
+        },
+        "transient_map": {
+          "type": "string",
+          "description": "transient map for the transaction as a JSON string."
+        }
+      },
+      "title": "Request data for a Fabric chaincode transaction"
+    },
+    "v1TransactionResponse": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32",
+          "title": "Status code. 200=success"
+        },
+        "message": {
+          "type": "string",
+          "title": "Error messages if code is not 200"
+        },
+        "data": {
+          "type": "string",
+          "title": "Returned data as JSON string"
+        }
+      },
+      "title": "Response from a Fabric transaction"
+    },
+    "v1TransactionType": {
+      "type": "string",
+      "enum": [
+        "INVOKE",
+        "QUERY"
+      ],
+      "default": "INVOKE",
+      "description": "Type of Fabric transaction: INVOKE or QUERY."
+    }
+  }
+}
