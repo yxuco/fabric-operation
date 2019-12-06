@@ -30,12 +30,12 @@ type Service struct {
 func (*Service) Connect(ctx context.Context, req *ConnectionRequest) (*ConnectionResponse, error) {
 	data := req.GetData()
 	networkConfig := data.GetNetworkConfig()
+	patternMatchers := data.GetPattenMatchers()
 	if networkConfig == "" {
 		networkConfig = defaultConfig.NetworkConfig
-	}
-	patternMatchers := data.GetPattenMatchers()
-	if patternMatchers == "" {
-		patternMatchers = defaultConfig.PattenMatchers
+		if patternMatchers == "" {
+			patternMatchers = defaultConfig.PattenMatchers
+		}
 	}
 	channelID := data.GetChannelId()
 	if channelID == "" {

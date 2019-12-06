@@ -41,12 +41,12 @@ entityMatchers:
       mappedHost: peer1.org2.example.com
 
     - pattern: (\w+).org1.example.(\w+):(\d+)
-      urlSubstitutionExp: localhost:${2}
+      urlSubstitutionExp: localhost:${3}
       sslTargetOverrideUrlSubstitutionExp: ${1}.org1.example.com
       mappedHost: ${1}.org1.example.com
 
     - pattern: (\w+).org2.example.(\w+):(\d+)
-      urlSubstitutionExp: localhost:${2}
+      urlSubstitutionExp: localhost:${3}
       sslTargetOverrideUrlSubstitutionExp: ${1}.org2.example.com
       mappedHost: ${1}.org2.example.com
 
@@ -71,7 +71,6 @@ entityMatchers:
       mappedHost: peer1.org2.example.com
 
   orderer:
-
     - pattern: (\w+).example.(\w+)
       urlSubstitutionExp: localhost:7050
       sslTargetOverrideUrlSubstitutionExp: orderer.example.com

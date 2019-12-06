@@ -1,0 +1,69 @@
+name: mychannel
+version: 1.0.0
+
+client:
+  organization: netop1
+  cryptoconfig:
+    path: ${CRYPTO_PATH}
+
+channels:
+  mychannel:
+    peers:
+      peer-0.netop1.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+      peer-1.netop1.com:
+        endorsingPeer: true
+        chaincodeQuery: true
+        ledgerQuery: true
+        eventSource: true
+
+organizations:
+  netop1:
+    mspid: netop1MSP
+    cryptoPath:  netop1.com/crypto/users/{username}@netop1.com/msp
+    peers:
+      - peer-0.netop1.com
+      - peer-1.netop1.com
+    certificateAuthorities:
+      - ca.netop1.com
+
+orderers:
+  orderer-0.netop1.com:
+    url: orderer-0.orderer.netop1.svc.cluster.local:7050
+    tlsCACerts:
+      path: ${CRYPTO_PATH}/netop1.com/orderers/orderer-0/crypto/msp/tlscacerts/tlsca.netop1.com-cert.pem
+
+  orderer-1.netop1.com:
+    url: orderer-1.orderer.netop1.svc.cluster.local:7050
+    tlsCACerts:
+      path: ${CRYPTO_PATH}/netop1.com/orderers/orderer-1/crypto/msp/tlscacerts/tlsca.netop1.com-cert.pem
+    
+  orderer-2.netop1.com:
+    url: orderer-2.orderer.netop1.svc.cluster.local:7050
+    tlsCACerts:
+      path: ${CRYPTO_PATH}/netop1.com/orderers/orderer-2/crypto/msp/tlscacerts/tlsca.netop1.com-cert.pem
+     
+peers:
+  peer-0.netop1.com:
+    url: peer-0.peer.netop1.svc.cluster.local:7051
+    tlsCACerts:
+      path: ${CRYPTO_PATH}/netop1.com/peers/peer-0/crypto/msp/tlscacerts/tlsca.netop1.com-cert.pem
+
+  peer-1.netop1.com:
+    url: peer-1.peer.netop1.svc.cluster.local:7051
+    tlsCACerts:
+      path: ${CRYPTO_PATH}/netop1.com/peers/peer-1/crypto/msp/tlscacerts/tlsca.netop1.com-cert.pem
+
+certificateAuthorities:
+  ca.netop1.com:
+    url: https://ca-server.netop1.svc.cluster.local:7054
+    tlsCACerts:
+      path: ${CRYPTO_PATH}/netop1.com/crypto/ca/tls/server.crt
+    registrar:
+      enrollId: admin
+      enrollSecret: adminpw
+    caName: ca.netop1.com

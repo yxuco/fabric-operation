@@ -29,8 +29,8 @@ var useTLS bool
 
 // Initial values of the command-line args
 func init() {
-	flag.StringVar(&configPath, "config", "./config/config_byfn.yaml", "Path of the blockchain network configuration file")
-	flag.StringVar(&patternPath, "pattern", "./config/local_entity_matchers.yaml", "Path of entity matcher file for blockchain network config")
+	flag.StringVar(&configPath, "config", "config_byfn.yaml", "Path of the blockchain network configuration file")
+	flag.StringVar(&patternPath, "pattern", "matchers_byfn.yaml", "Path of entity matcher file for blockchain network config")
 	flag.StringVar(&channel, "channel", "mychannel", "ID of the default channel for chaincode transactions")
 	flag.StringVar(&org, "org", "org1", "Name of the Fabric organization that this client connects to")
 	flag.StringVar(&user, "user", "Admin", "Name of the Fabric user to execute transactions on this connection")

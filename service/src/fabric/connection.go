@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"hash/fnv"
+	"path/filepath"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -148,28 +149,38 @@ func HashCode(text string) uint64 {
 }
 
 // ReadFile returns content of a specified file
-func ReadFile(filePath string) ([]byte, error) {
-	if filePath == "" {
+func ReadFile(pathName string) ([]byte, error) {
+	if pathName == "" {
 		glog.V(2).Info("file not specified")
 		return nil, nil
 	}
-	f, err := os.Open(Subst(filePath))
+	filename := pathName
+	// get absolute file path using env ${CONFIG_PATH}
+	if !filepath.IsAbs(filename) {
+		dir, ok := os.LookupEnv("CONFIG_PATH")
+		if !ok {
+			// default to 'config' folder under current working directory
+			dir = "./config"
+		}
+		filename = filepath.Join(dir, filename)
+	}
+	f, err := os.Open(Subst(filename))
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to open file: %s", filePath)
+		return nil, errors.Wrapf(err, "Failed to open file: %s", filename)
 	}
 	defer f.Close()
 	fi, err := f.Stat()
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to read file stat: %s", filePath)
+		return nil, errors.Wrapf(err, "Failed to read file stat: %s", filename)
 	}
 	s := fi.Size()
 	cBytes := make([]byte, s)
 	n, err := f.Read(cBytes)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Failed to read file: %s", filePath)
+		return nil, errors.Wrapf(err, "Failed to read file: %s", filename)
 	}
 	if n == 0 {
-		glog.Infof("file %s is empty", filePath)
+		glog.Infof("file %s is empty", filename)
 		return nil, nil
 	}
 	return cBytes, err
