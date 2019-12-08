@@ -274,6 +274,8 @@ function cleanupCrypto {
     echo "cleanup ${f} crypto"
     rm -R ${DATA_ROOT}/${f}/crypto
   done
+  echo "cleanup gateway crypto"
+  rm -R ${DATA_ROOT}/gateway/${FABRIC_ORG}
 
   # cleanup crypto of orderers
   local _seq=${ORDERER_MIN:-"0"}
@@ -313,6 +315,11 @@ function initCrypto {
       mkdir -p ${DATA_ROOT}/cli/crypto/orderer-0/msp
       cp -R ${DATA_ROOT}/crypto/msp/tlscacerts ${DATA_ROOT}/cli/crypto/orderer-0/msp
     fi
+
+    # initialize gateway crypto
+    mkdir -p ${DATA_ROOT}/gateway/${FABRIC_ORG}/ca/tls
+    cp ${DATA_ROOT}/crypto/ca/tls/server.crt ${DATA_ROOT}/gateway/${FABRIC_ORG}/ca/tls
+    cp -R ${DATA_ROOT}/crypto/msp/tlscacerts ${DATA_ROOT}/gateway/${FABRIC_ORG}
   else
     echo "${DATA_ROOT}/crypto/msp/config.yaml already exists"
   fi
@@ -421,10 +428,19 @@ function copyNodeCrypto {
     cp -R ${_target}/tls ${DATA_ROOT}/cli/crypto/${1}
   fi
 
-  # copy admin user msp to cli crypto
-  if [ "${2}" == "users" ] && [ "${3}" == "server" ]; then
-    mkdir -p ${DATA_ROOT}/cli/crypto/${_name}
-    cp -R ${_target}/msp ${DATA_ROOT}/cli/crypto/${_name}
+  # copy user msp to cli and gateway crypto
+  if [ "${2}" == "users" ]; then
+    if [ "${3}" == "server" ]; then
+      # copy admin user msp to cli crypto
+      mkdir -p ${DATA_ROOT}/cli/crypto/${_name}
+      cp -R ${_target}/msp ${DATA_ROOT}/cli/crypto/${_name}
+    fi
+
+    # copy all user msp to gateway crypto
+    # Note that fabric-sdk-go requires the naming of folder and signcert file such that
+    #  the crypto root folder ${FABRIC_ORG} must match the same ORG inserted in the filename under user's signcerts
+    mkdir -p ${DATA_ROOT}/gateway/${FABRIC_ORG}/users/${_name}
+    cp -R ${_target}/msp ${DATA_ROOT}/gateway/${FABRIC_ORG}/users/${_name}
   fi
 }
 

@@ -16,14 +16,19 @@ function test {
   if [ "$?" -ne 0 ]; then
     return 1
   fi
+  joinChannel "peer-1" ${TEST_CHANNEL}
+  if [ "$?" -ne 0 ]; then
+    return 1
+  fi
 
   packageChaincode "peer-0" "chaincode_example02/go" "mycc"
   installChaincode "peer-0" "mycc_1.0.cds"
+  installChaincode "peer-1" "mycc_1.0.cds"
   instantiateChaincode "peer-0" ${TEST_CHANNEL} "mycc" "1.0" '{"Args":["init","a","100","b","200"]}'
 
   echo "Wait 10s before testing chaincode ..."
   sleep 10
-  queryChaincode "peer-0" ${TEST_CHANNEL} "mycc" '{"Args":["query","a"]}'
+  queryChaincode "peer-1" ${TEST_CHANNEL} "mycc" '{"Args":["query","a"]}'
   invokeChaincode "peer-0" ${TEST_CHANNEL} "mycc" '{"Args":["invoke","a","b","10"]}'
 
   echo "wait 5s for transaction to commit ..."

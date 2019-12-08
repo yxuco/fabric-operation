@@ -108,14 +108,14 @@ The currently supported operations include
 Refer [operations](./operations.md) for description of these activities. More operations (as described in `TODO` bellow) will be supported in the future.
 
 ## Non-Mac users
-If you are not using a Mac, you can run these scripts using `docker-compose`, `Amazon EKS`, or `Azure AKS`. Simply add a corresponding `env_type` in all the commands, e.g.,
+If you are not using a Mac, you can run these scripts using `docker-compose`, `Amazon EKS`, `Azure AKS`, or `Google GKE`. Simply add a corresponding `env_type` in all the commands, e.g.,
 * `./ca-server.sh start -t docker` to use `docker-composer`, or
 * `./ca-server.sh start -t aws` to use AWS as described in the folder [aws](./aws), or
 * `./ca-server.sh start -t az` to use Azure as described in the folder [az](./az), or
 * `./ca-server.sh start -t gke` to use Google Cloud as described in the folder [gke](./gke), or
 * try to verify if the scripts would work on [Minikube](https://kubernetes.io/docs/tasks/tools/install-minikube/).
 
-When `docker` is used, start and test the Fabric network using the following commands:
+When `docker-compose` is used, start and test the Fabric network using the following commands:
 ```
 cd ./network
 ./network.sh start -t docker

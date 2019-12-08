@@ -40,8 +40,11 @@ func NewNetworkClient(configPath, patternPath, channelID, user, org string) (*Ne
 	clientKey := fmt.Sprintf("%s.%s.%s", channelID, user, org)
 	hash := HashCode(clientKey)
 	if fbClient, ok := clientMap[hash]; ok && fbClient != nil {
+		glog.V(2).Infof("found cached fabric connection: %s", clientKey)
 		return fbClient, nil
 	}
+
+	glog.V(2).Infof("Creating new fabric connection: %s", clientKey)
 	provider, err := networkConfigProvider(configPath, patternPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create config provider")
@@ -51,14 +54,18 @@ func NewNetworkClient(configPath, patternPath, channelID, user, org string) (*Ne
 		return nil, errors.Wrapf(err, "Failed to create new SDK")
 	}
 
+	glog.V(2).Infof("connect to fabric with user: %s", user)
 	opts := []fabsdk.ContextOption{fabsdk.WithUser(user)}
 	if org != "" {
+		glog.V(2).Infof("connect to fabric with org: %s", org)
 		opts = append(opts, fabsdk.WithOrg(org))
 	}
+	glog.V(2).Infof("connect to fabric channel: %s", channelID)
 	client, err := channel.New(sdk.ChannelContext(channelID, opts...))
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to create new client of channel %s", channelID)
 	}
+	glog.V(2).Info("created new channel client")
 	fbClient := &NetworkClient{
 		cid:    hash,
 		sdk:    sdk,
@@ -70,6 +77,7 @@ func NewNetworkClient(configPath, patternPath, channelID, user, org string) (*Ne
 }
 
 func networkConfigProvider(configPath, patternPath string) (core.ConfigProvider, error) {
+	glog.V(2).Infof("read network file: %s and pattern matcher file: %s", configPath, patternPath)
 	netConfig, err := ReadFile(configPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to read network config %s", configPath)
@@ -101,6 +109,7 @@ func networkConfigProvider(configPath, patternPath string) (core.ConfigProvider,
 			return append(matcherBackends, currentBackends...), nil
 		}, nil
 	}
+	glog.V(2).Info("No pattern matcher override is used")
 	return configProvider, nil
 }
 

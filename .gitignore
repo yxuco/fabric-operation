@@ -15,5 +15,6 @@ gke/config/
 **/*.tx
 **/peer-pv-*.yaml
 **/orderer-pv-*.yaml
-service/keystore/
+**/keystore/
 service/gateway
+**/gateway/
