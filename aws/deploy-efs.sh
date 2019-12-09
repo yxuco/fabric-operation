@@ -38,6 +38,7 @@ fi
 
 # set limited SSH rule for bastion host
 mycidr=$(curl ifconfig.me)/32
+echo "export MYCIDR=${mycidr}" >> ./config/env.sh
 bastionSgid=$(aws ec2 describe-security-groups --filters Name=group-name,Values=${EFS_STACK}-InstanceSecurityGroup* --query 'SecurityGroups[*].GroupId' --output text)
 echo "set ssh rule for ${mycidr} to access bastion host ${bastionSgid}"
 aws ec2 revoke-security-group-ingress --group-id ${bastionSgid} --protocol tcp --port 80 --cidr 0.0.0.0/0

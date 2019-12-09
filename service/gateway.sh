@@ -4,11 +4,11 @@
 # This file is subject to the license terms contained
 # in the license file that is distributed with this file.
 
-# start or shutdown and test fabric network
-# usage: network.sh <cmd> [-p <property file>] [-t <env type>] [-d]
+# start or shutdown and config client gateway service
+# usage: gateway.sh <cmd> [-p <property file>] [-t <env type>] [-c channel>] [-u <user>]
 # it uses a property file of the specified org as defined in ../config/org.env, e.g.
-#   network.sh start -p netop1
-# using config parameters specified in ../config/netop1.env
+#   gateway.sh start -p netop1
+# would use config parameters specified in ../config/netop1.env
 # the env_type can be k8s or aws/az/gke to use local host or a cloud file system, i.e. efs/azf/gfs, default k8s for local persistence
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
@@ -387,8 +387,20 @@ metadata:
   namespace: ${ORG}
 spec:
   selector:
-    app: gateway
-  ports:
+    app: gateway"
+  if [ "${ENV_TYPE}" == "aws" ]; then
+    echo "  ports:
+  - protocol: TCP
+    name: http-port
+    port: 7081
+    targetPort: http-port
+  - protocol: TCP
+    name: grpc-port
+    port: 7082
+    targetPort: grpc-port
+  type: LoadBalancer"
+  else
+    echo "  ports:
   # use nodePort for Mac docker-desktop, port range must be 30000-32767
   - protocol: TCP
     name: http-port
@@ -401,6 +413,7 @@ spec:
     targetPort: grpc-port
     nodePort: 30082
   type: NodePort"
+  fi
 }
 
 ##############################################################################
@@ -453,8 +466,12 @@ function startGateway {
     echo "start gateway service"
     kubectl create -f ${DATA_ROOT}/gateway/k8s/gateway-pv.yaml
     kubectl create -f ${DATA_ROOT}/gateway/k8s/gateway.yaml
-    echo "access gateway REST swagger-ui at http://localhost:30081/swagger"
-    echo "download gateway grpc service defintion at http://localhost:30081/doc"
+    if [ "${ENV_TYPE}" == "k8s" ]; then
+      echo "browse gateway REST swagger-ui at http://localhost:30081/swagger"
+      echo "view gateway grpc service defintion at http://localhost:30081/doc"
+    else if [ "${ENV_TYPE}" == "aws" ]; then
+      ${SCRIPT_DIR}/../aws/setup-gateway-sg.sh
+    fi
   fi
 }
 

@@ -4,7 +4,7 @@
 # This file is subject to the license terms contained
 # in the license file that is distributed with this file.
 
-# configure bastion host, and
+# Execute this script on bastion host to configure bastion host, and
 # install amazon-efs-utils on a specified EKS nodes, or all EKS nodes if no node is specified
 # usage: ./setup-eks-node.sh [ host [ host ] ]
 
@@ -44,6 +44,26 @@ echo "download fabric-operation project and set filesystem id ${AWS_FSID}"
 git clone https://github.com/yxuco/fabric-operation.git
 sed -i -e "s|^AWS_MOUNT_POINT=.*|AWS_MOUNT_POINT=${MOUNT_POINT}|" ./fabric-operation/config/setup.sh
 sed -i -e "s|^AWS_FSID=.*|AWS_FSID=${AWS_FSID}|" ./fabric-operation/config/setup.sh
+
+echo "install protobuf 3.7.1"
+PROTOC_ZIP=protoc-3.7.1-linux-x86_64.zip
+curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/$PROTOC_ZIP
+sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
+sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
+rm -f $PROTOC_ZIP
+
+echo "install Golang 1.13.5"
+curl -O https://storage.googleapis.com/golang/go1.13.5.linux-amd64.tar.gz
+sudo tar -xf go1.13.5.linux-amd64.tar.gz -C /usr/local
+mkdir -p ~/go/{bin,pkg,src}
+echo "export GOPATH=$HOME/go" >> .bash_profile
+echo "export PATH=$HOME/go/bin:/usr/local/go/bin:$PATH" >> .bash_profile
+rm -f go1.13.5.linux-amd64.tar.gz
+
+echo "install grpc gateway Go packages"
+go get -u github.com/golang/protobuf/protoc-gen-go
+go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
 check=$(grep "env.sh" .bash_profile)
 if [ -z "${check}" ]; then
