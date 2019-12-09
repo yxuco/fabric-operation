@@ -1,6 +1,6 @@
 # Fabric gateway service
 
-The gateway service is a generic Fabric client app service that provides REST and gRPC APIs for other applications to query or invoke Fabric transactions.
+The gateway service is a generic Fabric client service that provides REST and gRPC APIs for other applications to query or invoke Fabric transactions.
 
 ## Build (optional)
 The gateway is pre-built for Mac and Linux, which can be executed in a docker container.
@@ -18,7 +18,7 @@ You can then build and test the gateway service using the [Makefile](./Makefile)
 # clean and build for local test on Mac
 make
 
-# test using fabric-sample byfn, assuming that sample is installed in $GOPATH/src/github.com/hyperledger/fabric-samples/first-network
+# test using fabric-sample byfn, assuming that the sample is installed in $GOPATH/src/github.com/hyperledger/fabric-samples/first-network
 make run
 
 # build and copy for Kubernetes, assuming that fabric network is started using '../network/network.sh start'
@@ -53,7 +53,7 @@ This command started 2 gateway `PODs`, and the gateway service listens REST requ
 Open the Swagger UI in Chrome web browser: [http://localhost:30081/swagger](http://localhost:30081/swagger).
 
 It defines 2 REST APIs:
-* **Connection**, which creates or finds a Fabric connection, and returns the connection-ID.
+* **Connection**, which creates or finds a Fabric network connection, and returns the connection-ID.
 * **Transaction**, which invokes a Fabric transaction for query or invocation on a specified or randomly chosen endpoint.
 
 Click `Try it out` for `/v1/connection`, and execute the following request
@@ -94,7 +94,7 @@ Click `Try it out` for `/v1/transaction` again, and execute the following transa
 ```
 Execute the above query again, it should return a reduced value of `a`, e.g., `80`.
 
-Note that this gateway service can be used to test any deployed chaincode, and it supports connections to multiple channels or networks, as long as the connection is configured by using the script `./gateway.sh config [options]`.  You can also use a gRPC client to send API requests to the gateway service.
+Note that this gateway service can be used to test any instantiated chaincode, and it supports connections to multiple channels or networks, as long as the connection is configured by using the script `./gateway.sh config [options]`.  You can also use a gRPC client to send API requests to the gateway service.
 
 ## TODO
 * Support HTTPS and gRPCs for secure client connections.

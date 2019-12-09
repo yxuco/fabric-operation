@@ -96,7 +96,7 @@ Note that the scripts use the operating company name `netop1`, as a Kubernetes n
 After the smoke test succeeds, you should see a test result of `90` printed on the screen. If you used `docker-compose` for this excersize (as described below), you can look at the blockchain state via the `CouchDB` futon UI at `http://localhost:7056/_utils`, which is exposed for `docker-compose` only because it is not recommended to expose `CouchDB` in production configuration using Kubernetes.
 
 ## Start gateway service and use REST APIs to test chaincode
-Refer [gateway](./service/README.md) for more details on how to build and start a REST APi service for applications to interact with one or more Fabric networks. The following commands starts a gateway service that exposes a Swagger-UI at `http://localhost:30081/swagger`.
+Refer [gateway](./service/README.md) for more details on how to build and start a REST API service for applications to interact with one or more Fabric networks. The following commands will start a gateway service that exposes a Swagger-UI at `http://localhost:30081/swagger`.
 ```
 cd ../service
 ./gateway.sh config
