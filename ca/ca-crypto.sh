@@ -85,7 +85,7 @@ function printHelp {
   echo "      - 'admin' - generate crypto for specified admin users"
   echo "      - 'user' - generate crypto for specified client users"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
-  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', 'az', or 'gke'"
+  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', 'az', or 'gcp'"
   echo "    -s <start seq> - start sequence number (inclusive) for orderer or peer"
   echo "    -e <end seq> - end sequence number (exclusive) for orderer or peer"
   echo "    -u <user name> - space-delimited admin/client user names"

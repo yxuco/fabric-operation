@@ -9,7 +9,7 @@
 # it uses a property file of the specified org as defined in ../config/org.env, e.g.
 #   gateway.sh start -p netop1
 # would use config parameters specified in ../config/netop1.env
-# the env_type can be k8s or aws/az/gke to use local host or a cloud file system, i.e. efs/azf/gfs, default k8s for local persistence
+# the env_type can be k8s or aws/az/gcp to use local host or a cloud file system, i.e. efs/azf/gfs, default k8s for local persistence
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
 
@@ -208,7 +208,7 @@ function printLocalMatcherYaml {
 # print k8s persistent volume for gateway config files
 # e.g., printDataPV
 function printDataPV {
-  local _store_size="100Mi"
+  local _store_size="${TOOL_PV_SIZE}"
   local _mode="ReadWriteOnce"
   local _folder="gateway"
 
@@ -249,7 +249,7 @@ spec:
   - nobrl"
   elif [ "${K8S_PERSISTENCE}" == "gfs" ]; then
     echo "  nfs:
-    server: ${GKE_STORE_IP}
+    server: ${GCP_STORE_IP}
     path: /vol1/${FABRIC_ORG}/${_folder}"
   else
     echo "  hostPath:
@@ -338,6 +338,10 @@ spec:
       containers:
       - name: gateway
         image: ubuntu:18.04
+        resources:
+          requests:
+            memory: ${POD_MEM}
+            cpu: ${POD_CPU}
         env:
         - name: CONFIG_PATH
           value: /etc/hyperledger/gateway/config

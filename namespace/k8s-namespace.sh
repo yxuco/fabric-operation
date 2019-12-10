@@ -94,7 +94,7 @@ function printHelp() {
   echo "      - 'create' - create k8s namespace for the organization defined in network spec; for Azure, also create storage secret"
   echo "      - 'delete' - delete k8s namespace, for Azure, also delete the storage secret"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
-  echo "    -t <env type> - deployment environment type: one of 'k8s' (default), 'aws', 'az', or 'gke'"
+  echo "    -t <env type> - deployment environment type: one of 'k8s' (default), 'aws', 'az', or 'gcp'"
   echo "  k8s-namespace.sh -h (print this message)"
 }
 

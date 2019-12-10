@@ -3,9 +3,9 @@
 The gateway service is a generic Fabric client service that provides REST and gRPC APIs for other applications to query or invoke Fabric transactions.
 
 ## Build (optional)
-The gateway is pre-built for Mac and Linux, which can be executed in a docker container.
+If you use a cloud provider, i.e., `AWS`, `Azure`, or `GCP`, you can use a `bastion` host to build and test the gateway service, and thus you do not need to install anything on your local workstation.  We provide scripts to setup the `bastion` host for each of the major cloud providers.  Refer to the folder for [AWS](../aws), [Azure](../az), or [GCP](../gcp) for more details.
 
-To build the service from source code, you need to install the following prerequisites:
+To build the service from source code for local test, you need to install the following prerequisites:
 * Download and install Go as described [here](https://golang.org/dl/)
 * Download and install `protoc` as described [here](https://grpc.io/docs/quickstart/go/)
 * Install protobuff plugin for REST over gRPC as described [here](https://github.com/grpc-ecosystem/grpc-gateway) i.e.,

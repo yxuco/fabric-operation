@@ -17,4 +17,5 @@ gke/config/
 **/orderer-pv-*.yaml
 **/keystore/
 service/gateway
+service/gateway-linux
 **/gateway/

@@ -5,7 +5,7 @@
 # in the license file that is distributed with this file.
 
 # create MSP configuration, channel profile, and orderer genesis block
-#   for target environment, i.e., docker, k8s, aws, az, gke, etc
+#   for target environment, i.e., docker, k8s, aws, az, gcp, etc
 # usage: msp-util.sh -h
 # to display usage info
 
@@ -305,15 +305,21 @@ networks:
 "
 }
 
-# printK8sStorageClass <name>
-# storage class for local host, or AWS EFS
+# print k8s PV and PVC for tool Pod
+function printK8sStorageYaml {
+  printK8sStorageClass
+  printK8sPV
+}
+
+# printK8sStorageClass for tool container
+# storage class for local host, or AWS EFS, Azure File, or GCP Filestore
 function printK8sStorageClass {
   if [ "${K8S_PERSISTENCE}" == "efs" ]; then
     PROVISIONER="efs.csi.aws.com"
   elif [ "${K8S_PERSISTENCE}" == "azf" ]; then
     PROVISIONER="kubernetes.io/azure-file"
   elif [ "${K8S_PERSISTENCE}" == "gfs" ]; then
-    # no need to define storage class for Google Filestore
+    # no need to define storage class for GCP Filestore
     return 0
   else
     # default to local host
@@ -324,7 +330,7 @@ function printK8sStorageClass {
 kind: StorageClass
 apiVersion: storage.k8s.io/v1
 metadata:
-  name: ${1}
+  name: ${ORG}-tool-data-class
 provisioner: ${PROVISIONER}
 reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer"
@@ -335,26 +341,19 @@ volumeBindingMode: WaitForFirstConsumer"
   fi
 }
 
-# print k8s PV and PVC for tool Pod
-function printK8sStorageYaml {
-  printK8sStorageClass "${ORG}-tool-data-class"
-  printK8sPV "data-tool"
-}
-
-# printK8sPV <name>
+# printK8sPV for tool container
 function printK8sPV {
   echo "---
 kind: PersistentVolume
 apiVersion: v1
-# create PV for ${1}
 metadata:
-  name: ${1}-${ORG}-pv
+  name: data-${ORG}-tool
   labels:
-    app: ${1}
+    app: data-tool
     org: ${ORG}
 spec:
   capacity:
-    storage: 100Mi
+    storage: ${TOOL_PV_SIZE}
   volumeMode: Filesystem
   accessModes:
   - ReadWriteOnce
@@ -381,7 +380,7 @@ spec:
   - nobrl"
   elif [ "${K8S_PERSISTENCE}" == "gfs" ]; then
     echo "  nfs:
-    server: ${GKE_STORE_IP}
+    server: $GCP_STORE_IP}
     path: /vol1/${FABRIC_ORG}/tool"
   else
     echo "  hostPath:
@@ -393,7 +392,7 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: ${1}-pvc
+  name: data-tool
   namespace: ${ORG}
 spec:
   storageClassName: ${ORG}-tool-data-class
@@ -401,10 +400,10 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 100Mi
+      storage: ${TOOL_PV_SIZE}
   selector:
     matchLabels:
-      app: ${1}
+      app: data-tool
       org: ${ORG}"
 }
 
@@ -420,6 +419,10 @@ spec:
   - name: tool
     image: hyperledger/fabric-tools
     imagePullPolicy: Always
+    resources:
+      requests:
+        memory: ${POD_MEM}
+        cpu: ${POD_CPU}
     env:
     - name: FABRIC_LOGGING_SPEC
       value: INFO
@@ -458,7 +461,7 @@ spec:
       type: Directory
   - name: data
     persistentVolumeClaim:
-      claimName: data-tool-pvc"
+      claimName: data-tool"
 }
 
 function startService {
@@ -546,7 +549,7 @@ function printHelp() {
   echo "      - 'mspconfig' - print MSP config json for adding to a network, output in '${DATA_ROOT}/tool'"
   echo "      - 'orderer-config' - print orderer RAFT consenter config for adding to a network, with arguments -s <start-seq> [-e <end-seq>]"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
-  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', 'az', or 'gke'"
+  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', 'az', or 'gcp'"
   echo "    -o <consensus type> - 'solo' or 'etcdraft' used with the 'genesis' command"
   echo "    -c <channel name> - name of a channel, used with the 'channel' command"
   echo "    -s <start seq> - start sequence number (inclusive) for orderer config"

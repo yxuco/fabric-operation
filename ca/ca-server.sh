@@ -5,7 +5,7 @@
 # in the license file that is distributed with this file.
 
 # start fabric-ca server and client for a specified org,
-#   with optional target env, i.e., docker, k8s, aws, az, gke, etc, to provide extra SVC_DOMAIN config
+#   with optional target env, i.e., docker, k8s, aws, az, gcp, etc, to provide extra SVC_DOMAIN config
 # usage: start-ca.sh <org_name> <env>
 # where config parameters for the org are specified in ../config/org_name.env, e.g.
 #   start-ca.sh netop1
@@ -82,14 +82,14 @@ services:"
 }
 
 # printK8sStorageClass <name>
-# storage class for local host, or AWS EFS
+# storage class for local host, or AWS EFS, Azure File, or GCP Filestore
 function printK8sStorageClass {
   if [ "${K8S_PERSISTENCE}" == "efs" ]; then
     PROVISIONER="efs.csi.aws.com"
   elif [ "${K8S_PERSISTENCE}" == "azf" ]; then
     PROVISIONER="kubernetes.io/azure-file"
   elif [ "${K8S_PERSISTENCE}" == "gfs" ]; then
-    # no need to define storage class for Google Filestore
+    # no need to define storage class for GCP Filestore
     return 0
   else
     # default to local host
@@ -139,7 +139,7 @@ metadata:
     org: ${ORG}
 spec:
   capacity:
-    storage: 100Mi
+    storage: ${TOOL_PV_SIZE}
   volumeMode: Filesystem
   accessModes:
   - ReadWriteOnce
@@ -166,7 +166,7 @@ spec:
   - nobrl"
   elif [ "${K8S_PERSISTENCE}" == "gfs" ]; then
     echo "  nfs:
-    server: ${GKE_STORE_IP}
+    server: ${GCP_STORE_IP}
     path: /vol1/${FABRIC_ORG}${_folder}"
   else
     echo "  hostPath:
@@ -186,7 +186,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 100Mi
+      storage: ${TOOL_PV_SIZE}
   selector:
     matchLabels:
       node: ${_name}
@@ -219,6 +219,10 @@ spec:
       containers:
       - name: ca-client
         image: hyperledger/fabric-ca
+        resources:
+          requests:
+            memory: ${POD_MEM}
+            cpu: ${POD_CPU}
         env:
         - name: FABRIC_CA_HOME
           value: /etc/hyperledger/data/canet/ca-client
@@ -278,6 +282,10 @@ spec:
       containers:
       - name: ${CA_NAME}-server
         image: hyperledger/fabric-ca
+        resources:
+          requests:
+            memory: ${POD_MEM}
+            cpu: ${POD_CPU}
         env:
         - name: FABRIC_CA_HOME
           value: /etc/hyperledger/fabric-ca-server
@@ -394,7 +402,7 @@ function printHelp() {
   echo "      - 'start' - start ca and tlsca servers and ca client"
   echo "      - 'shutdown' - shutdown ca and tlsca servers and ca client, and cleanup ca-client data"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
-  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', 'az', or 'gke'"
+  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', 'az', or 'gcp'"
   echo "    -d - delete all ca/tlsca server data for fresh start next time"
   echo "  ca-server.sh -h (print this message)"
 }
