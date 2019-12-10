@@ -42,7 +42,7 @@ kubectl apply -k "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernete
 
 echo "download fabric-operation project and set filesystem id ${AWS_FSID}"
 git clone https://github.com/yxuco/fabric-operation.git
-sed -i -e "s|^AWS_MOUNT_POINT=.*|AWS_MOUNT_POINT=${MOUNT_POINT}|" ./fabric-operation/config/setup.sh
+sed -i -e "s|^MOUNT_POINT=.*|MOUNT_POINT=${MOUNT_POINT}|" ./fabric-operation/config/setup.sh
 sed -i -e "s|^AWS_FSID=.*|AWS_FSID=${AWS_FSID}|" ./fabric-operation/config/setup.sh
 
 echo "install protobuf 3.7.1"

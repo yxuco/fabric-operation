@@ -4,7 +4,7 @@
 # This file is subject to the license terms contained
 # in the license file that is distributed with this file.
 
-# this script is called to initialize bastion host when it is created
+# Execute this script on bastion host to initialize the host
 source ./env.sh
 
 # install kubectl
@@ -23,7 +23,7 @@ mnt_point=mnt/share
 
 # download fabric operation project
 git clone https://github.com/yxuco/fabric-operation.git
-sed -i -e "s|^AZ_MOUNT_POINT=.*|AZ_MOUNT_POINT=${mnt_point}|" ./fabric-operation/config/setup.sh
+sed -i -e "s|^MOUNT_POINT=.*|MOUNT_POINT=${mnt_point}|" ./fabric-operation/config/setup.sh
 sed -i -e "s|^AZ_STORAGE_SHARE=.*|AZ_STORAGE_SHARE=${STORAGE_SHARE}|" ./fabric-operation/config/setup.sh
 
 # mount Azure file
@@ -41,3 +41,27 @@ else
   echo "${SMB_PATH} /${mnt_point} cifs nofail,vers=3.0,credentials=${cred},serverino" | sudo tee -a /etc/fstab > /dev/null
 fi
 sudo mount -a
+
+echo "install protobuf 3.7.1"
+sudo apt-get install unzip
+PROTOC_ZIP=protoc-3.7.1-linux-x86_64.zip
+curl -OL https://github.com/protocolbuffers/protobuf/releases/download/v3.7.1/$PROTOC_ZIP
+sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
+sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
+rm -f $PROTOC_ZIP
+
+echo "install Golang 1.13.5"
+curl -O https://storage.googleapis.com/golang/go1.13.5.linux-amd64.tar.gz
+sudo tar -xf go1.13.5.linux-amd64.tar.gz -C /usr/local
+mkdir -p ~/go/{bin,pkg,src}
+echo "export GOPATH=$HOME/go" >> .profile
+echo "export PATH=$HOME/go/bin:/usr/local/go/bin:$PATH" >> .profile
+rm -f go1.13.5.linux-amd64.tar.gz
+
+echo "install grpc gateway Go packages"
+. .profile
+go get -u github.com/golang/protobuf/protoc-gen-go
+go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
+go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+
+sudo apt install make

@@ -555,7 +555,6 @@ function printHelp() {
 }
 
 ORG_ENV="netop1"
-ENV_TYPE="k8s"
 
 CMD=${1}
 shift

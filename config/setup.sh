@@ -18,20 +18,29 @@ ORDERER_MSP=${ORDERER_MSP:-"${ORG}OrdererMSP"}
 SYS_CHANNEL=${SYS_CHANNEL:-"${ORG}-channel"}
 TEST_CHANNEL=${TEST_CHANNEL:-"mychannel"}
 ORDERER_TYPE=${ORDERER_TYPE:-"solo"}
+MOUNT_POINT=mnt/share
 
 # AWS EFS variables populated by aws startup
-AWS_MOUNT_POINT=mnt/share
 AWS_FSID=fs-aec3d805
 
 # Azure File variables populated by Azure startup
-AZ_MOUNT_POINT=mnt/share
 AZ_STORAGE_SHARE=fabshare
 
 # Google Filestore variables populated by GKE startup
-GKE_MOUNT_POINT=mnt/share
 GKE_STORE_IP=10.216.129.154
 
-target=${2:-"docker"}
+target=${2}
+# set ENV_TYPE according to /mnt/share mount point if ${2} is empty
+if [ -z "${target}" ]; then
+  # default to local Kubernetes
+  target="k8s"
+  fs=$(df | grep ${MOUNT_POINT} | awk '{print $1}')
+  if [[ $fs == *file.core.windows.net* ]]; then
+    target="az"
+  fi
+fi
+ENV_TYPE=${target}
+
 if [ "${target}" == "docker" ]; then
   echo "use docker-compose"
   SVC_DOMAIN=""
@@ -49,14 +58,14 @@ surm="sudo rm"
 sumv="sudo mv"
 stee="sudo tee"
 if [ "${target}" == "aws" ]; then
-  DATA_ROOT="/${AWS_MOUNT_POINT}/${FABRIC_ORG}"
+  DATA_ROOT="/${MOUNT_POINT}/${FABRIC_ORG}"
   # Kubernetes persistence type: local | efs | azf
   K8S_PERSISTENCE="efs"
 elif [ "${target}" == "az" ]; then
-  DATA_ROOT="/${AZ_MOUNT_POINT}/${FABRIC_ORG}"
+  DATA_ROOT="/${MOUNT_POINT}/${FABRIC_ORG}"
   K8S_PERSISTENCE="azf"
 elif [ "${target}" == "gke" ]; then
-  DATA_ROOT="/${GKE_MOUNT_POINT}/${FABRIC_ORG}"
+  DATA_ROOT="/${MOUNT_POINT}/${FABRIC_ORG}"
   K8S_PERSISTENCE="gfs"
 else
   DATA_ROOT=$(dirname "${curr_dir}")/${FABRIC_ORG}

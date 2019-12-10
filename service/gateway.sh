@@ -471,6 +471,21 @@ function startGateway {
       echo "view gateway grpc service defintion at http://localhost:30081/doc"
     elif [ "${ENV_TYPE}" == "aws" ]; then
       ${SCRIPT_DIR}/../aws/setup-gateway-sg.sh ${ORG}
+    elif [ "${ENV_TYPE}" == "az" ]; then
+      # wait for load-balancer to start
+      local lbip=$(kubectl get service gateway -n ${ORG} -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')
+      local cnt=1
+      until [ ! -z "${lbip}" ] || [ ${cnt} -gt 5 ]; do
+        sleep 5s
+        echo -n "."
+        lbip=$(kubectl get service gateway -n ${ORG} -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')
+        cnt=$((${cnt}+1))
+      done
+      if [ -z "${lbip}" ]; then
+        echo "cannot find k8s gateway service for org: ${ORG}"
+      else
+        echo "browse gateway swagger UI at http://${lbip}:7081/swagger"
+      fi
     fi
   fi
 }
@@ -501,7 +516,6 @@ function printHelp() {
 }
 
 ORG_ENV="netop1"
-ENV_TYPE="k8s"
 
 CMD=${1}
 shift

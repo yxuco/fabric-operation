@@ -67,7 +67,7 @@ cd ../ca
 ```
 This command starts 2 CA servers and a CA client, and generates crypto data according to the network specification, [netop1.env](../config/netop1.env).  You can verify the result using the following commands:
 * `kubectl get pods` should list 3 running PODs: `ca-server`, `tlsca-server`, and `ca-client`;
-* `ls /mnt/share/netop1.com/` should list folders containing crypto data, i.e., `crypto`, `orderers`, `peers`, `cli`, and `tool`.
+* `ls /mnt/share/netop1.com/` should list folders containing crypto data, i.e., `canet`, `cli`, `crypto`, `gateway`, `namespace`, `orderers`, `peers`, and `tool`.
 
 ### Generate genesis block and channel creation tx
 ```
@@ -78,7 +78,7 @@ cd ../msp
 ```
 This command starts a Kubernetes POD to generate the genesis block and transaction for creating a test channel `mychannel` based on the network specification.  You can verify the result using the following commands:
 * `kubectl get pods` should list a running POD `tool`;
-* `ls /mnt/share/netop1.com/tool` should show the generated artifacts: `genesis.block`, `channel.tx`, `anchors.tx`, and `configtx.yaml`.
+* `ls /mnt/share/netop1.com/tool` should show the generated artifacts: `etcdraft-genesis.block`, `mychannel.tx`, `mychannel-anchors.tx`, and `configtx.yaml`.
 
 ### Start Fabric network
 ```
