@@ -99,7 +99,6 @@ After the smoke test succeeds, you should see a test result of `90` printed on t
 Refer [gateway](./service/README.md) for more details on how to build and start a REST API service for applications to interact with one or more Fabric networks. The following commands will start a gateway service that exposes a Swagger-UI at `http://localhost:30081/swagger`.
 ```
 cd ../service
-./gateway.sh config
 ./gateway.sh start
 ```
 ## Operations for managing the Fabric network
