@@ -69,7 +69,7 @@ Following steps will start and smoke test the default Hyperledger Fabric network
 cd ./fabric-operation/namespace
 ./k8s-namespace.sh create -t aws
 ```
-This command creates a namespace for the default Fabric operator company, `netop1`, and sets it as the default namespace. You can verify this step using the following commands:
+This command creates a namespace for the default Fabric operator company, `netop1`, and sets it as the default namespace. The option `-t aws` specifies the working environment for `AWS`, and it is optional since the script will automatically detect the environment if it is not specified. You can verify this step using the following commands:
 * `kubectl get namespaces` should show a list of namespaces, including the new namespace `netop1`;
 * `kubectl config current-context` should show that the default namespace is set to `netop1`.
 
@@ -121,14 +121,13 @@ This command creates the test channel `mychannel`, installs and instantiates a t
 Refer [gateway](../service/README.md) for more details on how to build and start a REST API service for applications to interact with one or more Fabric networks. The following commands can be used on the bastion host to start a gateway service that exposes a Swagger-UI.
 ```
 cd ../service
-# build the gateway service from source code if necessary
+# build the gateway service from source code, whih creates executable 'gateway-linux'
 make dist
 
-# config and start gateway service for aws
-./gateway.sh config -t aws
+# config and start gateway service for AWS
 ./gateway.sh start -t aws
 ```
-The last command started 2 PODs to run the gateway service, and created a load-balancer service with a public accessible port.  It also updated the security rule such that the load-balancer port is open to the developer's workstation where this script is ececuted.
+The last command started 2 PODs to run the gateway service, and created a load-balancer service with a public accessible port.  It also updated the security rule such that the load-balancer port is open to the developer's workstation where this script is executed.
 
 The URL of the load-balancer is printed by the script as, e.g.,
 ```

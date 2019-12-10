@@ -40,11 +40,16 @@ if [ -z "${target}" ]; then
   # default to local Kubernetes
   target="k8s"
   fs=$(df | grep ${MOUNT_POINT} | awk '{print $1}')
-  if [[ $fs == *file.core.windows.net* ]]; then
+  if [[ $fs == *efs.*.amazonaws.com* ]]; then
+    target="aws"
+  elif [[ $fs == *file.core.windows.net* ]]; then
     target="az"
+  elif [[ $fs == */vol1 ]]; then
+    target="gcp"
   fi
+  echo "set target ENV_TYPE: ${target}"
+  ENV_TYPE=${target}
 fi
-ENV_TYPE=${target}
 
 if [ "${target}" == "docker" ]; then
   echo "use docker-compose"

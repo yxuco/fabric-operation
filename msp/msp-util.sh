@@ -380,7 +380,7 @@ spec:
   - nobrl"
   elif [ "${K8S_PERSISTENCE}" == "gfs" ]; then
     echo "  nfs:
-    server: $GCP_STORE_IP}
+    server: ${GCP_STORE_IP}
     path: /vol1/${FABRIC_ORG}/tool"
   else
     echo "  hostPath:

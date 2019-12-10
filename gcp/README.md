@@ -12,7 +12,7 @@ You can then login from your local workstation to setup the work environment:
 gcloud auth login
 gcloud projects list
 ```
-Select your Google account in a pop-up browser window to login to Google Cloud.  The second command should list the project that we created on using the GCP Console.
+Select your Google account in a pop-up browser window to login to Google Cloud.  The second command should list the project that we created using the GCP Console.  Note that `gcloud` stores config data in `$HOME/.config/gcloud`.
 
 ## Start GKE cluster
 Edit [env.sh](./env.sh) to upldate `GCP_PROJECT` to the name of the project created above or any existing project, and then create and start the GKE cluster with all defaults:
@@ -30,7 +30,7 @@ Wait 7-8 minutes for the cluster nodes to startup.  When the cluster is up, it w
 ```
 gcloud compute ssh --ssh-key-file ./config/fab-key fab@fab-bastion
 ```
-You can use this command to login to the `bastion` host and create a Hyperledger Fabric network using the GKE cluster. Note that the `ssh` keypair for accessing the `bastion` host is in the [config](./config) folder.
+You can use this command to login to the `bastion` host and create a Hyperledger Fabric network using a GKE cluster. Note that the `ssh` keypair for accessing the `bastion` host is generated in the [config](./config) folder.
 
 ## Setup Google login from `bastion` host
 Log on to the `bastion` host, and login to Google Cloud, e.g.,
@@ -58,7 +58,7 @@ Following steps will start and smoke test the default Hyperledger Fabric network
 cd ./fabric-operation/namespace
 ./k8s-namespace.sh create -t gcp
 ```
-This command creates a namespace for the default Fabric operator company, `netop1`, and sets it as the default namespace.  It also creates Kubernetes secret for accessing Azure Files storage for persistence.  You can verify this step using the following commands:
+This command creates a namespace for the default Fabric operator company, `netop1`, and sets it as the default namespace.  The option `-t gcp` specifies the working environment for `GCP`, and it is optional since the script will automatically detect the environment if it is not specified.  You can verify this step using the following commands:
 * `kubectl get namespaces` should show a list of namespaces, including the new namespace `netop1`;
 * `kubectl config current-context` should show that the default namespace is set to `netop1`.
 
@@ -71,7 +71,7 @@ cd ../ca
 ```
 This command starts 2 CA servers and a CA client, and generates crypto data according to the network specification, [netop1.env](../config/netop1.env).  You can verify the result using the following commands:
 * `kubectl get pods` should list 3 running PODs: `ca-server`, `tlsca-server`, and `ca-client`;
-* `ls /mnt/share/netop1.com/` should list folders containing crypto data, i.e., `crypto`, `orderers`, `peers`, `cli`, and `tool`.
+* `ls /mnt/share/netop1.com/` should list folders containing crypto data, i.e., `canet`, `cli`, `crypto`, `gateway`, `namespace`, `orderers`, `peers`, and `tool`.
 
 ### Generate genesis block and channel creation tx
 ```
@@ -82,7 +82,7 @@ cd ../msp
 ```
 This command starts a Kubernetes POD to generate the genesis block and transaction for creating a test channel `mychannel` based on the network specification.  You can verify the result using the following commands:
 * `kubectl get pods` should list a running POD `tool`;
-* `ls /mnt/share/netop1.com/tool` should show the generated artifacts: `genesis.block`, `channel.tx`, `anchors.tx`, and `configtx.yaml`.
+* `ls /mnt/share/netop1.com/tool` should show the generated artifacts: `etcdraft-genesis.block`, `mychannel.tx`, `mychannel-anchors.tx`, and `configtx.yaml`.
 
 ### Start Fabric network
 ```
@@ -105,6 +105,24 @@ This command creates the test channel `mychannel`, installs and instantiates a t
 * The last result printed out by the test should be `90`;
 * Orderer data folder, e.g., `/mnt/share/netop1.com/orderers/orderer-0/data` would show a block file added under the chain of a new channel `chains/mychannel`;
 * Peer data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would show a new chaincode `mycc.1.0` added to the `chaincodes` folder, and a transaction block file created under `ledgersData/chains/chains/mychannel`.
+
+### Start client gateway service and use REST APIs to test chaincode
+Refer [gateway](../service/README.md) for more details on how to build and start a REST API service for applications to interact with one or more Fabric networks. The following commands can be used on the bastion host to start a gateway service that exposes a Swagger-UI.
+```
+cd ../service
+# build the gateway service from source code, whih creates executable 'gateway-linux'
+make dist
+
+# config and start gateway service for GCP
+./gateway.sh start -t gcp
+```
+The last command started 2 PODs to run the gateway service, and created a load-balancer service with a public accessible port.  The load-balancer port is open to public by default, which is convenient for dev and test.  To restrict the access of source IPs, you can add a field `loadBalancerSourceRanges` to the gateway service definition.  Refer the [link](https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service) for more details.
+
+The URL of the load-balancer is printed by the script as, e.g.,
+```
+http://34.82.144.78:7081/swagger
+```
+Copy and paste the URL (your actual URL will be different) into a Chrome web-browser, and use it to test the sample chaincode as described in [gateway](../service/README.md).
 
 ### Stop Fabric network and cleanup persistent data
 ```

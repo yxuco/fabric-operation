@@ -53,7 +53,7 @@ Following steps will start and smoke test the default Hyperledger Fabric network
 cd ./fabric-operation/namespace
 ./k8s-namespace.sh create -t az
 ```
-This command creates a namespace for the default Fabric operator company, `netop1`, and sets it as the default namespace.  It also creates Kubernetes secret for accessing Azure Files storage for persistence.  You can verify this step using the following commands:
+This command creates a namespace for the default Fabric operator company, `netop1`, and sets it as the default namespace.  It also creates Kubernetes secret for accessing Azure Files storage for persistence.  The option `-t az` specifies the working environment for `Azure`, and it is optional since the script will automatically detect the environment if it is not specified.  You can verify this step using the following commands:
 * `kubectl get namespaces` should show a list of namespaces, including the new namespace `netop1`;
 * `kubectl get secret` should show that a secret named `azure-secret` is created;
 * `kubectl config current-context` should show that the default namespace is set to `netop1`.
@@ -101,6 +101,24 @@ This command creates the test channel `mychannel`, installs and instantiates a t
 * The last result printed out by the test should be `90`;
 * Orderer data folder, e.g., `/mnt/share/netop1.com/orderers/orderer-0/data` would show a block file added under the chain of a new channel `chains/mychannel`;
 * Peer data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would show a new chaincode `mycc.1.0` added to the `chaincodes` folder, and a transaction block file created under `ledgersData/chains/chains/mychannel`.
+
+### Start client gateway service and use REST APIs to test chaincode
+Refer [gateway](../service/README.md) for more details on how to build and start a REST API service for applications to interact with one or more Fabric networks. The following commands can be used on the bastion host to start a gateway service that exposes a Swagger-UI.
+```
+cd ../service
+# build the gateway service from source code, whih creates executable 'gateway-linux'
+make dist
+
+# config and start gateway service for Azure
+./gateway.sh start -t az
+```
+The last command started 2 PODs to run the gateway service, and created a load-balancer service with a public accessible port.  The load-balancer port is automatically open to public, which is convenient for dev and test, although Azure recommends to add `Ingress controllers` for produciton use.
+
+The URL of the load-balancer is printed by the script as, e.g.,
+```
+http://52.148.162.197:7081/swagger
+```
+Copy and paste the URL (your actual URL will be different) into a Chrome web-browser, and use it to test the sample chaincode as described in [gateway](../service/README.md).
 
 ### Stop Fabric network and cleanup persistent data
 ```
