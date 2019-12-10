@@ -469,8 +469,8 @@ function startGateway {
     if [ "${ENV_TYPE}" == "k8s" ]; then
       echo "browse gateway REST swagger-ui at http://localhost:30081/swagger"
       echo "view gateway grpc service defintion at http://localhost:30081/doc"
-    else if [ "${ENV_TYPE}" == "aws" ]; then
-      ${SCRIPT_DIR}/../aws/setup-gateway-sg.sh
+    elif [ "${ENV_TYPE}" == "aws" ]; then
+      ${SCRIPT_DIR}/../aws/setup-gateway-sg.sh ${ORG}
     fi
   fi
 }

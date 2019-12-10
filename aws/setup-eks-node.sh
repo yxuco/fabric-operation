@@ -61,6 +61,7 @@ echo "export PATH=$HOME/go/bin:/usr/local/go/bin:$PATH" >> .bash_profile
 rm -f go1.13.5.linux-amd64.tar.gz
 
 echo "install grpc gateway Go packages"
+. .bash_profile
 go get -u github.com/golang/protobuf/protoc-gen-go
 go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger

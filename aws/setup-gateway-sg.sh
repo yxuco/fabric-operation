@@ -8,27 +8,27 @@
 # usage: ./setup-gateway-sg.sh <org-name>
 
 ORG=${1:-"netop1"}
+ELB_HOST=""
 
 function waitForService {
-  local svc=$(kubectl get service gateway -n ${ORG} -o=jsonpath='{.spec.type}')
+  ELB_HOST=$(kubectl get service gateway -n ${ORG} -o=jsonpath='{.status.loadBalancer.ingress[0].hostname}')
   local cnt=1
 
-  until [ "${svc}" == "LoadBalancer" ] || [ ${cnt} -ge 5 ]; do
+  until [ ! -z "${ELB_HOST}" ] || [ ${cnt} -gt 5 ]; do
     sleep 5s
     echo -n "."
-    svc=$(kubectl get service gateway -n ${ORG} -o=jsonpath='{.spec.type}')
+    ELB_HOST=$(kubectl get service gateway -n ${ORG} -o=jsonpath='{.status.loadBalancer.ingress[0].hostname}')
     cnt=$((${cnt}+1))
   done
 }
 
 # check if elb for gateway service exists
 waitForService
-elbHost=$(kubectl get service gateway -n ${ORG} -o=jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-if [ -z "${elbHost}" ]; then
+if [ -z "${ELB_HOST}" ]; then
   echo "cannot find k8s gateway service for org: ${ORG}"
   exit 1
 fi
-echo "gateway service load-balancer host: ${elbHost}"
+echo "gateway service load-balancer host: ${ELB_HOST}"
 
 # set security rule for gateway service
 elbSgid=$(aws ec2 describe-security-groups --filters "Name=group-name,Values=k8s-elb-*" "Name=description,Values=*(${ORG}/gateway)" --query 'SecurityGroups[*].GroupId' --output text)
@@ -39,4 +39,4 @@ fi
 echo "open gateway load balancer port 7081-7082 to ${MYCIDR}"
 aws ec2 authorize-security-group-ingress --group-id ${elbSgid} --protocol tcp --port 7081-7082 --cidr ${MYCIDR}
 
-echo "browse gateway swagger UI at http://${elbHost}:7081/swagger"
+echo "browse gateway swagger UI at http://${ELB_HOST}:7081/swagger"

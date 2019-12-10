@@ -117,6 +117,25 @@ This command creates the test channel `mychannel`, installs and instantiates a t
 * Orderer data folder, e.g., `/mnt/share/netop1.com/orderers/orderer-0/data` would show a block file added under the chain of a new channel `chains/mychannel`;
 * Peer data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would show a new chaincode `mycc.1.0` added in the `chaincodes` folder, and a transaction block file created under `ledgersData/chains/chains/mychannel`.
 
+### Start client gateway service and use REST APIs to test chaincode
+Refer [gateway](./service/README.md) for more details on how to build and start a REST API service for applications to interact with one or more Fabric networks. The following commands can be used on the bastion host to start a gateway service that exposes a Swagger-UI.
+```
+cd ../service
+# build the gateway service from source code if necessary
+make dist
+
+# config and start gateway service for aws
+./gateway.sh config -t aws
+./gateway.sh start -t aws
+```
+The last command started 2 PODs to run the gateway service, and created a load-balancer service with a public accessible port.  It also updated the security rule such that the load-balancer port is open to the developer's workstation where this script is ececuted.
+
+The URL of the load-balancer is printed by the script as, e.g.,
+```
+http://aa77c78ea1aef11eab0b202b81aaff60-1397096608.us-west-2.elb.amazonaws.com:7081/swagger
+```
+Copy and paste this URL into a Chrome web-browser, and use it to test the sample chaincode as described in [README.md](./service/README.md).  If you want this URL accessible by other hosts, you can use AWS console to update the security rules.
+
 ### Stop Fabric network and cleanup persistent data
 ```
 cd ../network

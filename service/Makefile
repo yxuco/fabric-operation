@@ -13,6 +13,7 @@ build: codegen
 .PHONY: dist
 dist: codegen
 	cd src && GOOS=linux GOARCH=amd64 go build -o ../gateway-linux
+	mkdir -p $(DEPLOY_PATH)/gateway
 	cp gateway-linux $(DEPLOY_PATH)/gateway
 	cp src/fabric.proto $(DEPLOY_PATH)
 	cp -Rf swagger-ui $(DEPLOY_PATH)
