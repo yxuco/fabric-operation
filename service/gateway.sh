@@ -388,18 +388,7 @@ metadata:
 spec:
   selector:
     app: gateway"
-  if [ "${ENV_TYPE}" == "aws" ]; then
-    echo "  ports:
-  - protocol: TCP
-    name: http-port
-    port: 7081
-    targetPort: http-port
-  - protocol: TCP
-    name: grpc-port
-    port: 7082
-    targetPort: grpc-port
-  type: LoadBalancer"
-  else
+  if [ "${ENV_TYPE}" == "k8s" ]; then
     echo "  ports:
   # use nodePort for Mac docker-desktop, port range must be 30000-32767
   - protocol: TCP
@@ -413,6 +402,17 @@ spec:
     targetPort: grpc-port
     nodePort: 30082
   type: NodePort"
+  else
+    echo "  ports:
+  - protocol: TCP
+    name: http-port
+    port: 7081
+    targetPort: http-port
+  - protocol: TCP
+    name: grpc-port
+    port: 7082
+    targetPort: grpc-port
+  type: LoadBalancer"
   fi
 }
 
