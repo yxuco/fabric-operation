@@ -42,6 +42,7 @@ else
 fi
 sudo mount -a
 
+# setup for building cient service
 echo "install protobuf 3.7.1"
 sudo apt-get install unzip
 PROTOC_ZIP=protoc-3.7.1-linux-x86_64.zip
@@ -50,13 +51,14 @@ sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
 sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
 rm -f $PROTOC_ZIP
 
-echo "install Golang 1.13.5"
-curl -O https://storage.googleapis.com/golang/go1.13.5.linux-amd64.tar.gz
-sudo tar -xf go1.13.5.linux-amd64.tar.gz -C /usr/local
+echo "install Golang 1.12.14"
+GO_ZIP=go1.12.14.linux-amd64.tar.gz
+curl -O https://storage.googleapis.com/golang/$GO_ZIP
+sudo tar -xf $GO_ZIP -C /usr/local
 mkdir -p ~/go/{bin,pkg,src}
 echo "export GOPATH=$HOME/go" >> .profile
 echo "export PATH=$HOME/go/bin:/usr/local/go/bin:$PATH" >> .profile
-rm -f go1.13.5.linux-amd64.tar.gz
+rm -f $GO_ZIP
 
 echo "install grpc gateway Go packages"
 . .profile
@@ -65,3 +67,12 @@ go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
 sudo apt install make
+
+# setup for dovetail
+echo "install jq and gcc"
+sudo snap install jq
+sudo apt install build-essential
+
+echo "setup dovetail"
+git clone https://github.com/TIBCOSoftware/dovetail-contrib.git
+go get -u github.com/project-flogo/cli/...

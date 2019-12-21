@@ -761,6 +761,8 @@ spec:
       value: ${ord_url}
     - name: ORG
       value: ${ORG}
+    - name: FABRIC_ORG
+      value: ${FABRIC_ORG}
     - name: SYS_CHANNEL
       value: ${SYS_CHANNEL}
     - name: TEST_CHANNEL

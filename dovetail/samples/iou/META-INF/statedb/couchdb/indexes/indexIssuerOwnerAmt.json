@@ -1,0 +1,1 @@
+{"index":{"fields":["issuer","owner","amount"]},"ddoc":"indexIssuerOwnerAmtDoc", "name":"indexIssuerOwnerAmt","type":"json"}

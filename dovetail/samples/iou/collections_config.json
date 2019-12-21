@@ -1,0 +1,33 @@
+[{
+    "name": "USDBankTransactions",
+    "policy": "OR('Org1MSP.member', 'Org2MSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 1000000,
+    "memberOnlyRead": true
+  },
+  {
+    "name": "EURBankTransactions",
+    "policy": "OR('Org1MSP.member', 'Org2MSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 1000000,
+    "memberOnlyRead": true
+  },
+  {
+    "name": "USDBankAccounts",
+    "policy": "OR('Org2MSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 1000000,
+    "memberOnlyRead": true
+  },
+  {
+    "name": "EURBankAccounts",
+    "policy": "OR('Org1MSP.member')",
+    "requiredPeerCount": 0,
+    "maxPeerCount": 3,
+    "blockToLive": 1000000,
+    "memberOnlyRead": true
+  }
+]
