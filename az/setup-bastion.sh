@@ -71,7 +71,7 @@ sudo apt install make
 # setup for dovetail
 echo "install jq and gcc"
 sudo snap install jq
-sudo apt install build-essential
+sudo apt -y install build-essential
 
 echo "setup dovetail"
 git clone https://github.com/TIBCOSoftware/dovetail-contrib.git
