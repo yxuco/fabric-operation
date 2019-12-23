@@ -92,7 +92,7 @@ function cleanup {
 function printHelp() {
   echo "Usage: "
   echo "  az-util.sh <cmd> [-n <name>] [-r <region>]"
-  echo "    <cmd> - one of 'create', or 'cleanup'"
+  echo "    <cmd> - one of the following commands"
   echo "      - 'create' - create AKS cluster and Azure Files storage"
   echo "      - 'cleanup' - shutdown AKS cluster and cleanup Azure Files storage"
   echo "      - 'upload-file' - upload a file to bastion host"

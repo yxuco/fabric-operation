@@ -52,13 +52,14 @@ sudo unzip -o $PROTOC_ZIP -d /usr/local bin/protoc
 sudo unzip -o $PROTOC_ZIP -d /usr/local 'include/*'
 rm -f $PROTOC_ZIP
 
-echo "install Golang 1.13.5"
-curl -O https://storage.googleapis.com/golang/go1.13.5.linux-amd64.tar.gz
-sudo tar -xf go1.13.5.linux-amd64.tar.gz -C /usr/local
+echo "install Golang 1.12.14"
+GO_ZIP=go1.12.14.linux-amd64.tar.gz
+curl -O https://storage.googleapis.com/golang/$GO_ZIP
+sudo tar -xf $GO_ZIP -C /usr/local
 mkdir -p ~/go/{bin,pkg,src}
 echo "export GOPATH=$HOME/go" >> .bash_profile
 echo "export PATH=$HOME/go/bin:/usr/local/go/bin:$PATH" >> .bash_profile
-rm -f go1.13.5.linux-amd64.tar.gz
+rm -f $GO_ZIP
 
 echo "install grpc gateway Go packages"
 . .bash_profile
@@ -71,3 +72,12 @@ if [ -z "${check}" ]; then
   echo "add env.sh to .bash_profile"
   echo ". ./env.sh" >> .bash_profile
 fi
+
+# setup for dovetail
+echo "install jq and gcc"
+sudo yum -y install jq
+sudo yum -y install gcc
+
+echo "setup dovetail"
+git clone https://github.com/TIBCOSoftware/dovetail-contrib.git
+go get -u github.com/project-flogo/cli/...
