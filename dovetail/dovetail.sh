@@ -21,11 +21,15 @@ source ${HOME}/env.sh
 # installFE <FE-installer-zip-file>
 function installFE {
   cd ${HOME}
-  if [ -f "${1}" ]; then
-    echo "set Flogo enterprise from file ${1}"
-    unzip ${1}
+  local fezip=${1}
+  if [ ! -f "${fezip}" ]; then
+    fezip=${HOME}/${fezip}
+  fi
+  if [ -f "${fezip}" ]; then
+    echo "set Flogo enterprise from file ${fezip}"
+    unzip ${fezip}
     echo "export FE_HOME=${HOME}/$(find flogo -name ?.? -print)" >> ./env.sh
-    rm ${1}
+    rm ${fezip}
     . ./env.sh
     echo "initialize go module for ${FE_HOME}"
     ${DT_HOME}/fe-generator/init-gomod.sh ${FE_HOME}
