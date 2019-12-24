@@ -11,29 +11,21 @@
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")"; echo "$(pwd)")"
 FLOGO_VER=v0.9.4
-DT_HOME=${HOME}/dovetail-contrib/hyperledger-fabric
 VERSION="1.0"
 BUILD_OS="linux"
 BUILD_ARCH="amd64"
 
-source ${HOME}/env.sh
-
+# install Flogo enterprise in $HOME
 # installFE <FE-installer-zip-file>
 function installFE {
-  cd ${HOME}
-  local fezip=${1}
-  if [ ! -f "${fezip}" ]; then
-    fezip=${HOME}/${fezip}
-  fi
-  if [ -f "${fezip}" ]; then
-    echo "set Flogo enterprise from file ${fezip}"
+  if [ -f "${1}" ]; then
+    echo "install Flogo enterprise from file ${1}"
     # ignore large studio docker image from the zip
-    unzip ${fezip} -x "**/docker/*"
-    echo "export FE_HOME=${HOME}/$(find flogo -name ?.? -print)" >> ./env.sh
-    rm ${fezip}
-    . ./env.sh
-    echo "initialize go module for ${FE_HOME}"
-    ${DT_HOME}/fe-generator/init-gomod.sh ${FE_HOME}
+    unzip ${1} -x "**/docker/*" -d ${HOME}
+    local fehome=${HOME}/$(find flogo -name ?.? -print)
+    rm ${1}
+    echo "initialize go module for ${fehome}"
+    ${DT_HOME}/fe-generator/init-gomod.sh ${fehome}
   else
     echo "cannot find FE installer file ${1}"
     return 1
@@ -43,14 +35,16 @@ function installFE {
 # build CDS file on bastion host
 # buildCDS <source-folder> <model-json> <cc-name> [<version>]
 function buildCDS {
-  cd $HOME
+  local work_dir=${PWD}
+  local chaincode=$(dirname "${SCRIPT_DIR}")/chaincode
+  cd ${chaincode}
   local sFolder=${1}
   local ccName=${3}
   local version=${4:-"1.0"}
 
   # verify source folder
   if [ ! -d "${sFolder}" ]; then
-    sFolder=${SCRIPT_DIR}/${sFolder}
+    sFolder=${work_dir}/${sFolder}
     if [ ! -d "${sFolder}" ]; then
       echo "cannot find source folder ${sFolder}"
       return 1
@@ -58,9 +52,9 @@ function buildCDS {
   fi
 
   # cleanup old data
-  if [ -d "${HOME}/${ccName}" ]; then
-    echo "cleanup old file in ${HOME}/${ccName}"
-    rm -Rf ${HOME}/${ccName}
+  if [ -d "${chaincode}/${ccName}" ]; then
+    echo "cleanup old file in ${chaincode}/${ccName}"
+    rm -Rf ${chaincode}/${ccName}
   fi
 
   flogo create --cv ${FLOGO_VER} -f ${sFolder}/${2} ${ccName}
@@ -76,7 +70,7 @@ function buildCDS {
     ./gomodedit.sh
   fi
 
-  cd $HOME/${ccName}
+  cd ${chaincode}/${ccName}
   flogo build -e
   cd src
   go get -u -d github.com/project-flogo/flow/activity/subflow@master
@@ -92,20 +86,14 @@ function buildCDS {
   fi
 
   # build cds
-  cp -Rf ${HOME}/${ccName}/src $HOME/fabric-operation/chaincode/${ccName}
-  cd ${HOME}/fabric-operation/network
-  ./network.sh package-chaincode -n peer-0 -f ${ccName} -s ${ccName} -v ${version}
+  cd $(dirname "${SCRIPT_DIR}")/network
+  ./network.sh package-chaincode -n peer-0 -f ${ccName}/src -s ${ccName} -v ${version}
   
-  local faborg=$(kubectl exec cli -- sh -c 'echo ${FABRIC_ORG}')
-  local cds="/mnt/share/${faborg}/cli/${ccName}_${version}.cds"
-  sudo chmod +r ${cds}
-
+  local cds="${DATA_ROOT}/cli/${ccName}_${version}.cds"
   if [ -f "${cds}" ]; then
-    cp ${cds} ${HOME}
-    echo "cleanup ${sFolder} and $HOME/${ccName}"
-    rm -Rf $HOME/${ccName}
-    # rm -Rf ${sFolder}
-    echo "created cds: ${HOME}/${ccName}_${version}.cds"
+    sudo chmod +r ${cds}
+    cp ${cds} ${SCRIPT_DIR}
+    echo "created cds: ${SCRIPT_DIR}/${ccName}_${version}.cds"
   else
     echo "Failed to create CDS for chaincode in ${sFolder}"
     return 1
@@ -115,7 +103,8 @@ function buildCDS {
 # build executable on bastion host
 # buildApp <model-json> <app-name> [<goos> [<goarch>]]
 function buildApp {
-  cd $HOME
+  local work_dir=${PWD}
+  cd /tmp
   local model=${1}
   local appName=${2}
   local bOS=${3}
@@ -126,7 +115,7 @@ function buildApp {
 
   # verify model file
   if [ ! -f "${model}" ]; then
-    model=${SCRIPT_DIR}/${model}
+    model=${work_dir}/${model}
     if [ ! -f "${model}" ]; then
       echo "cannot find model file ${model}"
       return 1
@@ -134,9 +123,9 @@ function buildApp {
   fi
 
   # cleanup old data
-  if [ -d "${HOME}/${appName}" ]; then
-    echo "cleanup old file in ${HOME}/${appName}"
-    rm -Rf ${HOME}/${appName}
+  if [ -d "/tmp/${appName}" ]; then
+    echo "cleanup old file in /tmp/${appName}"
+    rm -Rf /tmp/${appName}
   fi
 
   flogo create --cv ${FLOGO_VER} -f ${model} ${appName}
@@ -149,19 +138,16 @@ function buildApp {
     ./gomodedit.sh
   fi
 
-  cd $HOME/${appName}
+  cd /tmp/${appName}
   flogo build -e
   cd src
   go get -u -d github.com/project-flogo/flow/activity/subflow@master
   go mod vendor
   find vendor/github.com/TIBCOSoftware/dovetail-contrib/hyperledger-fabric/fabclient/ -name '*_metadata.go' -exec rm {} \;
-  env GOOS=${bOS} GOARCH=${bArch} go build -mod vendor -o ${HOME}/${appName}_${bOS}_${bArch}
+  env GOOS=${bOS} GOARCH=${bArch} go build -mod vendor -o ${SCRIPT_DIR}/${appName}_${bOS}_${bArch}
 
-  local app="${HOME}/${appName}_${bOS}_${bArch}"
+  local app="${SCRIPT_DIR}/${appName}_${bOS}_${bArch}"
   if [ -f "${app}" ]; then
-    echo "cleanup ${model} and $HOME/${appName}"
-    rm -Rf $HOME/${appName}
-    # rm -Rf ${model}
     echo "created app: ${app}"
   else
     echo "Failed to create app for model ${model}"
@@ -172,13 +158,13 @@ function buildApp {
 # Print the usage message
 function printHelp() {
   echo "Usage: "
-  echo "  dovetail.sh <cmd> -p <platform> [options]"
+  echo "  dovetail.sh <cmd> [options]"
   echo "    <cmd> - one of the following commands"
-  echo "      - 'install-fe' - config Flogo Enterprise from zip previously uploaded in $HOME; arguments: -s <FE-installer-zip>"
+  echo "      - 'install-fe' - install Flogo Enterprise from zip; arguments: -s <FE-installer-zip>"
   echo "      - 'build-cds' - build chaincode model to cds format; args; -s -j -c [-v]"
   echo "      - 'build-app' - upload and build fabric client app; args: -j -c -o [-a]"
-  echo "    -p <platform> - cloud environment: az, aws, gcp, or k8s (default)"
-  echo "    -n <name> - prefix name of kubernetes environment, e.g., fab (default)"
+  echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
+  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', 'az', or 'gcp'"
   echo "    -s <source> - source folder name containing flogo model and other required files, e.g., ./marble"
   echo "    -j <json> - flogo model file in json format, e.g., marble.json"
   echo "    -c <cc-name> - chaincode or app name, e.g., marble_cc or marble_client"
@@ -188,19 +174,21 @@ function printHelp() {
   echo "  dovetail.sh -h (print this message)"
 }
 
+ORG_ENV="netop1"
+
 CMD=${1}
 shift
-while getopts "h?p:n:s:j:c:v:o:a:" opt; do
+while getopts "h?p:t:s:j:c:v:o:a:" opt; do
   case "$opt" in
   h | \?)
     printHelp
     exit 0
     ;;
   p)
-    PLATFORM=$OPTARG
+    ORG_ENV=$OPTARG
     ;;
-  n)
-    ENV_NAME=$OPTARG
+  t)
+    ENV_TYPE=$OPTARG
     ;;
   s)
     SOURCE=$OPTARG
@@ -223,8 +211,24 @@ while getopts "h?p:n:s:j:c:v:o:a:" opt; do
   esac
 done
 
-if [ -z "${ENV_NAME}" ]; then
-  ENV_NAME="fab"
+source $(dirname "${SCRIPT_DIR}")/config/setup.sh ${ORG_ENV} ${ENV_TYPE}
+if [ "${ENV_TYPE}" == "docker" ]; then
+  echo "docker not supported"
+  exit 1
+elif [ "${ENV_TYPE}" == "k8s" ]; then
+  if [ -z "${DT_HOME}" ]; then
+    echo "DT_HOME is not defined"
+    exit 1
+  fi
+  if [ -z "${FE_HOME}" ]; then
+    echo "FE_HOME is not defined"
+    exit 1
+  fi
+else
+  DT_HOME=${HOME}/dovetail-contrib/hyperledger-fabric
+  if [ -d "${HOME}/flogo" ]; then
+    FE_HOME=${HOME}/$(find flogo -name ?.? -print)
+  fi
 fi
 
 case "${CMD}" in

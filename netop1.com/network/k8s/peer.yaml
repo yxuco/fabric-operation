@@ -36,6 +36,10 @@ spec:
       containers:
       - name: couchdb
         image: hyperledger/fabric-couchdb
+        resources:
+          requests:
+            memory: 500Mi
+            cpu: 100m
         env:
         - name: COUCHDB_USER
           value: 

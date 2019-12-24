@@ -513,7 +513,7 @@ function printHelp() {
   echo "      - 'shutdown' - shutdown gateway service, arguments: [-p <prop-file>] [-t <env-type>]"
   echo "      - 'config' - create gateway artifacts, arguments: [-p <prop-file>] [-t <env-type>] [-c channel>] [-u <user>]"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
-  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', or 'az'"
+  echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', 'az', or 'gcp'"
   echo "    -c <channel> - default channel ID that the gateway will connect to, default 'mychannel'"
   echo "    -u <user> - default user that the gateway will use to connect to fabric network, default 'Admin'"
   echo "  gateway.sh -h (print this message)"

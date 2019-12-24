@@ -8,7 +8,7 @@ Chaincode flow model can be edited using [TIBCO Flogo® Enterprise v2.8.0](https
 First, start a Fabric network in one of the supported cloud services, e.g. Azure as described in [README](../az/README.md).  You can then build the chaincode as `CDS` format using the following script on the `bastion` host:
 ```
 cd ${HOME}/fabric-operation/dovetail
-./dovetail.sh build-cds -s $PWD/samples/marble -j marble.json -c marble_cc -v 1.0
+./dovetail.sh build-cds -s ./samples/marble -j marble.json -c marble_cc -v 1.0
 ```
 This will generate a `CDS` file: `${HOME}/marble_cc_1.0.cds`, which can be installed and instantiated on a Fabric network hosted by any cloud service.
 
@@ -20,12 +20,12 @@ cd /path/to/local/fabric-operation/az
 This will upload the `audit` sample in the local `dovetail-coontrib` project to the `${HOME}` directory of the `bastion` host in Azure.  You can then build the `CDS` file, `audit_cc_1.0.cds` on the Azure `bastion` host:
 ```
 cd ${HOME}/fabric-operation/dovetail
-./dovetail.sh build-cds -s audit -j audit.json -c audit_cc
+./dovetail.sh build-cds -s ~/audit -j audit.json -c audit_cc
 ```
 You can then download the `CDS` file from the `bastion` host, and so the same chaincode can be installed/instantiated any other Fabric network:
 ```
 cd /path/to/local/fabric-operation/az
-./az-util.sh download-file -f audit_cc_1.0.cds -l /path/to/download
+./az-util.sh download-file -f fabric-operation/dovetail/audit_cc_1.0.cds -l /path/to/download
 ```
 
 ## Install and instantiate chaincode
@@ -56,7 +56,7 @@ cd /path/to/local/fabric-operation/az
 Then, run the installation script on the `bastion` host:
 ```
 cd ${HOME}/fabric-operation/dovetail
-./dovetail.sh install-fe -s TIB_flogo_2.8.0_macosx_x86_64.zip
+./dovetail.sh install-fe -s ~/TIB_flogo_2.8.0_macosx_x86_64.zip
 ```
 Note that you must have a TIBCO logon to download the installer zip for Flogo Enterprise.
 
@@ -64,7 +64,7 @@ Note that you must have a TIBCO logon to download the installer zip for Flogo En
 Fabric client flows modeled using Flogo Enterprise can also be built on the `bastion` host simillarly, e.g.,
 ```
 cd ${HOME}/fabric-operation/dovetail
-./dovetail.sh build-app -j $PWD/samples/marble_client/marble_client.json -c marble_client -o linux
+./dovetail.sh build-app -j ./samples/marble_client/marble_client.json -c marble_client -o linux
 ```
 This command builds the sample flow `marble_client.json`, and creates an executable for `linux`: `${HOME}/marble_client_linux_amd64`.  You may upload any client flow `JSON` file to the `bastion` host and build an executable for `linux` or other hardware platform, e.g., `darwin` for Mac.
 

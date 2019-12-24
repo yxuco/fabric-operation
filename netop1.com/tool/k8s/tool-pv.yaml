@@ -9,9 +9,8 @@ volumeBindingMode: WaitForFirstConsumer
 ---
 kind: PersistentVolume
 apiVersion: v1
-# create PV for data-tool
 metadata:
-  name: data-tool-netop1-pv
+  name: data-netop1-tool
   labels:
     app: data-tool
     org: netop1
@@ -30,7 +29,7 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: data-tool-pvc
+  name: data-tool
   namespace: netop1
 spec:
   storageClassName: netop1-tool-data-class

@@ -50,6 +50,8 @@ spec:
       value: orderer-0.orderer.netop1.svc.cluster.local:7050
     - name: ORG
       value: netop1
+    - name: FABRIC_ORG
+      value: netop1.com
     - name: SYS_CHANNEL
       value: netop1-channel
     - name: TEST_CHANNEL
