@@ -145,6 +145,9 @@ if [ -z "${AWS_REGION}" ]; then
 fi
 aws configure set region ${AWS_REGION}
 
+echo "ENV_NAME: ${ENV_NAME}, AWS_REGION: ${AWS_REGION}, AWS_PROFILE: ${AWS_PROFILE}"
+source env.sh ${ENV_NAME} ${AWS_REGION} ${AWS_PROFILE}
+
 case "${CMD}" in
 create)
   echo "create EKS cluster - ENV_NAME: ${ENV_NAME}, AWS_REGION: ${AWS_REGION}, AWS_PROFILE: ${AWS_PROFILE}"

@@ -27,9 +27,29 @@ You can then download the `CDS` file from the `bastion` host, and so the same ch
 cd /path/to/local/fabric-operation/az
 ./az-util.sh download-file -f audit_cc_1.0.cds -l /path/to/download
 ```
+
+## Install and instantiate chaincode
+The `CDS` file can be used to install and instantiate the chaincode on a Fabric network. The script for chaincode management is described in [network](../network/README.md).  To see how it works, you can create a test channel, and then instantiate the `marble_cc_1.0.cds` as follows:
+```
+cd ../network
+# smoke test to create mychannel and join both peer nodes
+./network.sh test
+
+# install cds file from cli working folder, which is created during the build step
+./network.sh install-chaincode -n peer-0 -f marble_cc_1.0.cds
+./network.sh install-chaincode -n peer-1 -f marble_cc_1.0.cds
+
+# instantiate the chaincode
+./network.sh instantiate-chaincode -n peer-0 -c mychannel -s marble_cc -v 1.0 -m '{"Args":["init"]}'
+```
+
 ## Configure Flogo Enterprise components
 The above build process will fail if the chaincode flow model uses any component of the Flogo Enterprise, including a function, activity or trigger that is not an open-source Flogo component.  To build such chaincode flows, you must first upload the Flogo Enterprise installer zip file to the `bastion` host, e.g., for Azure,
 ```
+# delete large studio docker image from Flogo Enterprise installer zip
+zip -d /path/to/download/TIB_flogo_2.8.0_macosx_x86_64.zip "**/docker/flogo-studio-image.tar" 
+
+# upload installer zip to bastion host
 cd /path/to/local/fabric-operation/az
 ./az-util.sh upload-file -f /path/to/download/TIB_flogo_2.8.0_macosx_x86_64.zip
 ```

@@ -27,7 +27,8 @@ function installFE {
   fi
   if [ -f "${fezip}" ]; then
     echo "set Flogo enterprise from file ${fezip}"
-    unzip ${fezip}
+    # ignore large studio docker image from the zip
+    unzip ${fezip} -x "**/docker/*"
     echo "export FE_HOME=${HOME}/$(find flogo -name ?.? -print)" >> ./env.sh
     rm ${fezip}
     . ./env.sh
@@ -97,12 +98,14 @@ function buildCDS {
   
   local faborg=$(kubectl exec cli -- sh -c 'echo ${FABRIC_ORG}')
   local cds="/mnt/share/${faborg}/cli/${ccName}_${version}.cds"
+  sudo chmod +r ${cds}
+
   if [ -f "${cds}" ]; then
     cp ${cds} ${HOME}
     echo "cleanup ${sFolder} and $HOME/${ccName}"
     rm -Rf $HOME/${ccName}
     # rm -Rf ${sFolder}
-    echo "created cds: ${HOME}/${cds}"
+    echo "created cds: ${HOME}/${ccName}_${version}.cds"
   else
     echo "Failed to create CDS for chaincode in ${sFolder}"
     return 1
