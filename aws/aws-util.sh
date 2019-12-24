@@ -9,6 +9,7 @@
 # e.g., aws-util.sh create -n fab -r us-west-2 -p prod
 # specify profile if aws user assume a role of a different account, the assumed role should be defined in ~/.aws/config
 
+work_dir=${PWD}
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 # uploadFile <filename>
@@ -25,12 +26,15 @@ function uploadFile {
     return 1
   fi
 
-  if [ -f "${1}" ]; then
-    scp -i ${SSH_PRIVKEY} -q -o "StrictHostKeyChecking no" ${1} ec2-user@${BASTION}:/home/ec2-user/
-  else
-    echo "Cannot find source file ${1}"
-    return 1
+  local src=${1}
+  if [ ! -f "${src}" ]; then
+    src=${work_dir}/${1}
+    if [ ! -f "${src}" ]; then
+      echo "Cannot find source file ${1}"
+      return 1
+    fi
   fi
+  scp -i ${SSH_PRIVKEY} -o "StrictHostKeyChecking no" ${src} ec2-user@${BASTION}:/home/ec2-user/
   echo "Uploaded ${1} to bastion host ${BASTION} in $(($(date +%s)-starttime)) seconds."
 }
 
@@ -48,10 +52,14 @@ function downloadFile {
     return 1
   fi
 
-  scp -i ${SSH_PRIVKEY} -q -o "StrictHostKeyChecking no" ec2-user@${BASTION}:${1} ${2}
-  if [ -f "${2}" ]; then
-    echo "Downloaded ${1} from bastion host ${BASTION} in $(($(date +%s)-starttime)) seconds."
+  local dest=${2}
+  if [ -z "${2}" ]; then
+    dest="."
+  elif [ ! -d "${2}" ]; then
+    mkdir -p ${2}
   fi
+  scp -i ${SSH_PRIVKEY} -o "StrictHostKeyChecking no" ec2-user@${BASTION}:${1} ${dest}
+  echo "Downloaded ${1} from bastion host ${BASTION} in $(($(date +%s)-starttime)) seconds."
 }
 
 # tar folder and upload to bastion host and then untar on bastion
@@ -59,6 +67,14 @@ function downloadFile {
 function uploadFolder {
   local dir=$(dirname "${1}")
   local file="${1##*/}"
+  if [ ! -d "${dir}" ]; then
+    dir=${work_dir}/${dir}
+    if [ ! -d "${dir}" ]; then
+      echo "Cannot find source folder ${1}"
+      return 1
+    fi
+  fi
+
   cd ${dir}
   tar -czf ${file}.tar.gz ${file}
   echo "upload file ${file}.tar.gz"
@@ -75,7 +91,7 @@ EOF
 
 function cleanup {
   echo "cleanup EKS cluster - ENV_NAME: ${ENV_NAME}, AWS_REGION: ${AWS_REGION}, AWS_PROFILE: ${AWS_PROFILE}"
-  source env.sh ${ENV_NAME} ${AWS_REGION} ${AWS_PROFILE}
+  starttime=$(date +%s)
 
   ./cleanup-efs.sh ${ENV_NAME} ${AWS_REGION} ${AWS_PROFILE}
   ./cleanup-cluster.sh ${ENV_NAME} ${AWS_REGION} ${AWS_PROFILE}
@@ -87,6 +103,7 @@ function cleanup {
     echo "delete EC2 volume $v"
     aws ec2 delete-volume --volume-id $v
   done
+  echo "Cleaned up ${EKS_STACK} in $(($(date +%s)-starttime)) seconds."
 }
 
 # Print the usage message

@@ -8,6 +8,7 @@
 # usage: az-util.sh <cmd> [-n <name>] [-r <region>]
 # e.g., az-util.sh create -n fab -r westus2
 
+work_dir=${PWD}
 cd "$( dirname "${BASH_SOURCE[0]}" )"
 
 # uploadFile <filename>
@@ -24,12 +25,15 @@ function uploadFile {
     return 1
   fi
 
-  if [ -f "${1}" ]; then
-    scp ${1} ${BASTION_USER}@${BASTION_IP}:
-  else
-    echo "Cannot find source file ${1}"
-    return 1
+  local src=${1}
+  if [ ! -f "${src}" ]; then
+    src=${work_dir}/${1}
+    if [ ! -f "${src}" ]; then
+      echo "Cannot find source file ${1}"
+      return 1
+    fi
   fi
+  scp ${src} ${BASTION_USER}@${BASTION_IP}:
   echo "Uploaded ${1} to bastion host ${BASTION_HOST} in $(($(date +%s)-starttime)) seconds."
 }
 
@@ -47,10 +51,14 @@ function downloadFile {
     return 1
   fi
 
-  scp ${BASTION_USER}@${BASTION_IP}:${1} ${2}
-  if [ -f "${2}" ]; then
-    echo "Downloaded ${1} from bastion host ${BASTION_HOST} in $(($(date +%s)-starttime)) seconds."
+  local dest=${2}
+  if [ -z "${2}" ]; then
+    dest="."
+  elif [ ! -d "${2}" ]; then
+    mkdir -p ${2}
   fi
+  scp ${BASTION_USER}@${BASTION_IP}:${1} ${dest}
+  echo "Downloaded ${1} from bastion host ${BASTION_HOST} in $(($(date +%s)-starttime)) seconds."
 }
 
 # tar folder and upload to bastion host and then untar on bastion
@@ -58,6 +66,14 @@ function downloadFile {
 function uploadFolder {
   local dir=$(dirname "${1}")
   local file="${1##*/}"
+  if [ ! -d "${dir}" ]; then
+    dir=${work_dir}/${dir}
+    if [ ! -d "${dir}" ]; then
+      echo "Cannot find source folder ${1}"
+      return 1
+    fi
+  fi
+
   cd ${dir}
   tar -czf ${file}.tar.gz ${file}
   echo "upload file ${file}.tar.gz"
@@ -91,7 +107,7 @@ function cleanup {
 # Print the usage message
 function printHelp() {
   echo "Usage: "
-  echo "  az-util.sh <cmd> [-n <name>] [-r <region>]"
+  echo "  az-util.sh <cmd> [options]"
   echo "    <cmd> - one of the following commands"
   echo "      - 'create' - create AKS cluster and Azure Files storage"
   echo "      - 'cleanup' - shutdown AKS cluster and cleanup Azure Files storage"
