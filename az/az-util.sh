@@ -9,7 +9,8 @@
 # e.g., az-util.sh create -n fab -r westus2
 
 work_dir=${PWD}
-cd "$( dirname "${BASH_SOURCE[0]}" )"
+SCRIPT_DIR=$( dirname "${BASH_SOURCE[0]}" )
+cd ${SCRIPT_DIR}
 
 # uploadFile <filename>
 function uploadFile {
@@ -77,7 +78,8 @@ function uploadFolder {
   cd ${dir}
   tar -czf ${file}.tar.gz ${file}
   echo "upload file ${file}.tar.gz"
-  uploadFile ${file}.tar.gz
+  cd ${SCRIPT_DIR}
+  uploadFile ${dir}/${file}.tar.gz
   echo "connect to bastion ${BASTION_USER}@${BASTION_IP}"
 ssh -o "StrictHostKeyChecking no" ${BASTION_USER}@${BASTION_IP} << EOF
   echo "unzip file ${file}.tar.gz"

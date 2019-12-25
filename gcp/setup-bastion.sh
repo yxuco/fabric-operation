@@ -48,3 +48,12 @@ go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway
 go get -u github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
 sudo apt install make
+
+# setup for dovetail
+echo "install jq and gcc"
+sudo apt -y install jq
+sudo apt -y install build-essential
+
+echo "setup dovetail"
+git clone https://github.com/TIBCOSoftware/dovetail-contrib.git
+go get -u github.com/project-flogo/cli/...

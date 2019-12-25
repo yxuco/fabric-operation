@@ -10,7 +10,8 @@
 # specify profile if aws user assume a role of a different account, the assumed role should be defined in ~/.aws/config
 
 work_dir=${PWD}
-cd "$( dirname "${BASH_SOURCE[0]}" )"
+SCRIPT_DIR=$( dirname "${BASH_SOURCE[0]}" )
+cd ${SCRIPT_DIR}
 
 # uploadFile <filename>
 function uploadFile {
@@ -78,7 +79,8 @@ function uploadFolder {
   cd ${dir}
   tar -czf ${file}.tar.gz ${file}
   echo "upload file ${file}.tar.gz"
-  uploadFile ${file}.tar.gz
+  cd ${SCRIPT_DIR}
+  uploadFile ${dir}/${file}.tar.gz
   echo "connect to bastion ec2-user@${BASTION}"
 ssh -i ${SSH_PRIVKEY} -o "StrictHostKeyChecking no" ec2-user@${BASTION} << EOF
   echo "unzip file ${file}.tar.gz"

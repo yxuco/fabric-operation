@@ -22,7 +22,7 @@ function installFE {
     echo "install Flogo enterprise from file ${1}"
     # ignore large studio docker image from the zip
     unzip ${1} -x "**/docker/*" -d ${HOME}
-    local fehome=${HOME}/$(find flogo -name ?.? -print)
+    local fehome=$(find ${HOME}/flogo -name ?.? -print)
     rm ${1}
     echo "initialize go module for ${fehome}"
     ${DT_HOME}/fe-generator/init-gomod.sh ${fehome}
@@ -227,7 +227,7 @@ elif [ "${ENV_TYPE}" == "k8s" ]; then
 else
   DT_HOME=${HOME}/dovetail-contrib/hyperledger-fabric
   if [ -d "${HOME}/flogo" ]; then
-    FE_HOME=${HOME}/$(find flogo -name ?.? -print)
+    FE_HOME=$(find ${HOME}/flogo -name ?.? -print)
   fi
 fi
 
