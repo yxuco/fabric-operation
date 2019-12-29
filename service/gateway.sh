@@ -311,7 +311,6 @@ function printStorageYaml {
   printDataPV
 }
 
-# TODO: expose service port according to cloud type
 # printGatewayYaml <channel> <user>
 function printGatewayYaml {
   local user=${2:-"Admin"}
@@ -441,7 +440,6 @@ function createArtifacts {
   fi
 }
 
-# TODO: support gateway ports in cloud services
 function startGateway {
   createArtifacts
 
