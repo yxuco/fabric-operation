@@ -40,8 +40,7 @@ function buildCDS {
     return 1
   fi
   if [ -z "${FE_HOME}" ]; then
-    echo "FE_HOME is not defined"
-    return 1
+    echo "FE_HOME is not defined, so model cannot use Flogo Enterprise components"
   fi
 
   local work_dir=${PWD}
@@ -99,10 +98,8 @@ function buildCDS {
   ./network.sh package-chaincode -n peer-0 -f ${ccName}/src -s ${ccName} -v ${version}
   
   local cds="${DATA_ROOT}/cli/${ccName}_${version}.cds"
-  # TODO: no need to sudo for local k8s
   if [ -f "${cds}" ]; then
-    sudo chmod +r ${cds}
-    cp ${cds} ${SCRIPT_DIR}
+    ${sucp} ${cds} ${SCRIPT_DIR}
     echo "created cds: ${SCRIPT_DIR}/${ccName}_${version}.cds"
   else
     echo "Failed to create CDS for chaincode in ${sFolder}"
@@ -118,8 +115,7 @@ function buildApp {
     return 1
   fi
   if [ -z "${FE_HOME}" ]; then
-    echo "FE_HOME is not defined"
-    return 1
+    echo "FE_HOME is not defined, model should not use Flogo Enterprise components"
   fi
 
   local work_dir=${PWD}
