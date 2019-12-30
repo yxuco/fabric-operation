@@ -726,7 +726,7 @@
                                 "transactionName": "initMarble",
                                 "requestType": "invoke",
                                 "orgName": "",
-                                "userName": "=$property[\"CLIENT_USER\"]",
+                                "userName": "=$property[\"APPUSER\"]",
                                 "chaincodeID": "=$property[\"MARBLE_CC\"]",
                                 "timeoutMillis": 0,
                                 "endpoints": "",
@@ -1048,7 +1048,7 @@
                                 "transactionName": "readMarble",
                                 "requestType": "query",
                                 "orgName": "",
-                                "userName": "=$property[\"CLIENT_USER\"]",
+                                "userName": "=$property[\"APPUSER\"]",
                                 "chaincodeID": "=$property[\"MARBLE_CC\"]",
                                 "timeoutMillis": 0,
                                 "endpoints": "",
@@ -1194,7 +1194,7 @@
                     {
                         "id": "FabricRequest",
                         "name": "FabricRequest",
-                        "description": "",
+                        "description": "Send Fabric request",
                         "activity": {
                             "ref": "#fabrequest",
                             "input": {
@@ -1355,9 +1355,10 @@
                                 "transactionName": "queryMarblesByOwner",
                                 "requestType": "query",
                                 "orgName": "",
-                                "userName": "=$property[\"CLIENT_USER\"]",
+                                "userName": "=$property[\"APPUSER\"]",
                                 "chaincodeID": "=$property[\"MARBLE_CC\"]",
                                 "timeoutMillis": 0,
+                                "endpoints": "",
                                 "parameters": {
                                     "mapping": {
                                         "owner": "=$flow.owner"
@@ -1505,7 +1506,7 @@
                     {
                         "id": "FabricRequest",
                         "name": "FabricRequest",
-                        "description": "",
+                        "description": "Send Fabric request",
                         "activity": {
                             "ref": "#fabrequest",
                             "input": {
@@ -1666,9 +1667,10 @@
                                 "transactionName": "transferMarble",
                                 "requestType": "invoke",
                                 "orgName": "",
-                                "userName": "=$property[\"CLIENT_USER\"]",
+                                "userName": "=$property[\"APPUSER\"]",
                                 "chaincodeID": "=$property[\"MARBLE_CC\"]",
                                 "timeoutMillis": 0,
+                                "endpoints": "",
                                 "parameters": {
                                     "mapping": {
                                         "name": "=$flow.content.name",
@@ -1816,7 +1818,7 @@
                     {
                         "id": "FabricRequest",
                         "name": "FabricRequest",
-                        "description": "",
+                        "description": "Send Fabric request",
                         "activity": {
                             "ref": "#fabrequest",
                             "input": {
@@ -1977,9 +1979,10 @@
                                 "transactionName": "getMarblesByRange",
                                 "requestType": "query",
                                 "orgName": "",
-                                "userName": "=$property[\"CLIENT_USER\"]",
+                                "userName": "=$property[\"APPUSER\"]",
                                 "chaincodeID": "=$property[\"MARBLE_CC\"]",
                                 "timeoutMillis": 0,
+                                "endpoints": "",
                                 "parameters": {
                                     "mapping": {
                                         "startKey": "=$flow.startKey",
@@ -2132,7 +2135,7 @@
                     {
                         "id": "FabricRequest",
                         "name": "FabricRequest",
-                        "description": "",
+                        "description": "Send Fabric request",
                         "activity": {
                             "ref": "#fabrequest",
                             "input": {
@@ -2293,9 +2296,10 @@
                                 "transactionName": "transferMarblesBasedOnColor",
                                 "requestType": "invoke",
                                 "orgName": "",
-                                "userName": "=$property[\"CLIENT_USER\"]",
+                                "userName": "=$property[\"APPUSER\"]",
                                 "chaincodeID": "=$property[\"MARBLE_CC\"]",
                                 "timeoutMillis": 0,
+                                "endpoints": "",
                                 "parameters": {
                                     "mapping": {
                                         "color": "=$flow.content.color",
@@ -2448,7 +2452,7 @@
                     {
                         "id": "FabricRequest",
                         "name": "FabricRequest",
-                        "description": "",
+                        "description": "Send Fabric request",
                         "activity": {
                             "ref": "#fabrequest",
                             "input": {
@@ -2609,9 +2613,10 @@
                                 "transactionName": "delete",
                                 "requestType": "invoke",
                                 "orgName": "",
-                                "userName": "=$property[\"CLIENT_USER\"]",
+                                "userName": "=$property[\"APPUSER\"]",
                                 "chaincodeID": "=$property[\"MARBLE_CC\"]",
                                 "timeoutMillis": 0,
+                                "endpoints": "",
                                 "parameters": {
                                     "mapping": {
                                         "name": "=$flow.name"
@@ -2754,7 +2759,7 @@
                     {
                         "id": "FabricRequest",
                         "name": "FabricRequest",
-                        "description": "",
+                        "description": "Send Fabric request",
                         "activity": {
                             "ref": "#fabrequest",
                             "input": {
@@ -2915,9 +2920,10 @@
                                 "transactionName": "getHistoryForMarble",
                                 "requestType": "query",
                                 "orgName": "",
-                                "userName": "=$property[\"CLIENT_USER\"]",
+                                "userName": "=$property[\"APPUSER\"]",
                                 "chaincodeID": "=$property[\"MARBLE_CC\"]",
                                 "timeoutMillis": 0,
+                                "endpoints": "",
                                 "parameters": {
                                     "mapping": {
                                         "name": "=$flow.name"
@@ -3067,7 +3073,7 @@
                     {
                         "id": "FabricRequest",
                         "name": "FabricRequest",
-                        "description": "",
+                        "description": "Send Fabric request",
                         "activity": {
                             "ref": "#fabrequest",
                             "input": {
@@ -3228,9 +3234,10 @@
                                 "transactionName": "getMarblesByRangeWithPagination",
                                 "requestType": "query",
                                 "orgName": "",
-                                "userName": "=$property[\"CLIENT_USER\"]",
+                                "userName": "=$property[\"APPUSER\"]",
                                 "chaincodeID": "=$property[\"MARBLE_CC\"]",
                                 "timeoutMillis": 0,
+                                "endpoints": "",
                                 "parameters": {
                                     "mapping": {
                                         "startKey": "=$flow.startKey",
@@ -3354,17 +3361,17 @@
             "value": "marble_cc"
         },
         {
-            "name": "CLIENT_USER",
-            "type": "string",
-            "value": "User1"
-        },
-        {
             "name": "PORT",
             "type": "float64",
             "value": 8989
+        },
+        {
+            "name": "APPUSER",
+            "type": "string",
+            "value": "User1"
         }
     ],
     "connections": {},
     "contrib": "W3sicmVmIjoiZ2l0aHViLmNvbS9wcm9qZWN0LWZsb2dvL2NvbnRyaWIvYWN0aXZpdHkvbG9nIiwiczNsb2NhdGlvbiI6IntVU0VSSUR9L0RlZmF1bHQvYWN0aXZpdHkvbG9nIn0seyJyZWYiOiJnaXRodWIuY29tL1RJQkNPU29mdHdhcmUvZG92ZXRhaWwtY29udHJpYi9oeXBlcmxlZGdlci1mYWJyaWMvZmFiY2xpZW50IiwiczNsb2NhdGlvbiI6IntVU0VSSUR9L2ZhYmNsaWVudCJ9LHsicmVmIjoiZ2l0aHViLmNvbS9wcm9qZWN0LWZsb2dvL2NvbnRyaWIvYWN0aXZpdHkvZXJyb3IiLCJzM2xvY2F0aW9uIjoie1VTRVJJRH0vRGVmYXVsdC9hY3Rpdml0eS9lcnJvciJ9LHsicmVmIjoiZ2l0LnRpYmNvLmNvbS9naXQvcHJvZHVjdC9pcGFhcy93aS1jb250cmliLmdpdC9jb250cmlidXRpb25zL0dlbmVyYWwiLCJzM2xvY2F0aW9uIjoiVGliY28vR2VuZXJhbCJ9XQ==",
-    "fe_metadata": "UEsDBAoAAAAIABCUkk+rqSRGFQAAABMAAAAIAAAAYXBwLmpzb26rViopykxPTy1yy8kvL1ayio6tBQBQSwECFAAKAAAACAAQlJJPq6kkRhUAAAATAAAACAAAAAAAAAAAAAAAAAAAAAAAYXBwLmpzb25QSwUGAAAAAAEAAQA2AAAAOwAAAAAA"
+    "fe_metadata": "UEsDBAoAAAAIAMm+nU+rqSRGFQAAABMAAAAIAAAAYXBwLmpzb26rViopykxPTy1yy8kvL1ayio6tBQBQSwECFAAKAAAACADJvp1Pq6kkRhUAAAATAAAACAAAAAAAAAAAAAAAAAAAAAAAYXBwLmpzb25QSwUGAAAAAAEAAQA2AAAAOwAAAAAA"
 }

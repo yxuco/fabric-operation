@@ -99,6 +99,7 @@ function buildCDS {
   ./network.sh package-chaincode -n peer-0 -f ${ccName}/src -s ${ccName} -v ${version}
   
   local cds="${DATA_ROOT}/cli/${ccName}_${version}.cds"
+  # TODO: no need to sudo for local k8s
   if [ -f "${cds}" ]; then
     sudo chmod +r ${cds}
     cp ${cds} ${SCRIPT_DIR}
@@ -537,7 +538,7 @@ spec:
           value: /etc/hyperledger/gateway
         - name: PORT
           value: \"${PORT}\"
-        - name: USER
+        - name: APPUSER
           value: ${user}
         - name: TLS_ENABLED
           value: \"false\"

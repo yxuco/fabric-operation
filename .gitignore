@@ -20,3 +20,4 @@ service/gateway
 service/gateway-linux
 **/gateway/
 **/TIB_flogo*
+chaincode/audit_cc
