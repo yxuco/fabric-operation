@@ -67,7 +67,7 @@ Following steps will start and smoke test the default Hyperledger Fabric network
 ### Create namespace for the network operator
 ```
 cd ./fabric-operation/namespace
-./k8s-namespace.sh create -t aws
+./k8s-namespace.sh create
 ```
 This command creates a namespace for the default Fabric operator company, `netop1`, and sets it as the default namespace. The option `-t aws` specifies the working environment for `AWS`, and it is optional since the script will automatically detect the environment if it is not specified. You can verify this step using the following commands:
 * `kubectl get namespaces` should show a list of namespaces, including the new namespace `netop1`;
@@ -76,9 +76,9 @@ This command creates a namespace for the default Fabric operator company, `netop
 ### Start CA server and create crypto data for the Fabric network
 ```
 cd ../ca
-./ca-server.sh start -t aws
+./ca-server.sh start
 # wait until 3 ca server and client PODs are in running state
-./ca-crypto.sh bootstrap -t aws
+./ca-crypto.sh bootstrap
 ```
 This command starts 2 CA servers and a CA client, and generates crypto data according to the network specification, [netop1.env](../config/netop1.env).  You can verify the result using the following commands:
 * `kubectl get pod,svc` should list 3 running PODs: `ca-server`, `tlsca-server`, and `ca-client`;
@@ -87,9 +87,9 @@ This command starts 2 CA servers and a CA client, and generates crypto data acco
 ### Generate genesis block and channel creation tx
 ```
 cd ../msp
-./msp-util.sh start -t aws
+./msp-util.sh start
 # wait until the tool POD is in running state
-./msp-util.sh bootstrap -t aws
+./msp-util.sh bootstrap
 ```
 This command starts a Kubernetes POD to generate the genesis block and transaction for creating a test channel `mychannel` based on the network specification.  You can verify the result using the following commands:
 * `kubectl get pods` should list a running POD `tool`;
@@ -98,7 +98,7 @@ This command starts a Kubernetes POD to generate the genesis block and transacti
 ### Start Fabric network
 ```
 cd ../network
-./network.sh start -t aws
+./network.sh start
 ```
 This command starts the orderers and peers using the crypto and genesis block created in the previous steps.  You can verify the network status using the following commands:
 * `kubectl get pod,svc` should list 3 running orderers and 2 running peers;
@@ -110,7 +110,7 @@ This command starts the orderers and peers using the crypto and genesis block cr
 ### Smoke test of the Fabric network
 ```
 cd ../network
-./network.sh test -t aws
+./network.sh test
 ```
 This command creates the test channel `mychannel`, installs and instantiates a test chaincode, and then executes a transaction and a query to verify the working network.  You can verify the result as follows:
 * The last result printed out by the test should be `90`;
@@ -125,7 +125,7 @@ cd ../service
 make dist
 
 # config and start gateway service for AWS
-./gateway.sh start -t aws
+./gateway.sh start
 ```
 The last command started 2 PODs to run the gateway service, and created a load-balancer service with a public accessible port.  It also updated the security rule such that the load-balancer port is open to the developer's workstation where this script is executed.
 
@@ -159,10 +159,14 @@ access marble-client service at http://a5f6fbd502b8c11eab1950ab9b11ac8e-62639468
 ```
 You can use this end-point to update or query the blockchain ledger.  [marble.postman_collection.json](https://github.com/TIBCOSoftware/dovetail-contrib/blob/master/hyperledger-fabric/samples/marble/marble.postman_collection.json) contains a set of REST messages that you can import to [Postman](https://www.getpostman.com/downloads/) and invoke the `marble-client` REST APIs.
 
+Stop the client app after tests complete:
+```
+./dovetail.sh stop-app -j marble_client.json
+```
 ### Stop Fabric network and cleanup persistent data
 ```
 cd ../network
-./network.sh shutdown -t aws -d
+./network.sh shutdown -d
 ```
 This command shuts down orderers and peers, and the last argument `-d` means to delete all persistent data as well.  If you do not provide the argument `-d`, it would keep the test ledger files on the `EFS` file system, and so it can be loaded when the network restarts.  You can verify the result using the following command.
 * `kubectl get svc,pod` should not list any running orderers or peers;

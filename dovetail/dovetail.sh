@@ -99,10 +99,9 @@ function buildCDS {
   
   local cds="${DATA_ROOT}/cli/${ccName}_${version}.cds"
   if [ -f "${cds}" ]; then
-    ${sucp} ${cds} ${SCRIPT_DIR}
-    echo "created cds: ${SCRIPT_DIR}/${ccName}_${version}.cds"
+    echo "created cds: ${cds}"
   else
-    echo "Failed to create CDS for chaincode in ${sFolder}"
+    echo "Failed to create CDS for chaincode in folder ${chaincode}/${ccName}"
     return 1
   fi
 }
@@ -234,7 +233,6 @@ function startApp {
     if [ -z "${lbip}" ]; then
       echo "cannot find k8s ${modelName} service for org: ${ORG}"
     else
-      # TODO: display correct loadbalancer port
       local np=$(kubectl get service ${modelName} -o=jsonpath='{.spec.ports[0].port}')
       echo "access ${modelName} servcice at http://${lbip}:${np}"
     fi

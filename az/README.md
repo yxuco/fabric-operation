@@ -144,6 +144,10 @@ access marble-client servcice at http://51.143.127.189:7091
 ```
 You can use this end-point to update or query the blockchain ledger.  [marble.postman_collection.json](https://github.com/TIBCOSoftware/dovetail-contrib/blob/master/hyperledger-fabric/samples/marble/marble.postman_collection.json) contains a set of REST messages that you can import to [Postman](https://www.getpostman.com/downloads/) and invoke the `marble-client` REST APIs.
 
+Stop the client app after tests complete:
+```
+./dovetail.sh stop-app -j marble_client.json
+```
 ### Stop Fabric network and cleanup persistent data
 ```
 cd ../network
