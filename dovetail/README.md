@@ -10,7 +10,7 @@ First, start a Fabric network in one of the supported cloud services, e.g. Azure
 cd ${HOME}/fabric-operation/dovetail
 ./dovetail.sh build-cds -s ./samples/marble -j marble.json -c marble_cc -v 1.0
 ```
-This will generate a `CDS` file: `${HOME}/marble_cc_1.0.cds`, which can be installed and instantiated on a Fabric network hosted by any cloud service.
+This will generate a `CDS` file: `/mnt/share/netop1.com/cli/marble_cc_1.0.cds`, which can be installed and instantiated on a Fabric network hosted by any cloud service.
 
 The above command used a sample chaincode downloaded from `Github` during the initialization of the `bastion` host.  If you want to build a new chaincode on your local workstation, however, you can use the utility script to upload your chaincode flow model from local workstation to the `bastion` host, and then build it, e.g. for Azure,
 ```
@@ -25,7 +25,7 @@ cd ${HOME}/fabric-operation/dovetail
 You can then download the `CDS` file from the `bastion` host, and so the same chaincode can be installed/instantiated any other Fabric network:
 ```
 cd /path/to/local/fabric-operation/az
-./az-util.sh download-file -f fabric-operation/dovetail/audit_cc_1.0.cds -l /path/to/download
+./az-util.sh download-file -f /mnt/share/netop1.com/cli/audit_cc_1.0.cds -l /path/to/download
 ```
 
 ## Install and instantiate chaincode

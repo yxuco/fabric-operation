@@ -56,7 +56,7 @@ Following steps will start and smoke test the default Hyperledger Fabric network
 ### Create namespace for the network operator
 ```
 cd ./fabric-operation/namespace
-./k8s-namespace.sh create -t gcp
+./k8s-namespace.sh create
 ```
 This command creates a namespace for the default Fabric operator company, `netop1`, and sets it as the default namespace.  The option `-t gcp` specifies the working environment for `GCP`, and it is optional since the script will automatically detect the environment if it is not specified.  You can verify this step using the following commands:
 * `kubectl get namespaces` should show a list of namespaces, including the new namespace `netop1`;
@@ -65,9 +65,9 @@ This command creates a namespace for the default Fabric operator company, `netop
 ### Start CA server and create crypto data for the Fabric network
 ```
 cd ../ca
-./ca-server.sh start -t gcp
+./ca-server.sh start
 # wait until 3 ca server and client PODs are in running state
-./ca-crypto.sh bootstrap -t gcp
+./ca-crypto.sh bootstrap
 ```
 This command starts 2 CA servers and a CA client, and generates crypto data according to the network specification, [netop1.env](../config/netop1.env).  You can verify the result using the following commands:
 * `kubectl get pods` should list 3 running PODs: `ca-server`, `tlsca-server`, and `ca-client`;
@@ -76,9 +76,9 @@ This command starts 2 CA servers and a CA client, and generates crypto data acco
 ### Generate genesis block and channel creation tx
 ```
 cd ../msp
-./msp-util.sh start -t gcp
+./msp-util.sh start
 # wait until the tool POD is in running state
-./msp-util.sh bootstrap -t gcp
+./msp-util.sh bootstrap
 ```
 This command starts a Kubernetes POD to generate the genesis block and transaction for creating a test channel `mychannel` based on the network specification.  You can verify the result using the following commands:
 * `kubectl get pods` should list a running POD `tool`;
@@ -87,7 +87,7 @@ This command starts a Kubernetes POD to generate the genesis block and transacti
 ### Start Fabric network
 ```
 cd ../network
-./network.sh start -t gcp
+./network.sh start
 ```
 This command starts the orderers and peers using the crypto and genesis block created in the previous steps.  You can verify the network status using the following commands:
 * `kubectl get pods` should list 3 running orderers and 2 running peers;
@@ -99,7 +99,7 @@ This command starts the orderers and peers using the crypto and genesis block cr
 ### Smoke test of the Fabric network
 ```
 cd ../network
-./network.sh test -t gcp
+./network.sh test
 ```
 This command creates the test channel `mychannel`, installs and instantiates a test chaincode, and then executes a transaction and a query to verify the working network.  You can verify the result as follows:
 * The last result printed out by the test should be `90`;
@@ -114,7 +114,7 @@ cd ../service
 make dist
 
 # config and start gateway service for GCP
-./gateway.sh start -t gcp
+./gateway.sh start
 ```
 The last command started 2 PODs to run the gateway service, and created a load-balancer service with a public accessible port.  The load-balancer port is open to public by default, which is convenient for dev and test.  To restrict the access of source IPs, you can add a field `loadBalancerSourceRanges` to the gateway service definition.  Refer the [link](https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service) for more details.
 
@@ -124,6 +124,34 @@ http://34.82.144.78:7081/swagger
 ```
 Copy and paste the URL (your actual URL will be different) into a Chrome web-browser, and use it to test the sample chaincode as described in [gateway](../service/README.md).
 
+### Build and start Dovetail chaincode and service
+Refer [dovetail](../dovetail/README.md) for more details about [Dovetail](https://github.com/TIBCOSoftware/dovetail-contrib/tree/master/hyperledger-fabric), which is a visual programming tool for Hyperledger Fabric chaincode and client apps.
+
+A Dovetail chaincode model, e.g., [marble.json](../dovetail/samples/marble/marble.json) is a JSON file that implements a sample chaincode by using the TIBCO [Flogo](https://docs.tibco.com/products/tibco-flogo-enterprise-2-8-0) visual modeler.  Use the following script to build and instantiate the chaincode.
+```
+cd ${HOME}/fabric-operation/dovetail
+./dovetail.sh build-cds -s ./samples/marble -j marble.json -c marble_cc
+cd ../network
+./network.sh install-chaincode -n peer-0 -f marble_cc_1.0.cds
+./network.sh install-chaincode -n peer-1 -f marble_cc_1.0.cds
+./network.sh instantiate-chaincode -n peer-0 -c mychannel -s marble_cc -v 1.0 -m '{"Args":["init"]}'
+```
+By using the same `Flogo` modeling UI, we can implement a client app, e.g., [marble_client.json](../dovetail/samples/marble_client/marble_client.json), that updates or queries the Fabric distributed ledger by using the `marble` chaincode.  Use the following script to build and run the client app as a Kubernetes service.
+```
+cd ../dovetail
+./dovetail.sh config-app -j samples/marble_client/marble_client.json
+./dovetail.sh start-app -j marble_client.json
+```
+The above command will start 2 instances of the `marble-client` and expose a `load-balancer` end-point for other applications to invoke the service. Once the script completes successfully, it will print out the service end-point as, e.g.,
+```
+access marble-client servcice at http://34.83.160.221:7091
+```
+You can use this end-point to update or query the blockchain ledger.  [marble.postman_collection.json](https://github.com/TIBCOSoftware/dovetail-contrib/blob/master/hyperledger-fabric/samples/marble/marble.postman_collection.json) contains a set of REST messages that you can import to [Postman](https://www.getpostman.com/downloads/) and invoke the `marble-client` REST APIs.
+
+Stop the client app after tests complete:
+```
+./dovetail.sh stop-app -j marble_client.json
+```
 ### Stop Fabric network and cleanup persistent data
 ```
 cd ../network
