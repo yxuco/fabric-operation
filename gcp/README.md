@@ -155,7 +155,7 @@ Stop the client app after tests complete:
 ### Stop Fabric network and cleanup persistent data
 ```
 cd ../network
-./network.sh shutdown -t gcp -d
+./network.sh shutdown -d
 ```
 This command shuts down orderers and peers, and the last argument `-d` means to delete all persistent data as well.  If you do not use the argument `-d`, it would keep the test ledger file in the Google Cloud `Filestore`, and so it can be loaded when the network restarts.  You can verify the result using the following command.
 * `kubectl get svc,pod` should not list any running orderers or peers;
