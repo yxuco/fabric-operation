@@ -219,8 +219,8 @@ function startApp {
     local np=$(kubectl get service ${modelName} -o=jsonpath='{.spec.ports[0].nodePort}')
     echo "access ${modelName} service at http://localhost:${np}"
   elif [ "${ENV_TYPE}" == "aws" ]; then
-    # TODO: update the sg for app-service
-    ${SCRIPT_DIR}/../aws/setup-gateway-sg.sh ${ORG}
+    # update the sg for app-service
+    ${SCRIPT_DIR}/../aws/setup-service-sg.sh ${ORG} ${modelName} ${PORT}
   elif [ "${ENV_TYPE}" == "az" ] || [ "${ENV_TYPE}" == "gcp" ]; then
     # wait for load-balancer to start
     local lbip=$(kubectl get service ${modelName} -n ${ORG} -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')

@@ -472,7 +472,7 @@ function startGateway {
       echo "browse gateway REST swagger-ui at http://localhost:30081/swagger"
       echo "view gateway grpc service defintion at http://localhost:30081/doc"
     elif [ "${ENV_TYPE}" == "aws" ]; then
-      ${SCRIPT_DIR}/../aws/setup-gateway-sg.sh ${ORG}
+      ${SCRIPT_DIR}/../aws/setup-service-sg.sh ${ORG} "gateway"
     elif [ "${ENV_TYPE}" == "az" ] || [ "${ENV_TYPE}" == "gcp" ]; then
       # wait for load-balancer to start
       local lbip=$(kubectl get service gateway -n ${ORG} -o=jsonpath='{.status.loadBalancer.ingress[0].ip}')

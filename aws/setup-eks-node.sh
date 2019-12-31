@@ -75,8 +75,10 @@ fi
 
 # setup for dovetail
 echo "install jq and gcc"
-sudo yum -y install jq
 sudo yum -y install gcc
+curl -OL https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
+chmod +x jq-linux64
+sudo mv jq-linux64 /usr/local/bin/jq
 
 echo "setup dovetail"
 git clone https://github.com/TIBCOSoftware/dovetail-contrib.git

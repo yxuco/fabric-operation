@@ -135,6 +135,30 @@ http://aa77c78ea1aef11eab0b202b81aaff60-1397096608.us-west-2.elb.amazonaws.com:7
 ```
 Copy and paste the URL (your actual URL will be different) into a Chrome web-browser, and use it to test the sample chaincode as described in [gateway](../service/README.md).  If you want this URL accessible by other workstations, you can use AWS console to update the security rules.
 
+### Build and start Dovetail chaincode and service
+Refer [dovetail](../dovetail/README.md) for more details about [Dovetail](https://github.com/TIBCOSoftware/dovetail-contrib/tree/master/hyperledger-fabric), which is a visual programming tool for Hyperledger Fabric chaincode and client apps.
+
+A Dovetail chaincode model, e.g., [marble.json](../dovetail/samples/marble/marble.json) is a JSON file that implements a sample chaincode by using the TIBCO [Flogo](https://docs.tibco.com/products/tibco-flogo-enterprise-2-8-0) visual modeler.  Use the following script to build and instantiate the chaincode.
+```
+cd ${HOME}/fabric-operation/dovetail
+./dovetail.sh build-cds -s ./samples/marble -j marble.json -c marble_cc
+cd ../network
+./network.sh install-chaincode -n peer-0 -f marble_cc_1.0.cds
+./network.sh install-chaincode -n peer-1 -f marble_cc_1.0.cds
+./network.sh instantiate-chaincode -n peer-0 -c mychannel -s marble_cc -v 1.0 -m '{"Args":["init"]}'
+```
+By using the same `Flogo` modeling UI, we can implement a client app, e.g., [marble_client.json](../dovetail/samples/marble_client/marble_client.json), that updates or queries the Fabric distributed ledger by using the `marble` chaincode.  Use the following script to build and run the client app as a Kubernetes service.
+```
+cd ../dovetail
+./dovetail.sh config-app -j samples/marble_client/marble_client.json
+./dovetail.sh start-app -j marble_client.json
+```
+The above command will start 2 instances of the `marble-client` and expose a `load-balancer` end-point for other applications to invoke the service. Once the script completes successfully, it will print out the service end-point as, e.g.,
+```
+access marble-client service at http://a5f6fbd502b8c11eab1950ab9b11ac8e-626394681.us-west-2.elb.amazonaws.com:7091
+```
+You can use this end-point to update or query the blockchain ledger.  [marble.postman_collection.json](https://github.com/TIBCOSoftware/dovetail-contrib/blob/master/hyperledger-fabric/samples/marble/marble.postman_collection.json) contains a set of REST messages that you can import to [Postman](https://www.getpostman.com/downloads/) and invoke the `marble-client` REST APIs.
+
 ### Stop Fabric network and cleanup persistent data
 ```
 cd ../network
