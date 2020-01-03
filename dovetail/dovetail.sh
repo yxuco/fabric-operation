@@ -172,9 +172,8 @@ function buildApp {
 function configureApp {
   local network="${DATA_ROOT}/gateway/config/config_${CHANNEL_ID}.yaml"
   if [ ! -f "${network}" ]; then
-    echo "create network config"
-    ${sumd} -p ${DATA_ROOT}/gateway/config
-    printNetworkYaml ${CHANNEL_ID} | ${stee} ${network} > /dev/null
+    echo "config ${network} file not found, create it by using '../service/gateway.sh config -p ${ORG_ENV} -c ${CHANNEL_ID}'"
+    return 1
   fi
 
   local modelFile=${MODEL##*/}
@@ -284,111 +283,6 @@ function setEntityMatcher {
 ###############################################################################
 # configure client app as Kubernetes service
 ###############################################################################
-
-# set list of orderers from config
-function getOrderers {
-  ORDERERS=()
-  local seq=${ORDERER_MIN:-"0"}
-  local max=${ORDERER_MAX:-"0"}
-  until [ "${seq}" -ge "${max}" ]; do
-    ORDERERS+=("orderer-${seq}")
-    seq=$((${seq}+1))
-  done
-}
-
-# set list of peers from config
-function getPeers {
-  PEERS=()
-  local seq=${PEER_MIN:-"0"}
-  local max=${PEER_MAX:-"0"}
-  until [ "${seq}" -ge "${max}" ]; do
-    PEERS+=("peer-${seq}")
-    seq=$((${seq}+1))
-  done
-}
-
-# e.g., getHostUrl peer-1
-function getHostUrl {
-  if [ ! -z "${SVC_DOMAIN}" ]; then
-    # for Kubernetes target
-    svc=${1%%-*}
-    echo "${1}.${svc}.${SVC_DOMAIN}"
-  else
-    # default for docker-composer
-    echo "${1}.${FABRIC_ORG}"
-  fi
-}
-
-# printNetworkYaml <channel>
-function printNetworkYaml {
-  getOrderers
-  getPeers
-  local caHost="ca-server.${FABRIC_ORG}"
-  if [ ! -z "${SVC_DOMAIN}" ]; then
-    caHost="ca-server.${SVC_DOMAIN}"
-  fi
-  echo "
-name: ${1}
-version: 1.0.0
-
-client:
-  organization: ${ORG}
-  logging:
-    level: info
-  cryptoconfig:
-    path: \${CRYPTO_PATH}
-
-channels:
-  ${1}:
-    peers:"
-  for p in "${PEERS[@]}"; do
-    echo "
-      ${p}.${FABRIC_ORG}:
-        endorsingPeer: true
-        chaincodeQuery: true
-        ledgerQuery: true
-        eventSource: true"
-  done
-  echo "
-organizations:
-  ${ORG}:
-    mspid: ${ORG_MSP}
-    cryptoPath:  ${FABRIC_ORG}/users/{username}@${FABRIC_ORG}/msp
-    peers:"
-  for p in "${PEERS[@]}"; do
-    echo "      - ${p}.${FABRIC_ORG}"
-  done
-  echo "    certificateAuthorities:
-      - ca.${FABRIC_ORG}
-
-orderers:"
-  for ord in "${ORDERERS[@]}"; do
-    echo "
-  ${ord}.${FABRIC_ORG}:
-    url: $(getHostUrl ${ord}):7050
-    tlsCACerts:
-      path: \${CRYPTO_PATH}/${FABRIC_ORG}/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem"
-  done
-  echo "
-peers:"
-  for p in "${PEERS[@]}"; do
-    echo "
-  ${p}.${FABRIC_ORG}:
-    url: $(getHostUrl ${p}):7051
-    tlsCACerts:
-      path: \${CRYPTO_PATH}/${FABRIC_ORG}/tlscacerts/tlsca.${FABRIC_ORG}-cert.pem"
-  done
-  echo "
-certificateAuthorities:
-  ca.${FABRIC_ORG}:
-    url: https://${caHost}:7054
-    tlsCACerts:
-      path: \${CRYPTO_PATH}/${FABRIC_ORG}/ca/tls/server.crt
-    registrar:
-      enrollId: ${CA_ADMIN:-"caadmin"}
-      enrollSecret: ${CA_PASSWD:-"caadminpw"}
-    caName: ca.${FABRIC_ORG}"
-}
 
 # print k8s persistent volume for client-app config files
 # e.g., printDataPV <appName>

@@ -100,7 +100,7 @@ First, bootstrap and test the network for `netop1` as described in [README.md](.
 
 Second, bootstrap network nodes for a new organization, as defined in [peerorg1.env](./config/peerorg1.env), i.e.,
 ```
-cd ./namespace
+cd ../namespace
 ./k8s-namespace.sh create -p peerorg1
 cd ../ca
 ./ca-server.sh start -p peerorg1
@@ -115,7 +115,7 @@ cd ../network
 Now, we have Fabric nodes running for both organizations, and we want to set up peers of `peerorg1` to join the network of `netop1`.  Following are the steps:
 ```
 # create new org config by the peerorg1's admin
-cd ./msp
+cd ../msp
 ./msp-util.sh mspconfig -p peerorg1
 
 # send the resulting config file - peerorg1MSP.json - to netop1 for approval
@@ -123,6 +123,8 @@ cp ../peerorg1.com/tool/peerorg1MSP.json ../netop1.com/cli
 
 # netop1 admin user approves and updates the channel
 cd ../network
+# create and join mychannel for netop1 if it has not been done already
+./network.sh test -p netop1
 # create update transaction for mychannel
 ./network.sh add-org-tx -p netop1 -o peerorg1MSP -c mychannel
 # optionally sign the transaction, which is necessary only if there are more than one active orgs
@@ -140,8 +142,14 @@ The above sequence of sample commands joined the 4 peer nodes from 2 organizatio
 However, the endorsement policy of the sample chaincode has not changed to enable the new organization `peerorg1` as an endorser, and thus, peers of `peerorg1` cannot invoke transactions to update the blockchain state yet.  To enable `peerorg1` as an endorser for the sample chaincode, we have to install and upgrade the chaincode to a new version `2.0` with a new endorsement policy as follows:
 ```
 cd ./network
-./network.sh install-chaincode -p peerorg1 -n peer-0 -f chaincode_example02/go -s mycc -v 2.0
-./network.sh install-chaincode -p netop1 -n peer-0 -f chaincode_example02/go -s mycc -v 2.0
+./network.sh package-chaincode -p peerorg1 -n peer-0 -f chaincode_example02/go -s mycc -v 2.0
+./network.sh install-chaincode -p peerorg1 -n peer-0 -f mycc_2.0.cds
+./network.sh install-chaincode -p peerorg1 -n peer-1 -f mycc_2.0.cds
+# send mycc_2.0.cds to netop1 for installation
+cp ../peerorg1.com/cli/mycc_2.0.cds ../netop1.com/cli
+./network.sh install-chaincode -p netop1 -n peer-0 -f mycc_2.0.cds
+./network.sh install-chaincode -p netop1 -n peer-1 -f mycc_2.0.cds
+# upgrade chaincode with new endorsement policy
 ./network.sh upgrade-chaincode -p netop1 -n peer-0 -c mychannel -s mycc -v 2.0 -m '{"Args":["init","a","80","b","220"]}' -e "OR ('netop1MSP.peer','peerorg1MSP.peer')"
 
 # now, both organization can update the state, e.g., try the following:

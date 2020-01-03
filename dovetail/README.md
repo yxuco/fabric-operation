@@ -63,8 +63,12 @@ Note that you must have a TIBCO logon to download the installer zip for Flogo En
 ## Build client app flow and deploy as Kubernetes service
 Fabric client flows modeled using Flogo Enterprise can also be built locally or in cloud on a `bastion` host, and then running as a Kubernetes service.  The following scripts can be used on `bastion` host of any supported cloud environment, i.e., [Azure](../az), [AWS](../aws), or [GCP](../gcp).
 ```
-cd ${HOME}/fabric-operation/dovetail
+# generate network config file if it is not already created
+cd ${HOME}/fabric-operation/service
+./gateway.sh config
+
 # config app flows with default Fabric network yaml
+cd ../dovetail
 ./dovetail.sh config-app -j ./samples/marble_client/marble_client.json
 
 # start 2 instances of sample marble-client and expose end-point using a load-balancer service
@@ -81,4 +85,33 @@ export DT_HOME=/path/to/dovetail-contrib/hyperledger-fabric
 
 # Installation folder of Flogo Enterprise (needed for flogo models that use Flogo Enterprise components)
 export FE_HOME=/path/to/flogo/2.8
+```
+## Configure client services in multi-org network
+When a Fabric network contains multiple participating organizations, each organization may start its own orderer and/or peer nodes, and each organization may also run its own client services.
+
+A network operator can start a Fabric network with a single organization, and then invite more organizations to join the network.  New organizations can be added to the network using scripts described [here](../operations.md#add-new-peer-org-to-the-same-kubernetes-cluster).
+
+To configure a client service that interact with peer nodes of multiple organizations, you can run the following scripts to create a network config file containing list of peers from multiple organizations:
+```
+cd ../service
+# create network config file for 2 different orgs
+./gateway.sh config -p netop1 -c mychannel
+./gateway.sh config -p peerorg1 -c mychnnel
+
+# add peerorg1 peers to config file for netop1
+yq m ../netop1.com/gateway/config/config_mychannel.yaml ../peerorg1.com/gateway/config/config_mychannel.yaml > /tmp/config_mychannel.yaml
+cp /tmp/config_mychannel.yaml ../netop1.com/gateway/config
+
+# copy crypto data of peerorg1 for the client service (only TLS certs are required, private user data should not be copied)
+cp -R ../peerorg1.com/gateway/peerorg1.com ../netop1.com/gateway
+
+# use the new network config file to configure client service, e.g.
+cd ../dovetail
+./dovetail.sh config-app -p netop1 -j ./samples/marble_client/marble_client.json
+```
+Note that the above script uses a tool `yq` for merging 2 `yaml` files, which can be downloaded as follows, e.g., for Mac,
+```
+curl -OL https://github.com/mikefarah/yq/releases/download/2.4.1/yq_darwin_amd64
+chmod +x yq_darwin_amd64
+sudo mv yq_darwin_amd64 /usr/local/yq
 ```

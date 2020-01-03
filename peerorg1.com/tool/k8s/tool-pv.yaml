@@ -9,9 +9,8 @@ volumeBindingMode: WaitForFirstConsumer
 ---
 kind: PersistentVolume
 apiVersion: v1
-# create PV for data-tool
 metadata:
-  name: data-tool-peerorg1-pv
+  name: data-peerorg1-tool
   labels:
     app: data-tool
     org: peerorg1
@@ -30,7 +29,7 @@ spec:
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  name: data-tool-pvc
+  name: data-tool
   namespace: peerorg1
 spec:
   storageClassName: peerorg1-tool-data-class

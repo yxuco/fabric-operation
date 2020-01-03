@@ -50,12 +50,16 @@ spec:
       value: orderer-0.orderer.netop1.svc.cluster.local:7050
     - name: ORG
       value: peerorg1
+    - name: FABRIC_ORG
+      value: peerorg1.com
     - name: SYS_CHANNEL
       value: netop1-channel
     - name: TEST_CHANNEL
       value: org1channel
     - name: SVC_DOMAIN
       value: peerorg1.svc.cluster.local
+    - name: ORDERER_MSP
+      value: peerorg1OrdererMSP
     workingDir: /etc/hyperledger/cli/store
     volumeMounts:
     - mountPath: /host/var/run

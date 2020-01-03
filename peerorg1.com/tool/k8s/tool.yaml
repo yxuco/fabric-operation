@@ -9,6 +9,10 @@ spec:
   - name: tool
     image: hyperledger/fabric-tools
     imagePullPolicy: Always
+    resources:
+      requests:
+        memory: 500Mi
+        cpu: 100m
     env:
     - name: FABRIC_LOGGING_SPEC
       value: INFO
@@ -47,4 +51,4 @@ spec:
       type: Directory
   - name: data
     persistentVolumeClaim:
-      claimName: data-tool-pvc
+      claimName: data-tool

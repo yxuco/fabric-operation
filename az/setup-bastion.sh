@@ -75,6 +75,11 @@ curl -OL https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64
 chmod +x jq-linux64
 sudo mv jq-linux64 /usr/local/bin/jq
 
+# utility to merge yaml files, e.g., 'yq m file1 file2'
+curl -OL https://github.com/mikefarah/yq/releases/download/2.4.1/yq_linux_amd64
+chmod +x yq_linux_amd64
+sudo mv yq_linux_amd64 /usr/local/yq
+
 echo "setup dovetail"
 git clone https://github.com/TIBCOSoftware/dovetail-contrib.git
 go get -u github.com/project-flogo/cli/...

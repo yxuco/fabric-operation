@@ -21,6 +21,10 @@ spec:
       containers:
       - name: ca-server
         image: hyperledger/fabric-ca
+        resources:
+          requests:
+            memory: 500Mi
+            cpu: 100m
         env:
         - name: FABRIC_CA_HOME
           value: /etc/hyperledger/fabric-ca-server
@@ -83,6 +87,10 @@ spec:
       containers:
       - name: tlsca-server
         image: hyperledger/fabric-ca
+        resources:
+          requests:
+            memory: 500Mi
+            cpu: 100m
         env:
         - name: FABRIC_CA_HOME
           value: /etc/hyperledger/fabric-ca-server
@@ -145,6 +153,10 @@ spec:
       containers:
       - name: ca-client
         image: hyperledger/fabric-ca
+        resources:
+          requests:
+            memory: 500Mi
+            cpu: 100m
         env:
         - name: FABRIC_CA_HOME
           value: /etc/hyperledger/data/canet/ca-client
