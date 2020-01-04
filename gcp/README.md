@@ -110,13 +110,13 @@ This command creates the test channel `mychannel`, installs and instantiates a t
 Refer [gateway](../service/README.md) for more details on how to build and start a REST API service for applications to interact with one or more Fabric networks. The following commands can be used on the bastion host to start a gateway service that exposes a Swagger-UI.
 ```
 cd ../service
-# build the gateway service from source code, whih creates executable 'gateway-linux'
+# build the gateway service from source code, which creates executable 'gateway-linux'
 make dist
 
 # config and start gateway service for GCP
 ./gateway.sh start
 ```
-The last command started 2 PODs to run the gateway service, and created a load-balancer service with a public accessible port.  The load-balancer port is open to public by default, which is convenient for dev and test.  To restrict the access of source IPs, you can add a field `loadBalancerSourceRanges` to the gateway service definition.  Refer the [link](https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service) for more details.
+The last command started 2 PODs to run the gateway service, and created a load-balancer service with a publicly accessible port.  The load-balancer port is open to public by default, which is convenient for dev and test.  To restrict the access of source IPs, you can add a field `loadBalancerSourceRanges` to the gateway service definition.  Refer the [link](https://kubernetes.io/docs/tasks/access-application-cluster/configure-cloud-provider-firewall/#restrict-access-for-loadbalancer-service) for more details.
 
 The URL of the load-balancer is printed by the script as, e.g.,
 ```
@@ -125,9 +125,9 @@ http://34.82.144.78:7081/swagger
 Copy and paste the URL (your actual URL will be different) into a Chrome web-browser, and use it to test the sample chaincode as described in [gateway](../service/README.md).
 
 ### Build and start Dovetail chaincode and service
-Refer [dovetail](../dovetail/README.md) for more details about [Dovetail](https://github.com/TIBCOSoftware/dovetail-contrib/tree/master/hyperledger-fabric), which is a visual programming tool for Hyperledger Fabric chaincode and client apps.
+Refer [dovetail](../dovetail/README.md) for more details about [Project Dovetail](https://github.com/TIBCOSoftware/dovetail-contrib/tree/master/hyperledger-fabric), which is a visual programming tool for modeling Hyperledger Fabric chaincode and client apps.
 
-A Dovetail chaincode model, e.g., [marble.json](../dovetail/samples/marble/marble.json) is a JSON file that implements a sample chaincode by using the TIBCO [Flogo](https://docs.tibco.com/products/tibco-flogo-enterprise-2-8-0) visual modeler.  Use the following script to build and instantiate the chaincode.
+A Dovetail chaincode model, e.g., [marble.json](../dovetail/samples/marble/marble.json) is a JSON file that implements a sample chaincode by using the [TIBCO Flogo](https://docs.tibco.com/products/tibco-flogo-enterprise-2-8-0) visual modeler.  Use the following script to build and instantiate the chaincode.
 ```
 cd ${HOME}/fabric-operation/dovetail
 ./dovetail.sh build-cds -s ./samples/marble -j marble.json -c marble_cc
@@ -159,7 +159,7 @@ cd ../network
 ```
 This command shuts down orderers and peers, and the last argument `-d` means to delete all persistent data as well.  If you do not use the argument `-d`, it would keep the test ledger file in the Google Cloud `Filestore`, and so it can be loaded when the network restarts.  You can verify the result using the following command.
 * `kubectl get svc,pod` should not list any running orderers or peers;
-* The orderers and peers' persistent data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would be deleted if the option `-d` us used.
+* The orderers and peers' persistent data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would be deleted if the option `-d` is used.
 
 ## Clean up all GCP processes and storage
 You can exit from the `bastion` host, and clean up every thing created in GCP when they are no longer used, i.e.,

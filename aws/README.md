@@ -121,13 +121,13 @@ This command creates the test channel `mychannel`, installs and instantiates a t
 Refer [gateway](../service/README.md) for more details on how to build and start a REST API service for applications to interact with one or more Fabric networks. The following commands can be used on the bastion host to start a gateway service that exposes a Swagger-UI.
 ```
 cd ../service
-# build the gateway service from source code, whih creates executable 'gateway-linux'
+# build the gateway service from source code, which creates executable 'gateway-linux'
 make dist
 
 # config and start gateway service for AWS
 ./gateway.sh start
 ```
-The last command started 2 PODs to run the gateway service, and created a load-balancer service with a public accessible port.  It also updated the security rule such that the load-balancer port is open to the developer's workstation where this script is executed.
+The last command started 2 PODs to run the gateway service, and created a load-balancer service with a publicly accessible port.  It also updated the security rule such that the load-balancer port is open to the developer's workstation where this script is executed.
 
 The URL of the load-balancer is printed by the script as, e.g.,
 ```
@@ -136,9 +136,9 @@ http://aa77c78ea1aef11eab0b202b81aaff60-1397096608.us-west-2.elb.amazonaws.com:7
 Copy and paste the URL (your actual URL will be different) into a Chrome web-browser, and use it to test the sample chaincode as described in [gateway](../service/README.md).  If you want this URL accessible by other workstations, you can use AWS console to update the security rules.
 
 ### Build and start Dovetail chaincode and service
-Refer [dovetail](../dovetail/README.md) for more details about [Dovetail](https://github.com/TIBCOSoftware/dovetail-contrib/tree/master/hyperledger-fabric), which is a visual programming tool for Hyperledger Fabric chaincode and client apps.
+Refer [dovetail](../dovetail/README.md) for more details about [Project Dovetail](https://github.com/TIBCOSoftware/dovetail-contrib/tree/master/hyperledger-fabric), which is a visual programming tool for modeling Hyperledger Fabric chaincode and client apps.
 
-A Dovetail chaincode model, e.g., [marble.json](../dovetail/samples/marble/marble.json) is a JSON file that implements a sample chaincode by using the TIBCO [Flogo](https://docs.tibco.com/products/tibco-flogo-enterprise-2-8-0) visual modeler.  Use the following script to build and instantiate the chaincode.
+A Dovetail chaincode model, e.g., [marble.json](../dovetail/samples/marble/marble.json) is a JSON file that implements a sample chaincode by using the [TIBCO Flogo](https://docs.tibco.com/products/tibco-flogo-enterprise-2-8-0) visual modeler.  Use the following script to build and instantiate the chaincode.
 ```
 cd ${HOME}/fabric-operation/dovetail
 ./dovetail.sh build-cds -s ./samples/marble -j marble.json -c marble_cc
