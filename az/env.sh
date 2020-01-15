@@ -37,7 +37,7 @@ export SMB_PATH=//${STORAGE_ACCT}.file.core.windows.net/${STORAGE_SHARE}
 export AKS_CLUSTER=${ENV_NAME}AKSCluster
 export BASTION_HOST=${ENV_NAME}Bastion
 # public IP will be updated when bastion host is created
-export BASTION_IP=52.191.165.133
+export BASTION_IP=52.250.16.223
 export BASTION_USER=${ENV_NAME}
 
 export SCRIPT_HOME=$(getScriptDir)

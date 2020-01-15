@@ -1,8 +1,8 @@
 {
   "swagger": "2.0",
   "info": {
-    "title": "fabric.proto",
-    "version": "version not set"
+    "title": "fabric-gateway",
+    "version": "1.0"
   },
   "consumes": [
     "application/json"

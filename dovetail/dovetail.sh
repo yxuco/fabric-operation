@@ -81,11 +81,14 @@ function buildCDS {
   cd ${chaincode}/${ccName}
   flogo build -e
   cd src
+  # avoid bug in activity/subflow/v0.9.0
   go get -u -d github.com/project-flogo/flow/activity/subflow@master
   go mod vendor
+  # patch of flogo core and flow for handling chaincode
   cp -Rf ${DT_HOME}/flogo-patch/flow vendor/github.com/project-flogo
   cp -Rf ${DT_HOME}/flogo-patch/core vendor/github.com/project-flogo
-  find vendor/github.com/TIBCOSoftware/dovetail-contrib/hyperledger-fabric/fabric/ -name '*_metadata.go' -exec rm {} \;
+  # work around issue of legacy bridge -- legacy bridge no longer needed
+  # find vendor/github.com/TIBCOSoftware/dovetail-contrib/hyperledger-fabric/fabric/ -name '*_metadata.go' -exec rm {} \;
   go build -mod vendor -o ../${ccName}
 
   if [ ! -f "../${ccName}" ]; then
@@ -157,7 +160,8 @@ function buildApp {
   cd src
   go get -u -d github.com/project-flogo/flow/activity/subflow@master
   go mod vendor
-  find vendor/github.com/TIBCOSoftware/dovetail-contrib/hyperledger-fabric/fabclient/ -name '*_metadata.go' -exec rm {} \;
+  # work around issue of legacy bridge -- legacy bridge no longer needed
+  # find vendor/github.com/TIBCOSoftware/dovetail-contrib/hyperledger-fabric/fabclient/ -name '*_metadata.go' -exec rm {} \;
   env GOOS=${bOS} GOARCH=${bArch} go build -mod vendor -o ${SCRIPT_DIR}/${appName}_${bOS}_${bArch}
 
   local app="${SCRIPT_DIR}/${appName}_${bOS}_${bArch}"
