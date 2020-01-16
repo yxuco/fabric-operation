@@ -20,7 +20,7 @@ cd /path/to/local/fabric-operation/az
 This will upload the `audit` sample in the local `dovetail-coontrib` project to the `${HOME}` directory of the `bastion` host in Azure.  You can then build the `CDS` file, `audit_cc_1.0.cds` on the Azure `bastion` host:
 ```
 cd ${HOME}/fabric-operation/dovetail
-./dovetail.sh build-cds -s ~/audit -j audit.json -c audit_cc
+./dovetail.sh build-cds -s ${HOME}/audit -j audit.json -c audit_cc
 ```
 You can then download the `CDS` file from the `bastion` host, and so the same chaincode can be installed/instantiated any other Fabric network:
 ```
@@ -53,7 +53,7 @@ cd ../msp
 cd ../network
 ./network.sh start
 ```
-After the fabric network is running, you can build the chaincode flows into deployment packages of `cds` format, e.g.,
+After the fabric network is running, you can build the chaincode flows as a deployment package of `CDS` format, e.g.,
 ```
 cd ../dovetail
 ./dovetail.sh build-cds -s ./samples/marble -j marble.json -c marble_cc -v 1.0
@@ -64,7 +64,7 @@ The script will print out the location of the resulting chaincode package, e.g.,
 created cds: /path/to/fabric-operation/netop1.com/cli/marble_cc_1.0.cds
 ```
 ## Install and instantiate chaincode
-The `CDS` file can be used to install and instantiate the chaincode on a Fabric network. The script for chaincode management is described in [network](../network/README.md).  To see how it works, you can create a test channel, and then instantiate the `marble_cc_1.0.cds` as follows:
+The `CDS` file can be used to install and instantiate the chaincode on a Fabric network. The script for chaincode management is described in the [network](../network/README.md) folder.  To see how it works, you can create a test channel, and then instantiate the `marble_cc_1.0.cds` as follows:
 ```
 cd ../network
 # smoke test to create mychannel and join both peer nodes
@@ -97,7 +97,7 @@ cd /path/to/local/fabric-operation/az
 Then, run the installation script on the `bastion` host:
 ```
 cd ${HOME}/fabric-operation/dovetail
-./dovetail.sh install-fe -s ~/TIB_flogo_2.8.0_macosx_x86_64.zip
+./dovetail.sh install-fe -s ${HOME}/TIB_flogo_2.8.0_macosx_x86_64.zip
 ```
 Note that you must have a TIBCO logon to download the installer zip for Flogo Enterprise.
 
@@ -119,7 +119,7 @@ When the above script is invoked on a `bastion` host, it will start 2 instances 
 ```
 access marble-client service at http://localhost:32634
 ```
-Use this URL to send REST service requests to test the system.  Finally, you canshutdown the client PODs and service using the following command:
+Use this URL to send REST service requests to test the system.  Finally, you can shutdown the client PODs and service using the following command:
 ```
 ./dovetail.sh stop-app -j marble_client.json
 ```
