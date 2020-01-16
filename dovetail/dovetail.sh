@@ -89,7 +89,8 @@ function buildCDS {
   cp -Rf ${DT_HOME}/flogo-patch/core vendor/github.com/project-flogo
   # work around issue of legacy bridge -- legacy bridge no longer needed
   # find vendor/github.com/TIBCOSoftware/dovetail-contrib/hyperledger-fabric/fabric/ -name '*_metadata.go' -exec rm {} \;
-  go build -mod vendor -o ../${ccName}
+  echo "build ${chaincode}/${ccName}/${ccName} ..."
+  env GOOS=linux GOARCH=amd64 go build -mod vendor -o ../${ccName}
 
   if [ ! -f "../${ccName}" ]; then
     echo "Failed to build ${ccName}"

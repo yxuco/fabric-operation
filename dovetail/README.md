@@ -28,6 +28,41 @@ cd /path/to/local/fabric-operation/az
 ./az-util.sh download-file -f /mnt/share/netop1.com/cli/audit_cc_1.0.cds -l /path/to/download
 ```
 
+For other cloud services, refer [AWS](../aws/README.md) and [GCP](../gcp/README.md) for similar commands.
+
+## Build chaincode flow for local Kubernetes deployment
+You can use the same commands to build chaincode for local Kubernetes.  When using `Docker Desktop` on Mac, first, specify the following 2 env variables:
+```
+# Git repo location of dovetail-contrib for Hyperledger Fabric
+export DT_HOME=/path/to/dovetail-contrib/hyperledger-fabric
+
+# Installation folder of Flogo Enterprise (needed for flogo models that use Flogo Enterprise components)
+export FE_HOME=/path/to/flogo/2.8
+```
+Then, follow the instructions in [README](../README.md) to start the default fabric network on Kubernetes, i.e.,
+```
+cd ../namespace
+./k8s-namespace.sh create
+cd ../ca
+rm -R ../netop1.com/canet
+./ca-server.sh start
+./ca-crypto.sh bootstrap
+cd ../msp
+./msp-util.sh start
+./msp-util.sh bootstrap
+cd ../network
+./network.sh start
+```
+After the fabric network is running, you can build the chaincode flows into deployment packages of `cds` format, e.g.,
+```
+cd ../dovetail
+./dovetail.sh build-cds -s ./samples/marble -j marble.json -c marble_cc -v 1.0
+./dovetail.sh build-cds -s ./samples/audit -j audit.json -c audit_cc -v 1.0
+```
+The script will print out the location of the resulting chaincode package, e.g.,
+```
+created cds: /path/to/fabric-operation/netop1.com/cli/marble_cc_1.0.cds
+```
 ## Install and instantiate chaincode
 The `CDS` file can be used to install and instantiate the chaincode on a Fabric network. The script for chaincode management is described in [network](../network/README.md).  To see how it works, you can create a test channel, and then instantiate the `marble_cc_1.0.cds` as follows:
 ```
@@ -42,9 +77,15 @@ cd ../network
 # instantiate the chaincode
 ./network.sh instantiate-chaincode -n peer-0 -c mychannel -s marble_cc -v 1.0 -m '{"Args":["init"]}'
 ```
-
 ## Configure Flogo Enterprise components
-The above build process will fail if the chaincode flow model uses any component of the Flogo Enterprise, including a function, activity or trigger that is not an open-source Flogo component.  To build such chaincode flows, you must first upload the Flogo Enterprise installer zip file to the `bastion` host, e.g., for Azure,
+The above build process will fail if the chaincode flow model uses any component of the Flogo Enterprise, including a function, activity or trigger that is not an open-source Flogo component. To build such chaincode flows, you need to setup an installation of Flogo Enterprise.
+
+To setup a local installation of Flogo Enterprise, you can execute the following script:
+```
+cd ${DT_HOME}/fe-generator
+./init-gomod.sh ${FE_HOME}
+```
+To setup Flogo Enterprise in cloud, you must first upload the Flogo Enterprise installer zip file to the `bastion` host, e.g., for Azure,
 ```
 # delete large studio docker image from Flogo Enterprise installer zip
 zip -d /path/to/download/TIB_flogo_2.8.0_macosx_x86_64.zip "**/docker/flogo-studio-image.tar" 
@@ -61,10 +102,10 @@ cd ${HOME}/fabric-operation/dovetail
 Note that you must have a TIBCO logon to download the installer zip for Flogo Enterprise.
 
 ## Build client app flow and deploy as Kubernetes service
-Fabric client flows modeled using Flogo Enterprise can also be built locally or in cloud on a `bastion` host, and then running as a Kubernetes service.  The following scripts can be used on `bastion` host of any supported cloud environment, i.e., [Azure](../az), [AWS](../aws), or [GCP](../gcp).
+Fabric client flows modeled using Flogo Enterprise can also be built locally or in cloud on a `bastion` host, and then run as a Kubernetes service.  The following scripts can be used locally or on a `bastion` host of any supported cloud environment, i.e., [Azure](../az), [AWS](../aws), or [GCP](../gcp).
 ```
 # generate network config file if it is not already created
-cd ${HOME}/fabric-operation/service
+cd /path/to/fabric-operation/service
 ./gateway.sh config
 
 # config app flows with default Fabric network yaml
@@ -73,18 +114,14 @@ cd ../dovetail
 
 # start 2 instances of sample marble-client and expose end-point using a load-balancer service
 ./dovetail.sh start-app -j marble_client.json
-
-# shutdown marble-client PODs and load-balancer service
+```
+When the above script is invoked on a `bastion` host, it will start 2 instances of `marble_client` and expose the service end-point as a load-balancer service in corresponding cloud platform.  When it is invoked on local Kubernetes of `Docker Desktop`, it will start 2 PODs for `marble_client` and expose the service end-point as a random `Node Port`, which is printed out by the script, e.g., 
+```
+access marble-client service at http://localhost:32634
+```
+Use this URL to send REST service requests to test the system.  Finally, you canshutdown the client PODs and service using the following command:
+```
 ./dovetail.sh stop-app -j marble_client.json
-```
-
-When the above script is invoked on a `bastion` host, it will interact with the blockchain network in corresponding cloud platform.  To run the same script on local Kubernetes of `Docker Desktop`, you need to specify the following 2 env variables:
-```
-# Git repo location of dovetail-contrib for Hyperledger Fabric
-export DT_HOME=/path/to/dovetail-contrib/hyperledger-fabric
-
-# Installation folder of Flogo Enterprise (needed for flogo models that use Flogo Enterprise components)
-export FE_HOME=/path/to/flogo/2.8
 ```
 ## Configure client services in multi-org network
 When a Fabric network contains multiple participating organizations, each organization may start its own orderer and/or peer nodes, and each organization may also run its own client services.
