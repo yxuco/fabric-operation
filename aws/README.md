@@ -149,6 +149,11 @@ cd ../network
 ```
 By using the same `Flogo` modeling UI, we can implement a client app, e.g., [marble_client.json](../dovetail/samples/marble_client/marble_client.json), that updates or queries the Fabric distributed ledger by using the `marble` chaincode.  Use the following script to build and run the client app as a Kubernetes service.
 ```
+# generate network config if skipped the previous gateway test
+cd ${HOME}/fabric-operation/service
+./gateway.sh config
+
+# build and start client using the generated network config
 cd ../dovetail
 ./dovetail.sh config-app -j samples/marble_client/marble_client.json
 ./dovetail.sh start-app -j marble_client.json

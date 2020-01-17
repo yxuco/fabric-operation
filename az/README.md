@@ -125,8 +125,11 @@ Refer [dovetail](../dovetail/README.md) for more details about [Project Dovetail
 
 A Dovetail chaincode model, e.g., [marble.json](../dovetail/samples/marble/marble.json) is a JSON file that implements a sample chaincode by using the [TIBCO Flogo](https://docs.tibco.com/products/tibco-flogo-enterprise-2-8-0) visual modeler.  Use the following script to build and instantiate the chaincode.
 ```
+# create chaincode package
 cd ${HOME}/fabric-operation/dovetail
 ./dovetail.sh build-cds -s ./samples/marble -j marble.json -c marble_cc
+
+# install and instantiate chaincode
 cd ../network
 ./network.sh install-chaincode -n peer-0 -f marble_cc_1.0.cds
 ./network.sh install-chaincode -n peer-1 -f marble_cc_1.0.cds
@@ -134,6 +137,11 @@ cd ../network
 ```
 By using the same `Flogo` modeling UI, we can implement a client app, e.g., [marble_client.json](../dovetail/samples/marble_client/marble_client.json), that updates or queries the Fabric distributed ledger by using the `marble` chaincode.  Use the following script to build and run the client app as a Kubernetes service.
 ```
+# generate network config if skipped the previous gateway test
+cd ${HOME}/fabric-operation/service
+./gateway.sh config
+
+# build and start client using the generated network config
 cd ../dovetail
 ./dovetail.sh config-app -j samples/marble_client/marble_client.json
 ./dovetail.sh start-app -j marble_client.json

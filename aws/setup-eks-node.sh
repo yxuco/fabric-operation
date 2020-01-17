@@ -88,3 +88,6 @@ sudo mv yq_linux_amd64 /usr/local/yq
 echo "setup dovetail"
 git clone https://github.com/TIBCOSoftware/dovetail-contrib.git
 go get -u github.com/project-flogo/cli/...
+
+# install fabric binary for chaincode packaging
+curl -sSL http://bit.ly/2ysbOFE | bash -s

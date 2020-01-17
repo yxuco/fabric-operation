@@ -97,9 +97,8 @@ function buildCDS {
     return 1
   fi
 
-  # build cds
-  cd $(dirname "${SCRIPT_DIR}")/network
-  ./network.sh package-chaincode -n peer-0 -f ${ccName}/src -s ${ccName} -v ${version}
+  # build cds -- Note: on bastion host, this can be replaced by localPackCDS
+  packCDS ${ccName} ${version}
   
   local cds="${DATA_ROOT}/cli/${ccName}_${version}.cds"
   if [ -f "${cds}" ]; then
@@ -108,6 +107,26 @@ function buildCDS {
     echo "Failed to create CDS for chaincode in folder ${chaincode}/${ccName}"
     return 1
   fi
+}
+
+# create cds package using peer container, e.g. 
+# packCDS <ccName> <version>
+function packCDS {
+  cd $(dirname "${SCRIPT_DIR}")/network
+  ./network.sh package-chaincode -n peer-0 -f ${1}/src -s ${1} -v ${2}
+}
+
+# create cds package on bastion host locally, e.g. 
+# localPackCDS <ccName> <version>
+function localPackCDS {
+  mkdir -p ${GOPATH}/src/github.com/chaincode
+  rm -Rf ${GOPATH}/src/github.com/chaincode/${1}
+  cp -R $(dirname "${SCRIPT_DIR}")/chaincode/${1}/src ${GOPATH}/src/github.com/chaincode/${1}
+  # chaincode package command requires $FABRIC_CFG_PATH containing core.yaml and peer's msp cert/keys
+  local cfgPath=${DATA_ROOT}/peers/peer-0/crypto
+  sudo cp $(dirname "${SCRIPT_DIR}")/network/core.yaml ${cfgPath}
+  FABRIC_CFG_PATH=${cfgPath} ${HOME}/fabric-samples/bin/peer chaincode package -n ${1} -v ${2} -l golang -p github.com/chaincode/${1} ${1}_${2}.cds
+  sudo mv ${1}_${2}.cds ${DATA_ROOT}/cli
 }
 
 # build executable on bastion host
