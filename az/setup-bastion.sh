@@ -7,6 +7,8 @@
 # Execute this script on bastion host to initialize the host
 source ./env.sh
 
+sudo apt-get update
+
 # install kubectl
 sudo snap install kubectl --classic
 
