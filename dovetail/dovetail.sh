@@ -81,6 +81,9 @@ function buildCDS {
   cd ${chaincode}/${ccName}
   flogo build -e
   cd src
+  # override flogo version for core and flow
+  go mod edit -replace=github.com/project-flogo/core@v0.10.1=github.com/project-flogo/core@$(FLOGO_VER)
+  go mod edit -replace=github.com/project-flogo/flow@v0.10.0=github.com/project-flogo/flow@$(FLOGO_VER)
   # avoid bug in activity/subflow/v0.9.0
   go get -u -d github.com/project-flogo/flow/activity/subflow@master
   go mod vendor
