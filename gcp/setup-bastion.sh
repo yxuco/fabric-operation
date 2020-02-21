@@ -66,4 +66,4 @@ git clone https://github.com/TIBCOSoftware/dovetail-contrib.git
 go get -u github.com/project-flogo/cli/...
 
 # install fabric binary for chaincode packaging
-curl -sSL http://bit.ly/2ysbOFE | bash -s
+curl -sSL http://bit.ly/2ysbOFE | bash -s -- 1.4.4 1.4.4 0.4.18

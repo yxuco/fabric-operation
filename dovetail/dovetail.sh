@@ -573,7 +573,7 @@ function printHelp() {
   echo "  dovetail.sh <cmd> [options]"
   echo "    <cmd> - one of the following commands"
   echo "      - 'install-fe' - install Flogo Enterprise from zip; arguments: -s <FE-installer-zip>"
-  echo "      - 'build-cds' - build chaincode model to cds format; args; -j [-c -v]"
+  echo "      - 'build-cds' - build chaincode model to cds format; args; -s -j -c [-v]"
   echo "      - 'build-app' - upload and build fabric client app; args: -j -c -o [-a]"
   echo "      - 'config-app' - config client app with specified network and entity matcher yaml; args: -j [-i -n -u]"
   echo "      - 'start-app' - build and start kubernetes service for specified app model that is previously configured using config-app; args: -j"
@@ -671,12 +671,12 @@ install-fe)
   installFE ${SOURCE}
   ;;
 build-cds)
-  echo "build cds from flogo model for ${MODEL} ${APP_NAME} ${VERSION}"
-  build_CDS "${MODEL}" "${APP_NAME}" "${VERSION}"
+  echo "build cds from flogo model for ${SOURCE} ${MODEL} ${APP_NAME} ${VERSION}"
+  buildCDS "${SOURCE}" "${MODEL}" "${APP_NAME}" ${VERSION}
   ;;
 build-app)
   echo "build client app for model ${MODEL} with ${APP_NAME} ${BUILD_OS} ${BUILD_ARCH}"
-  build_App "${MODEL}" "${APP_NAME}" "${BUILD_OS}" "${BUILD_ARCH}"
+  buildApp "${MODEL}" "${APP_NAME}" "${BUILD_OS}" ${BUILD_ARCH}
   ;;
 config-app)
   echo "config client app for model ${MODEL} with ${CHANNEL_ID} ${PORT} ${USER_ID}"
