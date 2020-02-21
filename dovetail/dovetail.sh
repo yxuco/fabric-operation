@@ -32,6 +32,59 @@ function installFE {
   fi
 }
 
+# build CDS file using dovetail-tools docker container
+# build_CDS <model-json> [<cc-name> <version>]
+function build_CDS {
+  local model=${1}
+  local ccName=${2}
+  local version=${3}
+  if [ -z "${DT_HOME}" ]; then
+    echo "DT_HOME is not defined"
+    return 1
+  fi
+  if [ -z "${model}" ]; then
+    echo "Flogo model is not specified"
+    return 1
+  fi
+
+  if [ -z "${ccName}" ]; then
+    local modelFile=${model##*/}
+    ccName="${modelFile%.*}_cc"
+  fi
+  if [ -z "${version}" ]; then
+    version="1.0"
+  fi
+  ${DT_HOME}/dovetail-tools/build.sh cds -f ${model} -n ${ccName} -v ${version}
+  ${sumv} ${DT_HOME}/dovetail-tools/work/${ccName}_${version}.cds ${DATA_ROOT}/cli
+  echo "chaincode package: ${DATA_ROOT}/cli/${ccName}_${version}.cds"
+}
+
+# build app executable using dovetail-tools docker container
+# build_App <model-json> [<app-name> <goos> <goarch>]
+function build_App {
+  local model=${1}
+  local appName=${2}
+  local cos=${3}
+  local carch=${4}
+  if [ -z "${DT_HOME}" ]; then
+    echo "DT_HOME is not defined"
+    return 1
+  fi
+  if [ -z "${model}" ]; then
+    echo "Flogo model is not specified"
+    return 1
+  fi
+
+  if [ -z "${appName}" ]; then
+    local modelFile=${model##*/}
+    appName="${modelFile%.*}"
+  fi
+  local targetDir="$(cd "$(dirname "${model}")"; echo "$(pwd)")"
+  ${DT_HOME}/dovetail-tools/build.sh client -f ${model} -n ${appName} -s ${cos} -a ${carch}
+  ${sumv} ${DT_HOME}/dovetail-tools/work/${appName}_${cos}_${carch} ${targetDir}
+  echo "client app: ${targetDir}/${appName}_${cos}_${carch}"
+}
+
 # build CDS file on bastion host
 # buildCDS <source-folder> <model-json> <cc-name> [<version>]
 function buildCDS {
@@ -227,10 +280,8 @@ function startApp {
       echo "model is not configured, so call config-app first."
       return 1
     fi
-    buildApp "${DATA_ROOT}/gateway/${modelFile}" ${modelName}
-    if [ -f "${SCRIPT_DIR}/${modelName}_linux_amd64" ]; then
-      ${sumv} "${SCRIPT_DIR}/${modelName}_linux_amd64" "${DATA_ROOT}/gateway/${modelName}_linux_amd64"
-    else
+    build_App "${DATA_ROOT}/gateway/${modelFile}" "${modelName}" "linux" "amd64"
+    if [ ! -f "${DATA_ROOT}/gateway/${modelName}_linux_amd64" ]; then
       echo "failed to build ${modelName}_linux_amd64"
       return 1
     fi
@@ -522,7 +573,7 @@ function printHelp() {
   echo "  dovetail.sh <cmd> [options]"
   echo "    <cmd> - one of the following commands"
   echo "      - 'install-fe' - install Flogo Enterprise from zip; arguments: -s <FE-installer-zip>"
-  echo "      - 'build-cds' - build chaincode model to cds format; args; -s -j -c [-v]"
+  echo "      - 'build-cds' - build chaincode model to cds format; args; -j [-c -v]"
   echo "      - 'build-app' - upload and build fabric client app; args: -j -c -o [-a]"
   echo "      - 'config-app' - config client app with specified network and entity matcher yaml; args: -j [-i -n -u]"
   echo "      - 'start-app' - build and start kubernetes service for specified app model that is previously configured using config-app; args: -j"
@@ -620,12 +671,12 @@ install-fe)
   installFE ${SOURCE}
   ;;
 build-cds)
-  echo "build cds from source ${SOURCE} for ${MODEL} ${APP_NAME} ${VERSION}"
-  buildCDS "${SOURCE}" "${MODEL}" "${APP_NAME}" ${VERSION}
+  echo "build cds from flogo model for ${MODEL} ${APP_NAME} ${VERSION}"
+  build_CDS "${MODEL}" "${APP_NAME}" "${VERSION}"
   ;;
 build-app)
   echo "build client app for model ${MODEL} with ${APP_NAME} ${BUILD_OS} ${BUILD_ARCH}"
-  buildApp "${MODEL}" "${APP_NAME}" "${BUILD_OS}" ${BUILD_ARCH}
+  build_App "${MODEL}" "${APP_NAME}" "${BUILD_OS}" "${BUILD_ARCH}"
   ;;
 config-app)
   echo "config client app for model ${MODEL} with ${CHANNEL_ID} ${PORT} ${USER_ID}"
