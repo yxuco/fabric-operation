@@ -550,20 +550,36 @@ function buildFlogoModel {
     return 1
   fi
   local _model=${MODEL##*/}
-  if [ ! -f "${DATA_ROOT}/tool/${_model}" ]; then
-    echo "copy ${MODEL} to ${DATA_ROOT}/tool"
-    ${sucp} ${MODEL} ${DATA_ROOT}/tool
-  fi
   local name=${_model%.*}
-  local cmd=""
   if [ "${type}" == "cds" ]; then
     name="${name}_cc"
-    cmd="build-cds.sh ${_model} ${name} ${VERSION}"
+  fi
+
+  local _src=${MODEL%/*}
+  if [ "${_src}" == "${_model}" ]; then
+    echo "set model file directory to PWD"
+    _src="."
+  fi
+  if [ ! -f "${DATA_ROOT}/tool/${name}/${_model}" ]; then
+    echo "copy ${MODEL} to ${DATA_ROOT}/tool/${name}"
+    ${surm} -rf ${DATA_ROOT}/tool/${name}
+    ${sumd} -p ${DATA_ROOT}/tool/${name}
+    ${sucp} ${MODEL} ${DATA_ROOT}/tool/${name}
+    if [ -d "${_src}/META-INF" ]; then
+      echo "copy META-INF from model folder"
+      ${surm} -rf ${DATA_ROOT}/tool/${name}/META-INF
+      ${sucp} -rf ${_src}/META-INF ${DATA_ROOT}/tool/${name}
+    fi
+  fi
+
+  local cmd=""
+  if [ "${type}" == "cds" ]; then
+    cmd="build-cds.sh ./${name}/${_model} ${name} ${VERSION}"
   else
-    cmd="build-client.sh ${_model} ${name} linux amd64"
+    cmd="build-client.sh ./${name}/${_model} ${name} linux amd64"
   fi
   kubectl exec -it tool -n ${ORG} -- bash -c "${HOME}/${cmd}"
-  echo "build output in folder ${DATA_ROOT}/tool"
+  echo "built output in folder ${DATA_ROOT}/tool"
 }
 
 # Print the usage message
