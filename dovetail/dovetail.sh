@@ -230,7 +230,7 @@ function startApp {
       return 1
     fi
     if [ ! -f "${DATA_ROOT}/tool/${modelName}_linux_amd64" ]; then
-      ${SCRIPT_DIR}/../msp/msp-util.sh -p ${ORG_ENV} -t ${ENV_TYPE} -m "${DATA_ROOT}/tool/${modelFile}"
+      ${SCRIPT_DIR}/../msp/msp-util.sh build-app -p ${ORG_ENV} -t ${ENV_TYPE} -m "${DATA_ROOT}/tool/${modelFile}"
     fi
     if [ ! -f "${DATA_ROOT}/tool/${modelName}_linux_amd64" ]; then
       echo "failed to build ${modelName}_linux_amd64"
@@ -525,13 +525,13 @@ function printHelp() {
   echo "  dovetail.sh <cmd> [options]"
   echo "    <cmd> - one of the following commands"
   echo "      - 'install-fe' - install Flogo Enterprise from zip; arguments: -s <FE-installer-zip>"
-  echo "      - 'config-app' - config client app with specified network and entity matcher yaml; args: -j [-i -n -u]"
-  echo "      - 'start-app' - build and start kubernetes service for specified app model that is previously configured using config-app; args: -j"
-  echo "      - 'stop-app' - shutdown kubernetes service for specified app model; args: -j"
+  echo "      - 'config-app' - config client app with specified network and entity matcher yaml; args: -m [-i -n -u]"
+  echo "      - 'start-app' - build and start kubernetes service for specified app model that is previously configured using config-app; args: -m"
+  echo "      - 'stop-app' - shutdown kubernetes service for specified app model; args: -m"
   echo "    -p <property file> - the .env file in config folder that defines network properties, e.g., netop1 (default)"
   echo "    -t <env type> - deployment environment type: one of 'docker', 'k8s' (default), 'aws', 'az', or 'gcp'"
   echo "    -s <source> - Flogo enterprise install zip file"
-  echo "    -j <json> - flogo model file in json format, e.g., marble.json"
+  echo "    -m <json> - flogo model file in json format, e.g., marble.json"
   echo "    -i <channel-id> - channel for client app to invoke chaincode"
   echo "    -n <port-number> - service listen port, e.g. '7091' (default)"
   echo "    -u <user> - user that client app uses to connect to fabric network, e.g. 'Admin' (default)"
@@ -542,7 +542,7 @@ ORG_ENV="netop1"
 
 CMD=${1}
 shift
-while getopts "h?p:t:s:j:i:n:u:" opt; do
+while getopts "h?p:t:s:m:i:n:u:" opt; do
   case "$opt" in
   h | \?)
     printHelp
@@ -557,7 +557,7 @@ while getopts "h?p:t:s:j:i:n:u:" opt; do
   s)
     SOURCE=$OPTARG
     ;;
-  j)
+  m)
     MODEL=$OPTARG
     ;;
   i)
