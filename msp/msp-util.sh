@@ -540,21 +540,15 @@ function execCommand {
   fi
 }
 
-# build chaincode cds package or app executable from flogo model json
-# buildFlogoModel cds|client
-function buildFlogoModel {
-  local type=${1}
+# build chaincode cds package from flogo model json
+function buildFlogoChaincode {
   if [ -z "${MODEL}" ]; then
     echo "Model json file is not specified"
     printHelp
     return 1
   fi
   local _model=${MODEL##*/}
-  local name=${_model%.*}
-  if [ "${type}" == "cds" ]; then
-    name="${name}_cc"
-  fi
-
+  local name="${_model%.*}_cc"
   local _src=${MODEL%/*}
   if [ "${_src}" == "${_model}" ]; then
     echo "set model file directory to PWD"
@@ -572,14 +566,30 @@ function buildFlogoModel {
     fi
   fi
 
-  local cmd=""
-  if [ "${type}" == "cds" ]; then
-    cmd="build-cds.sh ./${name}/${_model} ${name} ${VERSION}"
-  else
-    cmd="build-client.sh ./${name}/${_model} ${name} linux amd64"
-  fi
+  local cmd="build-cds.sh ./${name}/${_model} ${name} ${VERSION}"
   kubectl exec -it tool -n ${ORG} -- bash -c "/root/${cmd}"
-  echo "built output in folder ${DATA_ROOT}/tool"
+  echo "chaincode package is built in folder ${DATA_ROOT}/tool"
+}
+
+# build app executable from flogo model json
+function buildFlogoApp {
+  if [ -z "${MODEL}" ]; then
+    echo "Model json file is not specified"
+    printHelp
+    return 1
+  fi
+  local _model=${MODEL##*/}
+  local name=${_model%.*}
+  name=${name//_/-}
+
+  if [ ! -f "${DATA_ROOT}/tool/${_model}" ]; then
+    echo "copy ${MODEL} to ${DATA_ROOT}/tool"
+    ${sucp} ${MODEL} ${DATA_ROOT}/tool
+  fi
+
+  cmd="build-client.sh ./${_model} ${name} linux amd64"
+  kubectl exec -it tool -n ${ORG} -- bash -c "/root/${cmd}"
+  echo "app executable is built in folder ${DATA_ROOT}/tool"
 }
 
 # Print the usage message
@@ -699,11 +709,11 @@ orderer-config)
   ;;
 build-cds)
   echo "build chaincode cds package: ${MODEL} ${VERSION}"
-  buildFlogoModel "cds"
+  buildFlogoChaincode
   ;;
 build-app)
   echo "build executable for app: ${MODEL}"
-  buildFlogoModel "client"
+  buildFlogoApp
   ;;
 *)
   printHelp

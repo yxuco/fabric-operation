@@ -103,6 +103,7 @@ This command creates the test channel `mychannel`, installs and instantiates a t
 * Peer data folder, e.g., `/mnt/share/netop1.com/peers/peer-0/data` would show a new chaincode `mycc.1.0` added to the `chaincodes` folder, and a transaction block file created under `ledgersData/chains/chains/mychannel`.
 
 ### Start client gateway service and use REST APIs to test chaincode
+
 Refer [gateway](../service/README.md) for more details on how to build and start a REST API service for applications to interact with one or more Fabric networks. The following commands can be used on the bastion host to start a gateway service that exposes a Swagger-UI.
 ```
 cd ../service
@@ -124,7 +125,8 @@ Copy and paste the URL (your actual URL will be different) into a Chrome web-bro
 Refer [dovetail](../dovetail/README.md) for more details about [Project Dovetail](https://github.com/TIBCOSoftware/dovetail-contrib/tree/master/hyperledger-fabric), which is a visual programming tool for modeling Hyperledger Fabric chaincode and client apps.
 
 A Dovetail chaincode model, e.g., [marble.json](../dovetail/samples/marble/marble.json) is a JSON file that implements a sample chaincode by using the [TIBCO Flogo](https://docs.tibco.com/products/tibco-flogo-enterprise-2-8-0) visual modeler.  Use the following script to build and instantiate the chaincode.
-```
+
+```bash
 # create chaincode package
 cd ${HOME}/fabric-operation/msp
 ./msp-util.sh build-cds -m ../dovetail/samples/marble/marble.json
@@ -135,8 +137,24 @@ cd ../network
 ./network.sh install-chaincode -n peer-1 -f marble_cc_1.0.cds
 ./network.sh instantiate-chaincode -n peer-0 -c mychannel -s marble_cc -v 1.0 -m '{"Args":["init"]}'
 ```
-By using the same `Flogo` modeling UI, we can implement a client app, e.g., [marble_client.json](../dovetail/samples/marble_client/marble_client.json), that updates or queries the Fabric distributed ledger by using the `marble` chaincode.  Use the following script to build and run the client app as a Kubernetes service.
+
+You can send test transactions by using the Swagger UI of the gateway service, e.g., insert a new marble by posting the following transaction:
+
+```json
+{
+  "connection_id": "16453564131388984820",
+  "type": "INVOKE",
+  "chaincode_id": "marble_cc",
+  "transaction": "initMarble",
+  "parameter": [
+    "marble1","blue","35","tom"
+  ]
+}
 ```
+
+By using the same `Flogo` modeling UI, we can also implement a client app, e.g., [marble_client.json](../dovetail/samples/marble_client/marble_client.json), that updates or queries the Fabric distributed ledger by using the `marble` chaincode.  Use the following script to build and run a client app as a Kubernetes service.
+
+```bash
 # generate network config if skipped the previous gateway test
 cd ${HOME}/fabric-operation/service
 ./gateway.sh config
@@ -149,6 +167,7 @@ cd ../dovetail
 ./dovetail.sh config-app -j samples/marble_client/marble_client.json
 ./dovetail.sh start-app -j marble_client.json
 ```
+
 The above command will start 2 instances of the `marble-client` and expose a `load-balancer` end-point for other applications to invoke the service. Once the script completes successfully, it will print out the service end-point as, e.g.,
 ```
 access marble-client servcice at http://51.143.127.189:7091

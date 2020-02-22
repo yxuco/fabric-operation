@@ -1235,6 +1235,9 @@ install-chaincode)
     printHelp
     exit 1
   fi
+  if [ -f "${DATA_ROOT}/tool/${CC_SRC}" ]; then
+    ${sumv} ${DATA_ROOT}/tool/${CC_SRC} ${DATA_ROOT}/cli
+  fi
   execUtil ${CMD} ${PEER_ID} ${CC_SRC}
   ;;
 instantiate-chaincode)
