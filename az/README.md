@@ -126,8 +126,8 @@ Refer [dovetail](../dovetail/README.md) for more details about [Project Dovetail
 A Dovetail chaincode model, e.g., [marble.json](../dovetail/samples/marble/marble.json) is a JSON file that implements a sample chaincode by using the [TIBCO Flogo](https://docs.tibco.com/products/tibco-flogo-enterprise-2-8-0) visual modeler.  Use the following script to build and instantiate the chaincode.
 ```
 # create chaincode package
-cd ${HOME}/fabric-operation/dovetail
-./dovetail.sh build-cds -s ./samples/marble -j marble.json -c marble_cc
+cd ${HOME}/fabric-operation/msp
+./msp-util.sh build-cds -m ../dovetail/samples/marble/marble.json
 
 # install and instantiate chaincode
 cd ../network
@@ -142,6 +142,9 @@ cd ${HOME}/fabric-operation/service
 ./gateway.sh config
 
 # build and start client using the generated network config
+cd ../msp
+./msp-util.sh build-app -m ../dovetail/samples/marble_client/marble_client.json
+
 cd ../dovetail
 ./dovetail.sh config-app -j samples/marble_client/marble_client.json
 ./dovetail.sh start-app -j marble_client.json

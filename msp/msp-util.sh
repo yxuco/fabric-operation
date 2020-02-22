@@ -578,7 +578,7 @@ function buildFlogoModel {
   else
     cmd="build-client.sh ./${name}/${_model} ${name} linux amd64"
   fi
-  kubectl exec -it tool -n ${ORG} -- bash -c "${HOME}/${cmd}"
+  kubectl exec -it tool -n ${ORG} -- bash -c "/root/${cmd}"
   echo "built output in folder ${DATA_ROOT}/tool"
 }
 
