@@ -9,7 +9,7 @@ require (
 	github.com/hyperledger/fabric-sdk-go v1.0.0-beta1
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.5.1
-	golang.org/x/net v0.0.0-20200219183655-46282727080f
+	golang.org/x/net v0.7.0
 	google.golang.org/genproto v0.0.0-20200218151345-dad8c97a84f5
 	google.golang.org/grpc v1.27.1
 )
